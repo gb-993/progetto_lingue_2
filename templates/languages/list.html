@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Languages{% endblock %}
+{% block breadcrumb %}Languages{% endblock %}
+{% block content %}
+  <div class="toolbar">
+    <form method="get"><input name="q" value="{{ request.GET.q }}" placeholder="Search languages…"></form>
+    <a class="btn btn--primary" href="{% url 'language_add' %}">Add language</a>
+  </div>
+
+  <div class="card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Label</th><th>Name</th><th>Glottocode</th><th>ISO</th>
+          <th>Family</th><th>Group</th><th>Supervisor</th><th>Informant</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in languages %}
+        <tr>
+          <td>{{ l.id }}</td><td>{{ l.name_full }}</td><td>{{ l.glottocode }}</td><td>{{ l.isocode }}</td>
+          <td>{{ l.family }}</td><td>{{ l.grp }}</td><td>{{ l.supervisor }}</td><td>{{ l.informant }}</td>
+          <td class="row-actions">
+            <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
+            <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="9" class="muted">No languages</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

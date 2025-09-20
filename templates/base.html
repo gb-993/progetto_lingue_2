@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Admin{% endblock %}</title>
+  {% load static %}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  {# CSS principali #}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/mobile.css' %}" media="(max-width: 768px)">
+
+  {# Slot opzionale per CSS/JS extra nelle pagine figlie #}
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {# Link di salto al contenuto, visibile al focus #}
+  <a href="#main" class="sr-only">Salta al contenuto principale</a>
+
+  <div class="wrap">
+    <header role="banner" class="site-header">
+      <div class="site-brand">
+        <strong>Admin</strong>
+        <span class="muted" aria-current="page">
+          {% block breadcrumb %}{% endblock %}
+        </span>
+      </div>
+
+      {# Navigazione principale #}
+      {% with current=request.resolver_match.url_name %}
+      <nav class="nav" role="navigation" aria-label="Navigazione principale">
+        <ul class="nav-list">
+          <li>
+            <a class="btn" href="{% url 'dashboard' %}"
+               {% if current == 'dashboard' %}aria-current="page"{% endif %}>
+              Dashboard
+            </a>
+          </li>
+          <li>
+            <a class="btn" href="{% url 'language_list' %}"
+               {% if current == 'language_list' %}aria-current="page"{% endif %}>
+              Languages
+            </a>
+          </li>
+          <li>
+            <a class="btn" href="{% url 'parameter_list' %}"
+               {% if current == 'parameter_list' %}aria-current="page"{% endif %}>
+              Parameters
+            </a>
+          </li>
+          <li>
+            <a class="btn" href="{% url 'glossary_list' %}"
+               {% if current == 'glossary_list' %}aria-current="page"{% endif %}>
+              Glossary
+            </a>
+          </li>
+          <li>
+            <a class="btn" href="{% url 'tablea_index' %}"
+               {% if current == 'tablea_index' %}aria-current="page"{% endif %}>
+              Table A
+            </a>
+          </li>
+          <li>
+            <a class="btn" href="{% url 'accounts_list' %}"
+               {% if current == 'accounts_list' %}aria-current="page"{% endif %}>
+              Accounts
+            </a>
+          </li>
+          <li>
+            <form action="{% url 'logout' %}" method="post" aria-label="Esegui il logout">
+              {% csrf_token %}
+              <button type="submit" class="btn">Logout</button>
+            </form>
+          </li>
+        </ul>
+      </nav>
+      {% endwith %}
+    </header>
+
+    {# Messaggi flash: area annunci live e accessibile #}
+    <section role="status" aria-live="polite" aria-atomic="true">
+      {% include "_partials/messages.html" %}
+    </section>
+
+    {# Contenuto principale della pagina #}
+    <main id="main" role="main" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+
+    {# (Opzionale) Footer semantico #}
+    {% block footer %}
+    <footer role="contentinfo" class="site-footer">
+      <p class="muted">© {% now "Y" %} – Admin area</p>
+    </footer>
+    {% endblock %}
+  </div>
+</body>
+</html>

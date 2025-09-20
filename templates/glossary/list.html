@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Glossary{% endblock %}
+{% block breadcrumb %}Glossary{% endblock %}
+{% block content %}
+  <div class="toolbar">
+    <form method="get"><input name="q" value="{{ request.GET.q }}" placeholder="Search word…"></form>
+    <a class="btn btn--primary" href="{% url 'glossary_add' %}">Add new word</a>
+  </div>
+
+  {% for w in words %}
+    <div class="card">
+      <form method="post" action="{% url 'glossary_save' w.word %}">{% csrf_token %}
+        <h3>{{ w.word }}</h3>
+        <textarea name="description" rows="4">{{ w.description }}</textarea>
+        <div class="toolbar">
+          <a class="btn" href="{% url 'glossary_list' %}">Cancel</a>
+          <button class="btn btn--primary">Save</button>
+          <a class="btn btn--bad" href="{% url 'glossary_delete' w.word %}">Delete</a>
+        </div>
+      </form>
+    </div>
+  {% empty %}
+    <div class="muted">No words</div>
+  {% endfor %}
+{% endblock %}

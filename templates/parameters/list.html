@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Parameters{% endblock %}
+{% block breadcrumb %}Parameters{% endblock %}
+
+{% block content %}
+<section class="toolbar" role="search" aria-labelledby="search-heading">
+  <h2 id="search-heading" class="sr-only">Search parameters</h2>
+
+  <form method="get" aria-describedby="search-help">
+    <div class="form-row">
+      <label for="q">Search</label>
+      <input id="q" name="q" type="search" value="{{ request.GET.q }}" placeholder="Search parameters…"
+             autocomplete="off" aria-describedby="search-help">
+      <button type="submit" class="btn">Search</button>
+    </div>
+    <p id="search-help" class="sr-only">
+      Filter by position, label, name, questions, stop count or status.
+    </p>
+  </form>
+
+  <div class="actions" role="group" aria-label="Parameter actions">
+    <a class="btn btn--primary" href="{% url 'parameter_add' %}" aria-label="Add a new parameter">
+      Add parameter
+    </a>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="table-heading">
+  <h2 id="table-heading" class="sr-only">Parameter list</h2>
+
+  <table class="table" role="table" aria-describedby="table-caption">
+    <caption id="table-caption" class="sr-only">
+      Ordered parameters with position, label, name, questions, stop count, status and actions.
+      {% if parameters %} Total items: {{ parameters|length }}.{% endif %}
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Position</th>
+        <th scope="col">Label</th>
+        <th scope="col">Name</th>
+        <th scope="col">#Q</th>
+        <th scope="col">#Stop</th>
+        <th scope="col">Status</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for p in parameters %}
+      <tr>
+        {# NB: su mobile ogni cella mostra l’etichetta tramite data-label #}
+        <td data-label="Position">{{ p.position }}</td>
+        <td data-label="Label">{{ p.id }}</td>
+        <td data-label="Name">{{ p.name }}</td>
+        <td data-label="#Q">{{ p.questions_count }}</td>
+        <td data-label="#Stop">{{ p.stop_count }}</td>
+        <td data-label="Status">
+          {% if p.is_active %}
+            <span class="badge b-ok" aria-label="Status: Active">Active</span>
+          {% else %}
+            <span class="badge b-bad" aria-label="Status: Disabled">Disabled</span>
+          {% endif %}
+        </td>
+        <td data-label="Actions" class="row-actions">
+          <a class="btn" href="{% url 'parameter_edit' p.id %}" aria-label="Modify parameter {{ p.id }}">
+            Modify<span class="sr-only"> parameter {{ p.id }}</span>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7">
+          <p class="muted" role="status" aria-live="polite">No parameters found.</p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

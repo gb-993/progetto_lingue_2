@@ -1,0 +1,36 @@
+
+{% block title %}Account{% endblock %}
+{% block breadcrumb %}Accounts / {{ page_title }}{% endblock %}
+{% block content %}
+  <div class="card">
+    <h3>{{ page_title }}</h3>
+    <form method="post">{% csrf_token %}
+      <div class="grid grid-2">
+        <div><label>Email</label><input name="email" value="{{ form.email.value }}"></div>
+        <div><label>Role</label>
+          <select name="role">
+            <option value="admin" {% if form.role.value == "admin" %}selected{% endif %}>Admin</option>
+            <option value="user" {% if form.role.value == "user" %}selected{% endif %}>User</option>
+          </select>
+        </div>
+        <div><label>Name</label><input name="name" value="{{ form.name.value }}"></div>
+        <div><label>Surname</label><input name="surname" value="{{ form.surname.value }}"></div>
+        {% if show_password %}
+          <div><label>Password</label><input type="password" name="password"></div>
+        {% endif %}
+        <div class="grid-2" style="grid-column:1/-1">
+          <div>
+            <label>Assigned languages</label>
+            <select name="lang_ids" multiple size="8">
+              {% for lang in languages %}<option value="{{ lang.id }}" {% if lang.id in selected_lang_ids %}selected{% endif %}>{{ lang.id }} — {{ lang.name_full }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <a class="btn" href="{% url 'accounts_list' %}">Cancel</a>
+        <button class="btn btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

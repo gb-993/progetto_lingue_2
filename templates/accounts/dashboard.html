@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block content %}
+  <div class="grid grid-3">
+    <a class="card btn" href="{% url 'language_list' %}"><h3>Languages</h3><p class="muted">Gestisci lingue e dati</p></a>
+    <a class="card btn" href="{% url 'parameter_list' %}"><h3>Parameters</h3><p class="muted">Definizioni e domande</p></a>
+    <a class="card btn" href="{% url 'glossary_list' %}"><h3>Glossary</h3><p class="muted">Termini e definizioni</p></a>
+    <a class="card btn" href="{% url 'tablea_index' %}"><h3>Table A</h3><p class="muted">Riepilogo parametri × lingue</p></a>
+    <a class="card btn" href="{% url 'accounts_list' %}"><h3>Accounts</h3><p class="muted">Admin & Users</p></a>
+  </div>
+{% endblock %}

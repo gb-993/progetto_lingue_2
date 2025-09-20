@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Add word{% endblock %}
+{% block breadcrumb %}Glossary / Add{% endblock %}
+{% block content %}
+  <div class="card">
+    <form method="post">{% csrf_token %}
+      <div class="grid">
+        <div><label>Word</label><input name="word"></div>
+        <div><label>Description</label><textarea name="description" rows="4"></textarea></div>
+      </div>
+      <div class="toolbar">
+        <a class="btn" href="{% url 'glossary_list' %}">Cancel</a>
+        <button class="btn btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

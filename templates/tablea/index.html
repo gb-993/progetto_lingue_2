@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Table A{% endblock %}
+{% block breadcrumb %}Table A{% endblock %}
+{% block content %}
+  <div class="toolbar">
+    <div></div>
+    <div class="row-actions">
+      <a class="btn" href="{% url 'tablea_export_xlsx' %}">Export .xlsx</a>
+      <a class="btn" href="{% url 'tablea_export_csv' %}">Export .csv</a>
+    </div>
+  </div>
+
+  <div class="card" style="overflow:auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Label</th><th>Name</th><th>Implication</th>
+          {% for lang in languages %}<th>{{ lang.id }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in parameters %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.name }}</td>
+          <td class="muted">{{ p.implicational_condition }}</td>
+          {% for lang in languages %}
+            <td>{{ tableA.px[ p.id ][ lang.id ] }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

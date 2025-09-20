@@ -1,0 +1,59 @@
+/* ==== MOBILE (<= 768px) ==== */
+@media (max-width: 768px) {
+  /* Toolbar impilata */
+  .toolbar {
+    display: grid;
+    gap: 12px;
+    align-items: start;
+  }
+  .toolbar form { display: grid; gap: 8px; }
+  .toolbar .actions, .toolbar a.btn, .toolbar button.btn { width: 100%; }
+
+  /* Tabella -> layout “a schede” accessibile, niente scroll orizzontale */
+  .table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .table thead { 
+    position: absolute; 
+    left: -9999px; 
+    top: -9999px; 
+    /* nascosta ma disponibile ai lettori di schermo via aria/caption */
+  }
+
+  .table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid #2b3340;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: #0f141b;
+  }
+
+  .table tbody td, 
+  .table tbody th[scope="row"] {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+  }
+
+  /* Etichetta colonna prima del valore */
+  .table tbody td::before,
+  .table tbody th[scope="row"]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  /* Badge e azioni a tutta larghezza */
+  .badge { display: inline-block; text-align: center; padding: 6px 8px; border-radius: 8px; }
+  .row-actions .btn { width: 100%; }
+
+  /* Spazi e focus */
+  a.btn, button.btn { min-height: 44px; }
+  a:focus, button:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
