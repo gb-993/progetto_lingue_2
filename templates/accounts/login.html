@@ -1,9 +1,40 @@
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block breadcrumb %}Login{% endblock %}
 
+{% block content %}
+  <div class="parameter-form">
+    <div class="card">
+      <h2 style="margin-top:0;">Accedi</h2>
 
-<h2>Login</h2>
-<form method="post">{% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Accedi</button>
-</form>
+      {# Errori globali, tipo "Email o password non validi" #}
+      {% if form.non_field_errors %}
+        <div class="form-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <form method="post" class="grid" novalidate>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+        <div>
+          <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+          {{ form.username }}
+          {{ form.username.errors }}
+        </div>
+
+        <div>
+          <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+          {{ form.password }}
+          {{ form.password.errors }}
+        </div>
+
+        <button type="submit" class="btn btn--primary">Accedi</button>
+
+        <div class="toolbar" style="margin:0; padding:0;">
+          {% url 'password_reset' as pr %}{% if pr %}<a href="{{ pr }}">Password dimenticata?</a>{% endif %}
+          {% url 'signup' as su %}{% if su %}<a class="btn" href="{{ su }}">Crea account</a>{% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
