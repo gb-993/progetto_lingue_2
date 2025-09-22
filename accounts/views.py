@@ -21,7 +21,12 @@ def _is_admin(user: User) -> bool:
 
 @login_required
 def dashboard(request):
-    return render(request, "accounts/dashboard.html")
+    is_admin = (
+        request.user.is_staff
+        or request.user.is_superuser
+        or getattr(request.user, "role", "") == "admin"
+    )
+    return render(request, "accounts/dashboard.html", {"is_admin": is_admin})
 
 
 @login_required
