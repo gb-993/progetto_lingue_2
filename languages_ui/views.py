@@ -17,22 +17,44 @@ from .forms import LanguageForm
 @login_required
 def language_list(request):
     q = (request.GET.get("q") or "").strip()
+    user = request.user
+    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
+
     qs = Language.objects.select_related("assigned_user").order_by("position")
-    if q:
+
+    # 🔒 Filtro di sicurezza: gli user vedono solo le lingue a loro attribuite
+    if not is_admin:
         qs = qs.filter(
+            Q(assigned_user=user) | Q(users=user)  # FK assigned_user OPPURE M2M user.m2m_languages
+        )
+
+    # Ricerca
+    if q:
+        search_filter = (
             Q(id__icontains=q) |
             Q(name_full__icontains=q) |
             Q(isocode__icontains=q) |
             Q(glottocode__icontains=q) |
             Q(grp__icontains=q) |
             Q(informant__icontains=q) |
-            Q(supervisor__icontains=q) |
-            Q(assigned_user__email__icontains=q)
+            Q(supervisor__icontains=q)
         )
+        # Consenti di cercare per email assegnata solo agli admin (per privacy)
+        if is_admin:
+            search_filter |= Q(assigned_user__email__icontains=q)
+
+        qs = qs.filter(search_filter)
+
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get("page"))
-    ctx = {"languages": page_obj.object_list, "page_obj": page_obj, "q": q}
+    ctx = {
+        "languages": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "is_admin": is_admin,   # ➜ usato dal template per i bottoni
+    }
     return render(request, "languages/list.html", ctx)
+
 
 
 @login_required
@@ -66,13 +88,19 @@ def language_edit(request, lang_id):
 
 @login_required
 def language_data(request, lang_id):
-    """
-    Mostra tutti i ParameterDef attivi con le relative domande.
-    Per evitare l'indicizzazione di dict nei template, attacco:
-      - p.status  (ok|warn|missing) su ogni parametro
-      - q.ans     (SimpleNamespace) su ogni domanda, con campi usati dal template
-    """
+    user = request.user
+    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
+
     lang = get_object_or_404(Language, pk=lang_id)
+
+    # 🔒 Access control: admin OK; altrimenti solo se assegnata via FK o M2M
+    if not is_admin:
+        if not (
+            (lang.assigned_user_id == user.id) or
+            lang.users.filter(pk=user.pk).exists()
+        ):
+            messages.error(request, _("You don't have access to this language."))
+            return redirect("language_list")
 
     parameters = (
         ParameterDef.objects.filter(is_active=True)
@@ -82,24 +110,20 @@ def language_data(request, lang_id):
         )
     )
 
-    # Risposte dell'utente per questa lingua (con motivazioni ed esempi già prefetchati dal model default)
     answers_qs = (
         Answer.objects.filter(language=lang)
         .select_related("question")
         .prefetch_related("answer_motivations__motivation", "examples")
     )
-    # Mappa: question_id -> Answer
     by_qid = {a.question_id: a for a in answers_qs}
 
-    # Attacco q.ans e calcolo p.status
+    from types import SimpleNamespace
     for p in parameters:
         total = 0
         answered = 0
-
         for q in p.questions.all():
             total += 1
             a = by_qid.get(q.id)
-
             if a:
                 ans_ns = SimpleNamespace(
                     response_text=a.response_text,
@@ -108,11 +132,9 @@ def language_data(request, lang_id):
                     examples=list(a.examples.all()),
                     answer_id=a.id,
                 )
-                # conteggio risposte
                 if a.response_text in ("yes", "no"):
                     answered += 1
             else:
-                # default visivo per domande senza risposta
                 ans_ns = SimpleNamespace(
                     response_text="yes",
                     comments="",
@@ -120,11 +142,8 @@ def language_data(request, lang_id):
                     examples=[],
                     answer_id=None,
                 )
-
-            # esponi nel template come dot-notation
             q.ans = ans_ns
 
-        # stato del parametro
         if total == 0:
             p.status = "ok"
         elif answered == 0:
@@ -135,13 +154,9 @@ def language_data(request, lang_id):
             p.status = "ok"
 
     motivations = list(Motivation.objects.order_by("id"))
-
-    ctx = {
-        "language": lang,
-        "parameters": parameters,
-        "motivations": motivations,
-    }
+    ctx = {"language": lang, "parameters": parameters, "motivations": motivations}
     return render(request, "languages/data.html", ctx)
+
 
 
 @login_required

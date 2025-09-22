@@ -8,7 +8,9 @@
       <input id="q" name="q" value="{{ q }}" placeholder="Search languages…">
       <button class="btn">Search</button>
     </form>
-    <a class="btn btn--primary" href="{% url 'language_add' %}">Add language</a>
+    {% if is_admin %}
+      <a class="btn btn--primary" href="{% url 'language_add' %}">Add language</a>
+    {% endif %}
   </div>
 
   <div class="card">
@@ -39,7 +41,9 @@
           <td>{{ l.informant }}</td>
           <td class="row-actions">
             <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
+          {% if is_admin %}
             <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
+          {% endif %}          
           </td>
         </tr>
         {% empty %}
