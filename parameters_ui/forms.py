@@ -1,23 +1,21 @@
-# parameters_ui/forms.py
 from django import forms
 from core.models import ParameterDef
 
 class ParameterForm(forms.ModelForm):
     class Meta:
         model = ParameterDef
-        fields = ["id", "name", "short_description", "implicational_condition", "is_active", "position"]
+        fields = ["id", "position", "name", "short_description", "implicational_condition", "is_active"]
         widgets = {
-            "id": forms.TextInput(attrs={"class": "form-control"}),
+            "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
+            "position": forms.NumberInput(attrs={"class": "form-control", "min": "1", "step": "1", "inputmode": "numeric"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
-            "short_description": forms.Textarea(attrs={"class": "form-control"}),
+            "short_description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
             "implicational_condition": forms.TextInput(attrs={"class": "form-control"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check"}),
-            "position": forms.NumberInput(attrs={"class": "form-control", "min": 1, "step": 1}),
         }
 
-    # validazione custom del campo "position"
     def clean_position(self):
-        p = self.cleaned_data.get("position")
-        if p is None or p < 1:
-            return 1
-        return p
+        pos = self.cleaned_data.get("position")
+        if pos is None or pos < 1:
+            raise forms.ValidationError("Position deve essere un intero ≥ 1.")
+        return pos
