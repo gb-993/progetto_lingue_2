@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Delete {{ obj.word }}{% endblock %}
+{% block breadcrumb %}Glossary / Delete / {{ obj.word }}{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <p>Confermi di voler eliminare la voce <strong>{{ obj.word }}</strong>? L'azione è irreversibile.</p>
+      <div class="toolbar">
+        <a class="btn" href="{% url 'glossary_list' %}">Cancel</a>
+        <button class="btn btn--bad">Delete</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

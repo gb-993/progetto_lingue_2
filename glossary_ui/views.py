@@ -1,52 +1,94 @@
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
+
+from core.models import Glossary
+from .forms import GlossaryForm
+
+def _is_admin(user):
+    return user.is_authenticated and user.is_staff
 
 @login_required
 def glossary_list(request):
-    return render(request, "glossary/list.html", {"words": []})
-
-@login_required
-def glossary_add(request):
-    return render(request, "glossary/add.html")
-
-@login_required
-def glossary_save(request, word):
     """
-    Minimal save view for glossary terms.
+    Tutti vedono la lista e possono cercare. Solo gli admin vedono bottoni Add/Edit/Delete.
+    """
+    q = (request.GET.get("q") or "").strip()
+    qs = Glossary.objects.all().order_by("word")
+    if q:
+        qs = qs.filter(
+            Q(word__icontains=q) |
+            Q(description__icontains=q)
+        )
 
-    URL pattern provides a `word` string. For now we render an edit form on GET
-    and accept POSTed 'term' and 'definition' fields and then redirect back to
-    the list view. This is intentionally lightweight because no model exists in
-    this app yet. Replace with model-backed logic when a `GlossaryEntry` model
-    is added.
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    ctx = {
+        "page_obj": page_obj,
+        "q": q,
+        "is_admin": _is_admin(request.user),
+    }
+    return render(request, "glossary/list.html", ctx)
+
+@login_required
+@user_passes_test(_is_admin)
+def glossary_add(request):
+    """
+    Solo admin: crea una nuova voce.
     """
     if request.method == "POST":
-        term = request.POST.get("term", "").strip()
-        definition = request.POST.get("definition", "").strip()
-        # Here you'd normally save to the database. We'll fake a saved word and
-        # redirect back to the list view.
-        from django.shortcuts import redirect
+        form = GlossaryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Voce creata con successo.")
+            return redirect("glossary_list")
+        messages.error(request, "Correggi gli errori e riprova.")
+    else:
+        form = GlossaryForm()
 
-        return redirect("glossary_list")
-
-    # GET: render the edit form with the provided word as the id/term
-    return render(
-        request,
-        "glossary/edit.html",
-        {"word": {"id": word, "term": word, "definition": ""}},
-    )
-
+    return render(request, "glossary/add.html", {"form": form})
 
 @login_required
-def glossary_delete(request, word):
-    """Minimal delete view placeholder.
-
-    Currently there is no model backing glossary entries. This view simply
-    accepts the request and redirects back to the list. Replace with real
-    deletion logic when a model is added.
+def glossary_view(request, word):
     """
-    from django.shortcuts import redirect
+    Vista di dettaglio in sola lettura per gli user.
+    Gli admin vedono anche il pulsante 'Modifica'.
+    """
+    obj = get_object_or_404(Glossary, pk=word)
+    return render(request, "glossary/view.html", {"obj": obj, "is_admin": _is_admin(request.user)})
 
-    # A real implementation would check request.method and permissions and
-    # delete the model instance. For now, just redirect back to the list.
-    return redirect("glossary_list")
+@login_required
+@user_passes_test(_is_admin)
+def glossary_edit(request, word):
+    """
+    Solo admin: modifica voce esistente.
+    """
+    obj = get_object_or_404(Glossary, pk=word)
+    if request.method == "POST":
+        form = GlossaryForm(request.POST, instance=obj)
+        if form.is_valid():
+            # Se la "word" cambia (è pk), il save crea una nuova pk; va bene perché abbiamo validazione uniqueness iexact.
+            form.save()
+            messages.success(request, "Voce aggiornata.")
+            return redirect("glossary_list")
+        messages.error(request, "Correggi gli errori e riprova.")
+    else:
+        form = GlossaryForm(instance=obj)
+    return render(request, "glossary/edit.html", {"form": form, "obj": obj})
+
+@login_required
+@user_passes_test(_is_admin)
+def glossary_delete(request, word):
+    """
+    Solo admin: elimina (POST).
+    """
+    obj = get_object_or_404(Glossary, pk=word)
+    if request.method == "POST":
+        obj.delete()
+        messages.success(request, "Voce eliminata.")
+        return redirect("glossary_list")
+    # GET → conferma semplice
+    return render(request, "glossary/confirm_delete.html", {"obj": obj})

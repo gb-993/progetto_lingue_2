@@ -1,25 +1,68 @@
 {% extends "base.html" %}
 {% block title %}Glossary{% endblock %}
 {% block breadcrumb %}Glossary{% endblock %}
+
 {% block content %}
   <div class="toolbar">
-    <form method="get"><input name="q" value="{{ request.GET.q }}" placeholder="Search word…"></form>
-    <a class="btn btn--primary" href="{% url 'glossary_add' %}">Add new word</a>
+    <form method="get" role="search" aria-label="Search glossary">
+      <label class="sr-only" for="q">Search</label>
+      <input id="q" name="q" value="{{ q }}" placeholder="Search word or description…">
+    </form>
+
+    {% if is_admin %}
+      <a class="btn btn--primary" href="{% url 'glossary_add' %}">Add new word</a>
+    {% endif %}
   </div>
 
-  {% for w in words %}
+  {% if page_obj.object_list %}
     <div class="card">
-      <form method="post" action="{% url 'glossary_save' w.word %}">{% csrf_token %}
-        <h3>{{ w.word }}</h3>
-        <textarea name="description" rows="4">{{ w.description }}</textarea>
-        <div class="toolbar">
-          <a class="btn" href="{% url 'glossary_list' %}">Cancel</a>
-          <button class="btn btn--primary">Save</button>
-          <a class="btn btn--bad" href="{% url 'glossary_delete' w.word %}">Delete</a>
-        </div>
-      </form>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Word</th>
+            <th scope="col">Description</th>
+            <th scope="col" class="fit"></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for obj in page_obj.object_list %}
+          <tr>
+            <td>
+              <a href="{% url 'glossary_view' obj.word %}">{{ obj.word }}</a>
+            </td>
+            <td>{{ obj.description|default:"" }}</td>
+            <td class="fit">
+              {% if is_admin %}
+                <a class="btn" href="{% url 'glossary_edit' obj.word %}">Edit</a>
+                <form method="post" action="{% url 'glossary_delete' obj.word %}" style="display:inline">
+                  {% csrf_token %}
+                  <button class="btn btn--bad"
+                          aria-label="Delete {{ obj.word }}"
+                          onclick="return confirm('Eliminare definitivamente &quot;{{ obj.word }}&quot;?')">
+                    Delete
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
-  {% empty %}
-    <div class="muted">No words</div>
-  {% endfor %}
+
+    {# pagination #}
+    {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="pagination" role="navigation" aria-label="Pagination">
+        {% if page_obj.has_previous %}
+          <a class="btn" href="?q={{ q }}&page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a class="btn" href="?q={{ q }}&page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="muted">No words found.</div>
+  {% endif %}
 {% endblock %}
