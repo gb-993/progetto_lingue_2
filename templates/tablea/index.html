@@ -1,35 +1,62 @@
 {% extends "base.html" %}
 {% block title %}Table A{% endblock %}
 {% block breadcrumb %}Table A{% endblock %}
+
 {% block content %}
-  <div class="toolbar">
-    <div></div>
+  <div class="toolbar" role="region" aria-label="Azioni tabella">
+    <div aria-hidden="true"></div>
     <div class="row-actions">
       <a class="btn" href="{% url 'tablea_export_xlsx' %}">Export .xlsx</a>
       <a class="btn" href="{% url 'tablea_export_csv' %}">Export .csv</a>
     </div>
   </div>
 
-  <div class="card" style="overflow:auto">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Label</th><th>Name</th><th>Implication</th>
-          {% for lang in languages %}<th>{{ lang.id }}</th>{% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in parameters %}
-        <tr>
-          <td>{{ p.id }}</td>
-          <td>{{ p.name }}</td>
-          <td class="muted">{{ p.implicational_condition }}</td>
-          {% for lang in languages %}
-            <td>{{ tableA.px[ p.id ][ lang.id ] }}</td>
+  <div class="card table-container">
+    {% if rows %}
+      <table class="table" aria-describedby="tablea-desc">
+        <caption id="tablea-desc">
+          Valori per parametro (righe) e lingua (colonne).
+        </caption>
+
+        <thead>
+          <tr>
+            <th scope="col">Label</th>
+            <th scope="col">Name</th>
+            <th scope="col">Implication</th>
+            {% for lang in languages %}
+              <th scope="col">{{ lang.id }}</th>
+            {% empty %}
+              {# Nessuna lingua: mostriamo un’indicazione chiara #}
+              <th scope="col">No languages</th>
+            {% endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <th scope="row">{{ row.p.id }}</th>
+              <td>{{ row.p.name }}</td>
+              <td class="muted">{{ row.p.implicational_condition }}</td>
+
+              {% for val in row.cells %}
+                <td>{{ val }}</td>
+              {% empty %}
+                {# Nessuna cella (se non ci sono lingue) #}
+                <td>—</td>
+              {% endfor %}
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="{{ 3|add:languages|length }}">
+                Nessun dato disponibile per Table A.
+              </td>
+            </tr>
           {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    {% else %}
+      <p role="status">Nessun dato disponibile per Table A.</p>
+    {% endif %}
   </div>
 {% endblock %}
