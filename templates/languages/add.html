@@ -1,23 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Language{% endblock %}
-{% block breadcrumb %}Languages / {{ page_title }}{% endblock %}
+{% block title %}Add language{% endblock %}
+{% block breadcrumb %}Languages / Add{% endblock %}
 {% block content %}
   <div class="card">
-    <h3>{{ page_title }}</h3>
-    <form method="post">{% csrf_token %}
+    <h2 class="h3">Add language</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
       <div class="grid grid-2">
-        <div><label>Label (ID)</label><input name="id" value="{{ form.id.value }}" {% if lock_id %}readonly{% endif %}></div>
-        <div><label>Name</label><input name="name_full" value="{{ form.name_full.value }}"></div>
-        <div><label>Glottocode</label><input name="glottocode" value="{{ form.glottocode.value }}"></div>
-        <div><label>ISO</label><input name="isocode" value="{{ form.isocode.value }}"></div>
-        <div><label>Family</label><input name="family" value="{{ form.family.value }}"></div>
-        <div><label>Group</label><input name="grp" value="{{ form.grp.value }}"></div>
-        <div><label>Supervisor</label><input name="supervisor" value="{{ form.supervisor.value }}"></div>
-        <div><label>Informant</label><input name="informant" value="{{ form.informant.value }}"></div>
+        {% for field in form %}
+          <div class="form-row">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="error">{{ field.errors|striptags }}</div>{% endif %}
+            {% if field.help_text %}<div class="muted">{{ field.help_text }}</div>{% endif %}
+          </div>
+        {% endfor %}
       </div>
       <div class="toolbar">
-        <a class="btn" href="{% url 'language_list' %}">Cancel</a>
         <button class="btn btn--primary">Save</button>
+        <a class="btn" href="{% url 'language_list' %}">Cancel</a>
       </div>
     </form>
   </div>

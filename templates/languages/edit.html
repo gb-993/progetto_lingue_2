@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Edit language{% endblock %}
+{% block breadcrumb %}Languages / {{ language.id }} / Edit{% endblock %}
+{% block content %}
+  <div class="card">
+    <h2 class="h3">Edit: {{ language.name_full }} ({{ language.id }})</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="grid grid-2">
+        {% for field in form %}
+          <div class="form-row">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="error">{{ field.errors|striptags }}</div>{% endif %}
+            {% if field.help_text %}<div class="muted">{{ field.help_text }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="toolbar">
+        <button class="btn btn--primary">Save</button>
+        <a class="btn" href="{% url 'language_list' %}">Back</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

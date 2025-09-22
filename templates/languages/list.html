@@ -3,7 +3,11 @@
 {% block breadcrumb %}Languages{% endblock %}
 {% block content %}
   <div class="toolbar">
-    <form method="get"><input name="q" value="{{ request.GET.q }}" placeholder="Search languages…"></form>
+    <form method="get" aria-label="Search languages">
+      <label class="sr-only" for="q">Search</label>
+      <input id="q" name="q" value="{{ q }}" placeholder="Search languages…">
+      <button class="btn">Search</button>
+    </form>
     <a class="btn btn--primary" href="{% url 'language_add' %}">Add language</a>
   </div>
 
@@ -11,22 +15,49 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Label</th><th>Name</th><th>Glottocode</th><th>ISO</th>
-          <th>Family</th><th>Group</th><th>Supervisor</th><th>Informant</th><th></th>
+          <th scope="col">Label</th>
+          <th scope="col">Position</th>
+          <th scope="col">Name</th>
+          <th scope="col">Glottocode</th>
+          <th scope="col">ISO</th>
+          <th scope="col">Group</th>
+          <th scope="col">Supervisor</th>
+          <th scope="col">Informant</th>
+          <th scope="col" class="sr-only">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for l in languages %}
         <tr>
-          <td>{{ l.id }}</td><td>{{ l.name_full }}</td><td>{{ l.glottocode }}</td><td>{{ l.isocode }}</td>
-          <td>{{ l.family }}</td><td>{{ l.grp }}</td><td>{{ l.supervisor }}</td><td>{{ l.informant }}</td>
+          <td>{{ l.id }}</td>
+          <td>{{ l.position }}</td>
+          <td>{{ l.name_full }}</td>
+          <td>{{ l.glottocode }}</td>
+          <td>{{ l.isocode }}</td>
+          <td>{{ l.grp }}</td>
+          <td>{{ l.supervisor }}</td>
+          <td>{{ l.informant }}</td>
           <td class="row-actions">
             <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
             <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
           </td>
         </tr>
-        {% empty %}<tr><td colspan="9" class="muted">No languages</td></tr>{% endfor %}
+        {% empty %}
+          <tr><td colspan="8" class="muted">No languages</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
+
+  {% if page_obj %}
+  <nav class="pagination" aria-label="Pagination">
+    {% if page_obj.has_previous %}
+      <a class="btn" href="?q={{ q }}&page={{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+    <span class="muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="btn" href="?q={{ q }}&page={{ page_obj.next_page_number }}">Next</a>
+    {% endif %}
+  </nav>
+  {% endif %}
 {% endblock %}

@@ -1,26 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Language data{% endblock %}
 {% block breadcrumb %}Languages / {{ language.id }} / Data{% endblock %}
+
 {% block content %}
   <div class="split">
-    <aside class="card sidebar">
+    <aside class="card sidebar" aria-label="Parameters">
       <h3>Parameters</h3>
-      <ul style="list-style:none;padding-left:0;margin:0">
+      <ul>
         {% for p in parameters %}
-          <li style="margin:4px 0">
-            {% with status=param_status[p.id] %}
-              {% if status == "ok" %}<span class="badge b-ok">OK</span>
-              {% elif status == "warn" %}<span class="badge b-warn">Partial</span>
-              {% else %}<span class="badge b-bad">Missing</span>{% endif %}
+          <li>
+            {% with status=p.status %}
+              {% if status == "ok" %}
+                <span class="badge b-ok">OK</span>
+              {% elif status == "warn" %}
+                <span class="badge">Partial</span>
+              {% else %}
+                <span class="badge b-bad">Missing</span>
+              {% endif %}
             {% endwith %}
             <a href="#p-{{ p.id }}">{{ p.id }} — {{ p.name }}</a>
           </li>
         {% endfor %}
       </ul>
-      <div class="toolbar" style="margin-top:12px">
-        <a class="btn" href="{% url 'language_debug' language.id %}">Parameters debug</a>
-      </div>
+
       <div class="toolbar">
+        <a class="btn" href="{% url 'language_debug' language.id %}">Parameters debug</a>
         <a class="btn" href="{% url 'language_export' language.id %}">Export .xlsx</a>
       </div>
     </aside>
@@ -28,62 +32,72 @@
     <main>
       <div class="card">
         <h2>{{ language.name_full }} ({{ language.id }})</h2>
-        <form method="post" action="{% url 'language_save_instructions' language.id %}">
-          {% csrf_token %}
-          <label>Instructions</label>
-          <textarea name="instructions" rows="4">{{ instructions }}</textarea>
-          <div class="toolbar">
-            <button class="btn btn--primary">Save</button>
-            {% if can_approve %}
-              <a class="btn btn--ok" href="{% url 'language_approve' language.id %}">Approve</a>
-              <a class="btn btn--warn" href="{% url 'language_reopen' language.id %}">Reject & Reopen</a>
-            {% endif %}
-          </div>
-        </form>
+        <p class="muted">Answer the questions below. Fields are saved per question.</p>
       </div>
 
       {% for p in parameters %}
       <div id="p-{{ p.id }}" class="card">
         <h3>{{ p.id }} — {{ p.name }}</h3>
-        {% if p.short_description %}<p class="muted">{{ p.short_description }}</p>{% endif %}
+        {% if p.short_description %}
+          <p class="muted">{{ p.short_description }}</p>
+        {% endif %}
 
         {% for q in p.questions.all %}
-        <div class="card" style="padding:12px">
+        <div class="card">
           <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
           {% if q.instruction %}<p class="muted">{{ q.instruction }}</p>{% endif %}
+
           <form method="post" action="{% url 'answer_save' language.id q.id %}">
             {% csrf_token %}
             <div class="grid grid-3">
               <div>
-                <label>Answer</label>
-                <select name="response_text">
-                  <option value="yes" {% if answers[q.id].response_text == "yes" %}selected{% endif %}>YES</option>
-                  <option value="no"  {% if answers[q.id].response_text == "no"  %}selected{% endif %}>NO</option>
+                <label for="resp_{{ q.id }}">Answer</label>
+                <select id="resp_{{ q.id }}" name="response_text">
+                  <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
+                  <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
                 </select>
               </div>
+
               <div>
-                <label>Comments</label>
-                <input name="comments" value="{{ answers[q.id].comments }}">
+                <label for="com_{{ q.id }}">Comments</label>
+                <input id="com_{{ q.id }}" name="comments" value="{{ q.ans.comments }}">
               </div>
+
               <div>
-                <label>Motivations (if NO)</label>
-                <select name="motivation_ids" multiple size="4">
+                <label for="mot_{{ q.id }}">Motivations (if NO)</label>
+                <select id="mot_{{ q.id }}" name="motivation_ids" multiple size="4" aria-describedby="hint_mot_{{ q.id }}">
                   {% for m in motivations %}
-                    <option value="{{ m.id }}" {% if m.id in answers[q.id].motivation_ids %}selected{% endif %}>{{ m.label }}</option>
+                    <option value="{{ m.id }}" {% if m.id in q.ans.motivation_ids %}selected{% endif %}>{{ m.label }}</option>
                   {% endfor %}
                 </select>
+                <div id="hint_mot_{{ q.id }}" class="muted">Hold Ctrl/Cmd to select multiple.</div>
               </div>
             </div>
 
             <div class="grid grid-2">
-              {% for ex in answers[q.id].examples %}
+              {% for ex in q.ans.examples %}
                 <div class="card">
                   <div class="grid">
-                    <div><label>Data</label><input name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"></div>
-                    <div><label>Transliteration</label><input name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"></div>
-                    <div><label>Gloss</label><input name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"></div>
-                    <div><label>English translation</label><input name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"></div>
-                    <div><label>Reference</label><input name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"></div>
+                    <div>
+                      <label for="ex_{{ ex.id }}_textarea">Data</label>
+                      <input id="ex_{{ ex.id }}_textarea" name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}">
+                    </div>
+                    <div>
+                      <label for="ex_{{ ex.id }}_transliteration">Transliteration</label>
+                      <input id="ex_{{ ex.id }}_transliteration" name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}">
+                    </div>
+                    <div>
+                      <label for="ex_{{ ex.id }}_gloss">Gloss</label>
+                      <input id="ex_{{ ex.id }}_gloss" name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}">
+                    </div>
+                    <div>
+                      <label for="ex_{{ ex.id }}_translation">English translation</label>
+                      <input id="ex_{{ ex.id }}_translation" name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}">
+                    </div>
+                    <div>
+                      <label for="ex_{{ ex.id }}_reference">Reference</label>
+                      <input id="ex_{{ ex.id }}_reference" name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}">
+                    </div>
                   </div>
                 </div>
               {% empty %}

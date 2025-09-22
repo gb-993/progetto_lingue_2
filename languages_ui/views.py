@@ -1,12 +1,23 @@
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Prefetch
+from django.shortcuts import render, get_object_or_404, redirect
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_http_methods
+from django.utils.translation import gettext as _
+from types import SimpleNamespace
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
-from django.db.models import Q
-from core.models import Language
+from core.models import (
+    Language, ParameterDef, Question, Answer, Example, Motivation, AnswerMotivation
+)
+from .forms import LanguageForm
+
 
 @login_required
 def language_list(request):
     q = (request.GET.get("q") or "").strip()
-    qs = Language.objects.order_by("position")
+    qs = Language.objects.select_related("assigned_user").order_by("position")
     if q:
         qs = qs.filter(
             Q(id__icontains=q) |
@@ -15,44 +26,213 @@ def language_list(request):
             Q(glottocode__icontains=q) |
             Q(grp__icontains=q) |
             Q(informant__icontains=q) |
-            Q(supervisor__icontains=q)
+            Q(supervisor__icontains=q) |
+            Q(assigned_user__email__icontains=q)
         )
-    return render(request, "languages/list.html", {"languages": qs, "q": q})
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    ctx = {"languages": page_obj.object_list, "page_obj": page_obj, "q": q}
+    return render(request, "languages/list.html", ctx)
+
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def language_add(request):
-    return render(request, "languages/add.html", {"page_title": "Add language", "form": {}})
+    if request.method == "POST":
+        form = LanguageForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("Language created."))
+            return redirect("language_list")
+    else:
+        form = LanguageForm()
+    return render(request, "languages/add.html", {"page_title": "Add language", "form": form})
+
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def language_edit(request, lang_id):
-    return render(request, "languages/edit.html", {"page_title": "Edit language", "form": {}})
+    lang = get_object_or_404(Language, pk=lang_id)
+    if request.method == "POST":
+        form = LanguageForm(request.POST, instance=lang)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("Language updated."))
+            return redirect("language_list")
+    else:
+        form = LanguageForm(instance=lang)
+    return render(request, "languages/edit.html", {"page_title": "Edit language", "form": form, "language": lang})
 
-@login_required
+
 @login_required
 def language_data(request, lang_id):
+    """
+    Mostra tutti i ParameterDef attivi con le relative domande.
+    Per evitare l'indicizzazione di dict nei template, attacco:
+      - p.status  (ok|warn|missing) su ogni parametro
+      - q.ans     (SimpleNamespace) su ogni domanda, con campi usati dal template
+    """
     lang = get_object_or_404(Language, pk=lang_id)
-    return render(request, "languages/data.html", {"language": lang})
+
+    parameters = (
+        ParameterDef.objects.filter(is_active=True)
+        .order_by("position")
+        .prefetch_related(
+            Prefetch("questions", queryset=Question.objects.order_by("id"))
+        )
+    )
+
+    # Risposte dell'utente per questa lingua (con motivazioni ed esempi già prefetchati dal model default)
+    answers_qs = (
+        Answer.objects.filter(language=lang)
+        .select_related("question")
+        .prefetch_related("answer_motivations__motivation", "examples")
+    )
+    # Mappa: question_id -> Answer
+    by_qid = {a.question_id: a for a in answers_qs}
+
+    # Attacco q.ans e calcolo p.status
+    for p in parameters:
+        total = 0
+        answered = 0
+
+        for q in p.questions.all():
+            total += 1
+            a = by_qid.get(q.id)
+
+            if a:
+                ans_ns = SimpleNamespace(
+                    response_text=a.response_text,
+                    comments=a.comments or "",
+                    motivation_ids=[am.motivation_id for am in a.answer_motivations.all()],
+                    examples=list(a.examples.all()),
+                    answer_id=a.id,
+                )
+                # conteggio risposte
+                if a.response_text in ("yes", "no"):
+                    answered += 1
+            else:
+                # default visivo per domande senza risposta
+                ans_ns = SimpleNamespace(
+                    response_text="yes",
+                    comments="",
+                    motivation_ids=[],
+                    examples=[],
+                    answer_id=None,
+                )
+
+            # esponi nel template come dot-notation
+            q.ans = ans_ns
+
+        # stato del parametro
+        if total == 0:
+            p.status = "ok"
+        elif answered == 0:
+            p.status = "missing"
+        elif answered < total:
+            p.status = "warn"
+        else:
+            p.status = "ok"
+
+    motivations = list(Motivation.objects.order_by("id"))
+
+    ctx = {
+        "language": lang,
+        "parameters": parameters,
+        "motivations": motivations,
+    }
+    return render(request, "languages/data.html", ctx)
+
 
 @login_required
-def language_export(request, lang_id):  # placeholder
-    return render(request, "languages/data.html", {"language": {"id": lang_id, "name_full": "Example"}})
+@require_http_methods(["POST"])
+def answer_save(request, lang_id, question_id):
+    """
+    Salva Answer (yes/no), comments, motivazioni multiple, e aggiorna Examples esistenti.
+    Non crea nuovi Example in questa prima versione (si può aggiungere poi).
+    """
+    lang = get_object_or_404(Language, pk=lang_id)
+    question = get_object_or_404(Question, pk=question_id)
+
+    response_text = (request.POST.get("response_text") or "").strip().lower()
+    if response_text not in ("yes", "no"):
+        messages.error(request, _("Invalid answer value."))
+        return redirect("language_data", lang_id=lang.id)
+
+    comments = (request.POST.get("comments") or "").strip()
+
+    # Motivazioni multiple
+    try:
+        motivation_ids = [int(x) for x in request.POST.getlist("motivation_ids")]
+    except ValueError:
+        motivation_ids = []
+
+    # Upsert Answer
+    answer, _created = Answer.objects.get_or_create(
+        language=lang,
+        question=question,
+        defaults={"response_text": response_text, "comments": comments},
+    )
+    answer.response_text = response_text
+    answer.comments = comments
+    answer.save()
+
+    # Sync motivazioni
+    current_ids = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
+    target_ids = set(motivation_ids)
+
+    to_add = target_ids - current_ids
+    to_del = current_ids - target_ids
+
+    if to_add:
+        rows = [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add]
+        AnswerMotivation.objects.bulk_create(rows, ignore_conflicts=True)
+    if to_del:
+        AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
+
+    # Aggiorno Examples esistenti (pattern: ex_<id>_<field>)
+    # campi: textarea, transliteration, gloss, translation, reference
+    for key, val in request.POST.items():
+        if not key.startswith("ex_"):
+            continue
+        # formato: ex_<id>_<field>
+        try:
+            _ex, ex_id, field = key.split("_", 2)
+            ex_id = int(ex_id)
+        except ValueError:
+            continue
+        if field not in {"textarea", "transliteration", "gloss", "translation", "reference"}:
+            continue
+        Example.objects.filter(id=ex_id, answer=answer).update(**{field: val})
+
+    messages.success(request, _("Answer saved."))
+    return redirect("language_data", lang_id=lang.id)
+
+
+# Placeholder per compatibilità con i template
+@login_required
+def language_export(request, lang_id):
+    lang = get_object_or_404(Language, pk=lang_id)
+    messages.info(request, _("Export is not implemented yet."))
+    return redirect("language_data", lang_id=lang.id)
 
 @login_required
-def language_debug(request, lang_id):  # placeholder
-    return render(request, "languages/data.html", {"language": {"id": lang_id, "name_full": "Example"}})
+def language_debug(request, lang_id):
+    lang = get_object_or_404(Language, pk=lang_id)
+    messages.info(request, _("Debug page is not implemented yet."))
+    return redirect("language_data", lang_id=lang.id)
 
 @login_required
-def language_save_instructions(request, lang_id):  # placeholder
-    return render(request, "languages/data.html", {"language": {"id": lang_id, "name_full": "Example"}})
+def language_save_instructions(request, lang_id):
+    messages.info(request, _("Instructions are not supported yet (no model to store them)."))
+    return redirect("language_data", lang_id=lang_id)
 
 @login_required
-def language_approve(request, lang_id):  # placeholder
-    return render(request, "languages/data.html", {"language": {"id": lang_id, "name_full": "Example"}})
+def language_approve(request, lang_id):
+    messages.info(request, _("Approval flow not implemented yet."))
+    return redirect("language_data", lang_id=lang_id)
 
 @login_required
-def language_reopen(request, lang_id):  # placeholder
-    return render(request, "languages/data.html", {"language": {"id": lang_id, "name_full": "Example"}})
-
-@login_required
-def answer_save(request, lang_id, question_id):  # placeholder
-    return render(request, "languages/data.html", {"language": {"id": lang_id, "name_full": "Example"}})
+def language_reopen(request, lang_id):
+    messages.info(request, _("Reopen flow not implemented yet."))
+    return redirect("language_data", lang_id=lang_id)
