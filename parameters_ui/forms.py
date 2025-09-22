@@ -1,10 +1,13 @@
 from django import forms
 from core.models import ParameterDef
+from django.core.exceptions import ValidationError
 
 class ParameterForm(forms.ModelForm):
     class Meta:
         model = ParameterDef
         fields = ["id", "position", "name", "short_description", "implicational_condition", "is_active"]
+
+        # per CSS
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
             "position": forms.NumberInput(attrs={"class": "form-control", "min": "1", "step": "1", "inputmode": "numeric"}),
@@ -19,3 +22,4 @@ class ParameterForm(forms.ModelForm):
         if pos is None or pos < 1:
             raise forms.ValidationError("Position deve essere un intero ≥ 1.")
         return pos
+

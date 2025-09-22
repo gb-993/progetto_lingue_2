@@ -98,63 +98,104 @@ class Language(models.Model):
 # =======================
 # PARAMETER DEFINITIONS
 # =======================
-# core/models.py
-from django.db import models, transaction
-from django.db.models import Max, F
+from django.db import models, transaction, connection
+from django.db.models import F, Max, UniqueConstraint, Deferrable
+from django.core.exceptions import ObjectDoesNotExist  # (ok)
+from django.core.exceptions import ValidationError  # in cima al file
 
 class ParameterDef(models.Model):
     id = models.CharField(primary_key=True, max_length=10)
     name = models.CharField(max_length=200)
     short_description = models.TextField(blank=True, default="")
-    implicational_condition = models.CharField(max_length=255, blank=True, default="")
+    # Se NON vuoi mai NULL: meglio null=False, blank=True, default=""
+    implicational_condition = models.CharField(max_length=255, null=True, blank=True, default="")
     is_active = models.BooleanField(default=True)
-    position = models.PositiveIntegerField()  # visibile/editabile
+    position = models.PositiveIntegerField()
+    warning_default = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["position"]
+        constraints = [
+            UniqueConstraint(
+                fields=["position"],
+                name="uniq_parameterdef_position_deferrable",
+                deferrable=Deferrable.DEFERRED,
+            ),
+        ]
+
+    def _advisory_lock(self):
+        with connection.cursor() as cur:
+            cur.execute("SELECT pg_advisory_xact_lock(%s);", [987654321])
 
     def save(self, *args, **kwargs):
-        # Normalizziamo la posizione richiesta
-        req_pos = self.position
-
+        is_new = self._state.adding or self.pk is None
         with transaction.atomic():
-            if self.pk:
-                # UPDATE
-                old = ParameterDef.objects.get(pk=self.pk)
-                if req_pos is None or req_pos < 1:
-                    # fallback: append in coda
-                    maxpos = ParameterDef.objects.exclude(pk=self.pk).aggregate(m=Max('position'))['m'] or 0
-                    req_pos = maxpos + 1
+            self._advisory_lock()
 
-                # limiti massimi (puoi anche ometterlo: andare oltre la coda viene normalizzato)
-                maxpos_others = ParameterDef.objects.exclude(pk=self.pk).aggregate(m=Max('position'))['m'] or 0
-                if req_pos > maxpos_others + 1:
-                    req_pos = maxpos_others + 1
+            if is_new:
+                if not self.position:  # ok se parti da 1
+                    max_pos = type(self).objects.aggregate(m=Max("position"))["m"] or 0
+                    self.position = max_pos + 1
+                    return super().save(*args, **kwargs)
 
-                if old.position != req_pos:
-                    if req_pos < old.position:
-                        # sposto su: quelli tra [req_pos, old-1] scalano giù (+1)
-                        ParameterDef.objects.filter(
-                            position__gte=req_pos, position__lt=old.position
-                        ).update(position=F('position') + 1)
-                    else:
-                        # sposto giù: quelli tra [old+1, req_pos] scalano su (-1)
-                        ParameterDef.objects.filter(
-                            position__gt=old.position, position__lte=req_pos
-                        ).update(position=F('position') - 1)
-                    self.position = req_pos
+                type(self).objects.filter(position__gte=self.position)\
+                    .update(position=F("position") + 1)
+                return super().save(*args, **kwargs)
 
+            # UPDATE
+            try:
+                old = type(self).objects.get(pk=self.pk)
+            except ObjectDoesNotExist:
+                return super().save(*args, **kwargs)
+
+            old_pos = old.position
+            new_pos = self.position or old_pos
+
+            if new_pos == old_pos:
+                return super().save(*args, **kwargs)
+
+            if new_pos > old_pos:
+                type(self).objects.filter(
+                    position__gt=old_pos,
+                    position__lte=new_pos
+                ).exclude(pk=self.pk).update(position=F("position") - 1)
             else:
-                # CREATE
-                if req_pos is None or req_pos < 1:
-                    last = ParameterDef.objects.aggregate(m=Max('position'))['m'] or 0
-                    req_pos = last + 1
-                else:
-                    # Creo “spazio”: tutto ciò con pos >= req_pos scala di +1
-                    ParameterDef.objects.filter(position__gte=req_pos).update(position=F('position') + 1)
-                self.position = req_pos
+                type(self).objects.filter(
+                    position__gte=new_pos,
+                    position__lt=old_pos
+                ).exclude(pk=self.pk).update(position=F("position") + 1)
 
-            super().save(*args, **kwargs)
+            return super().save(*args, **kwargs)
+
+    def validate_unique(self, exclude=None):
+        ex = set(exclude or [])
+        ex.add("position")
+        super().validate_unique(exclude=ex)
+
+    def validate_constraints(self, exclude=None):
+        try:
+            super().validate_constraints(exclude=exclude)
+        except ValidationError as e:
+            error_dict = getattr(e, "error_dict", None)
+            error_list = getattr(e, "error_list", None)
+
+            if error_dict is not None:
+                error_dict.pop("position", None)
+                if error_dict:
+                    raise ValidationError(error_dict)
+                return
+
+            if error_list is not None:
+                filtered = []
+                for err in error_list:
+                    msg = str(err)
+                    if "uniq_parameterdef_position_deferrable" in msg or "Position" in msg:
+                        continue
+                    filtered.append(err)
+                if filtered:
+                    raise ValidationError(filtered)
+                return
+            raise
 
 
 class Question(models.Model):
