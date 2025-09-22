@@ -71,17 +71,25 @@ class Glossary(models.Model):
 # =============
 # LANGUAGE
 # =============
+# core/models.py
+from django.db import models, transaction, connection
+from django.db.models import F, Max, UniqueConstraint, Deferrable
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+
 class Language(models.Model):
     id = models.CharField(primary_key=True, max_length=10)  # 'ita','en',...
     name_full = models.CharField(max_length=255)
-    position = models.IntegerField(unique=True)
+
+    # ⬇️ rimuoviamo unique=True e usiamo un vincolo deferrable (vedi Meta)
+    position = models.PositiveIntegerField()
+
     grp = models.CharField(max_length=255, null=True, blank=True)
     isocode = models.CharField(max_length=50, null=True, blank=True)
     glottocode = models.CharField(max_length=50, null=True, blank=True)
     informant = models.CharField(max_length=255, null=True, blank=True)
     supervisor = models.CharField(max_length=255, null=True, blank=True)
     assigned_user = models.ForeignKey(
-        User, null=True, blank=True, on_delete=models.SET_NULL, related_name="languages"
+        "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="languages"
     )
 
     class Meta:
@@ -90,9 +98,106 @@ class Language(models.Model):
             models.Index(fields=["assigned_user"]),
         ]
         ordering = ["position"]
+        constraints = [
+            UniqueConstraint(
+                fields=["position"],
+                name="uniq_language_position_deferrable",
+                deferrable=Deferrable.DEFERRED,
+            ),
+        ]
 
     def __str__(self):
         return self.name_full
+
+    # Advisory lock per serializzare gli shift (chiave a piacere ma costante)
+    def _advisory_lock(self):
+        with connection.cursor() as cur:
+            cur.execute("SELECT pg_advisory_xact_lock(%s);", [123456789])
+
+    def save(self, *args, **kwargs):
+        """
+        Mantiene 'position' univoca e compatta:
+        - INSERT senza position -> append in coda (max+1)
+        - INSERT con position N -> shifta (>=N) di +1 e inserisce a N
+        - UPDATE old->new:
+            * se new > old: decrementa (old, new] di 1
+            * se new < old: incrementa [new, old) di 1
+        """
+        is_new = self._state.adding or self.pk is None
+
+        with transaction.atomic():
+            self._advisory_lock()
+
+            if is_new:
+                # Se manca una position valida, append in coda
+                if not self.position or self.position < 1:
+                    max_pos = type(self).objects.aggregate(m=Max("position"))["m"] or 0
+                    self.position = max_pos + 1
+                    return super().save(*args, **kwargs)
+
+                # Inserisco a 'position' richiesta e shifto le successive
+                type(self).objects.filter(position__gte=self.position).update(position=F("position") + 1)
+                return super().save(*args, **kwargs)
+
+            # UPDATE
+            try:
+                old = type(self).objects.get(pk=self.pk)
+            except ObjectDoesNotExist:
+                # oggetto non esiste più, salvo semplice
+                return super().save(*args, **kwargs)
+
+            old_pos = old.position
+            new_pos = self.position or old_pos
+
+            if new_pos == old_pos:
+                return super().save(*args, **kwargs)
+
+            if new_pos > old_pos:
+                # sposto in basso: le righe tra (old_pos, new_pos] scalano -1
+                type(self).objects.filter(
+                    position__gt=old_pos,
+                    position__lte=new_pos
+                ).exclude(pk=self.pk).update(position=F("position") - 1)
+            else:
+                # sposto in alto: le righe tra [new_pos, old_pos) scalano +1
+                type(self).objects.filter(
+                    position__gte=new_pos,
+                    position__lt=old_pos
+                ).exclude(pk=self.pk).update(position=F("position") + 1)
+
+            return super().save(*args, **kwargs)
+
+    # Evita che la validazione lato Django blocchi per 'position' (ci pensa il DB deferrable)
+    def validate_unique(self, exclude=None):
+        ex = set(exclude or [])
+        ex.add("position")
+        super().validate_unique(exclude=ex)
+
+    def validate_constraints(self, exclude=None):
+        try:
+            super().validate_constraints(exclude=exclude)
+        except ValidationError as e:
+            error_dict = getattr(e, "error_dict", None)
+            error_list = getattr(e, "error_list", None)
+
+            if error_dict is not None:
+                error_dict.pop("position", None)
+                if error_dict:
+                    raise ValidationError(error_dict)
+                return
+
+            if error_list is not None:
+                filtered = []
+                for err in error_list:
+                    msg = str(err)
+                    if "uniq_language_position_deferrable" in msg or "Position" in msg:
+                        continue
+                    filtered.append(err)
+                if filtered:
+                    raise ValidationError(filtered)
+                return
+            raise
+
 
 
 # =======================
