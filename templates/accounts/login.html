@@ -1,40 +1,67 @@
-{% extends "base.html" %}
-{% block title %}Login{% endblock %}
-{% block breadcrumb %}Login{% endblock %}
+{% load static %}
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Accedi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/mobile.css' %}" media="(max-width: 768px)">
+</head>
+<body>
+  <a class="sr-only" href="#main">Salta al contenuto</a>
 
-{% block content %}
-  <div class="parameter-form">
-    <div class="card">
-      <h2 style="margin-top:0;">Accedi</h2>
+  <main id="main" class="container" role="main" aria-labelledby="login-title">
+    <section class="card" role="region" aria-labelledby="login-title">
+      <h1 id="login-title">Accedi</h1>
 
-      {# Errori globali, tipo "Email o password non validi" #}
-      {% if form.non_field_errors %}
-        <div class="form-error">{{ form.non_field_errors }}</div>
+      {% if messages %}
+        <div role="status" aria-live="polite">
+          {% for message in messages %}
+            <p class="alert">{{ message }}</p>
+          {% endfor %}
+        </div>
       {% endif %}
 
-      <form method="post" class="grid" novalidate>
+      {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error">
+          {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}" novalidate class="form">
         {% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-        <div>
-          <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+        <div class="form-row">
+          <label for="{{ form.username.id_for_label }}">Email</label>
           {{ form.username }}
-          {{ form.username.errors }}
+          {% if form.username.errors %}
+            <div role="alert" class="field-error">
+              {% for e in form.username.errors %}<p>{{ e }}</p>{% endfor %}
+            </div>
+          {% endif %}
         </div>
 
-        <div>
-          <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+        <div class="form-row">
+          <label for="{{ form.password.id_for_label }}">Password</label>
           {{ form.password }}
-          {{ form.password.errors }}
+          {% if form.password.errors %}
+            <div role="alert" class="field-error">
+              {% for e in form.password.errors %}<p>{{ e }}</p>{% endfor %}
+            </div>
+          {% endif %}
         </div>
 
-        <button type="submit" class="btn btn--primary">Accedi</button>
-
-        <div class="toolbar" style="margin:0; padding:0;">
-          {% url 'password_reset' as pr %}{% if pr %}<a href="{{ pr }}">Password dimenticata?</a>{% endif %}
-          {% url 'signup' as su %}{% if su %}<a class="btn" href="{{ su }}">Crea account</a>{% endif %}
+        <div class="actions">
+          <button type="submit" class="btn btn--primary">Entra</button>
         </div>
       </form>
-    </div>
-  </div>
-{% endblock %}
+
+      <p class="muted" aria-live="polite">
+        Non hai un account? Contatta un amministratore.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

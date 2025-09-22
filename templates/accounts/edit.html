@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Account{% endblock %}
+{% block breadcrumb %}Accounts / {{ page_title }}{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h3>{{ page_title }}</h3>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {# errori non di campo #}
+      {% if form.non_field_errors %}
+        <div class="alert alert--error" role="alert">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="field-error" role="alert">{{ form.email.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.role.id_for_label }}">Role</label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="field-error" role="alert">{{ form.role.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.name.id_for_label }}">Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="field-error" role="alert">{{ form.name.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.surname.id_for_label }}">Surname</label>
+          {{ form.surname }}
+          {% if form.surname.errors %}
+            <div class="field-error" role="alert">{{ form.surname.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        {# In EDIT non mostriamo la password #}
+
+        <div class="form-group" style="grid-column:1/-1">
+        <label id="lang-legend">Assigned languages (opzionale)</label>
+
+        {# Se l'utente è admin, mostra un promemoria #}
+        {% if form.role.value == "admin" %}
+            <p class="muted" aria-live="polite">
+            Questo utente è <strong>admin</strong>: può accedere a <strong>tutte</strong> le lingue.
+            L’elenco sottostante mostra comunque l’assegnazione esplicita, se presente.
+            </p>
+        {% endif %}
+
+        <div>
+            <select name="lang_ids" multiple size="8" aria-labelledby="lang-legend">
+            {% for lang in languages %}
+                <option value="{{ lang.id }}"
+                        {% if lang.id in selected_lang_ids %}selected{% endif %}>
+                {{ lang }}
+                </option>
+            {% endfor %}
+            </select>
+        </div>
+
+        {# Riassunto leggibile delle lingue selezionate #}
+        <div class="muted" aria-live="polite" style="margin-top: .5rem;">
+            <strong>Selezionate:</strong>
+            {% if selected_lang_ids %}
+            <ul>
+                {% for lang in languages %}
+                {% if lang.id in selected_lang_ids %}
+                    <li>{{ lang }}</li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+            {% else %}
+            Nessuna lingua selezionata.
+            {% endif %}
+        </div>
+        </div>
+
+
+
+      </div>
+
+      <div class="toolbar">
+        <a class="btn" href="{% url 'accounts_list' %}">Cancel</a>
+        <button class="btn btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

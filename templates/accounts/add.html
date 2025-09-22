@@ -1,32 +1,80 @@
-
+{% extends "base.html" %}
 {% block title %}Account{% endblock %}
 {% block breadcrumb %}Accounts / {{ page_title }}{% endblock %}
+
 {% block content %}
   <div class="card">
     <h3>{{ page_title }}</h3>
-    <form method="post">{% csrf_token %}
-      <div class="grid grid-2">
-        <div><label>Email</label><input name="email" value="{{ form.email.value }}"></div>
-        <div><label>Role</label>
-          <select name="role">
-            <option value="admin" {% if form.role.value == "admin" %}selected{% endif %}>Admin</option>
-            <option value="user" {% if form.role.value == "user" %}selected{% endif %}>User</option>
-          </select>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {# errori non di campo #}
+      {% if form.non_field_errors %}
+        <div class="alert alert--error" role="alert">
+          {{ form.non_field_errors }}
         </div>
-        <div><label>Name</label><input name="name" value="{{ form.name.value }}"></div>
-        <div><label>Surname</label><input name="surname" value="{{ form.surname.value }}"></div>
+      {% endif %}
+
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="field-error" role="alert">{{ form.email.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.role.id_for_label }}">Role</label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="field-error" role="alert">{{ form.role.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.name.id_for_label }}">Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="field-error" role="alert">{{ form.name.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.surname.id_for_label }}">Surname</label>
+          {{ form.surname }}
+          {% if form.surname.errors %}
+            <div class="field-error" role="alert">{{ form.surname.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
         {% if show_password %}
-          <div><label>Password</label><input type="password" name="password"></div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label for="{{ form.password.id_for_label }}">Password</label>
+            {{ form.password }}
+            {% if form.password.errors %}
+              <div class="field-error" role="alert">{{ form.password.errors|striptags }}</div>
+            {% endif %}
+            <p class="muted">La password è obbligatoria solo in creazione.</p>
+          </div>
         {% endif %}
-        <div class="grid-2" style="grid-column:1/-1">
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label id="lang-legend">Assigned languages (opzionale)</label>
           <div>
-            <label>Assigned languages</label>
-            <select name="lang_ids" multiple size="8">
-              {% for lang in languages %}<option value="{{ lang.id }}" {% if lang.id in selected_lang_ids %}selected{% endif %}>{{ lang.id }} — {{ lang.name_full }}</option>{% endfor %}
+            <select name="lang_ids" multiple size="8" aria-labelledby="lang-legend">
+              {% for lang in languages %}
+                <option value="{{ lang.id }}"
+                        {% if lang.id in selected_lang_ids %}selected{% endif %}>
+                  {{ lang }}
+                </option>
+              {% endfor %}
             </select>
           </div>
         </div>
       </div>
+
       <div class="toolbar">
         <a class="btn" href="{% url 'accounts_list' %}">Cancel</a>
         <button class="btn btn--primary">Save</button>

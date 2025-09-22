@@ -38,6 +38,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     surname = models.CharField(max_length=100)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="user")
 
+    m2m_languages  = models.ManyToManyField(
+        "core.Language",      # riferimento per stringa, niente import
+        blank=True,
+        related_name="users"  # es: language.users.all()
+    )
+
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -47,7 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    class Meta:  # <-- QUI dentro al modello User
+    class Meta:  
         constraints = [
             models.UniqueConstraint(
                 models.functions.Lower("email"),

@@ -13,13 +13,39 @@
     <div class="card">
       <h3>Administrators</h3>
       <table class="table">
-        <thead><tr><th>Email</th><th>Name</th><th></th></tr></thead>
+        <thead><tr><th>Email</th><th>Name</th><th>Languages</th><th></th></tr></thead>
         <tbody>
           {% for u in admins %}
           <tr>
-            <td>{{ u.email }}</td><td>{{ u.name }} {{ u.surname }}</td>
-            <td class="row-actions"><a class="btn" href="{% url 'accounts_edit' u.id %}">Modify</a></td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.name }} {{ u.surname }}</td>
+
+            <td>
+              {% if u.role == "admin" %}
+                <span class="badge">All</span>
+              {% endif %}
+
+              {# Conteggio assegnazioni esplicite #}
+              <span class="muted">({{ u.m2m_languages.count }})</span>
+
+              {# Dettaglio espandibile con max 6 voci in prima colonna, tutte dentro <details> #}
+              {% if u.m2m_languages.exists %}
+                <details>
+                  <summary>Dettaglio</summary>
+                  <ul>
+                    {% for l in u.m2m_languages.all|slice:":12" %}
+                      <li>{{ l }}</li>
+                    {% endfor %}
+                  </ul>
+                </details>
+              {% endif %}
+            </td>
+
+            <td class="row-actions">
+              <a class="btn" href="{% url 'accounts_edit' u.id %}">Modify</a>
+            </td>
           </tr>
+
           {% empty %}<tr><td colspan="3" class="muted">No admins</td></tr>{% endfor %}
         </tbody>
       </table>
@@ -32,8 +58,31 @@
         <tbody>
           {% for u in users %}
           <tr>
-            <td>{{ u.email }}</td><td>{{ u.name }} {{ u.surname }}</td>
-            <td class="row-actions"><a class="btn" href="{% url 'accounts_edit' u.id %}">Modify</a></td>
+            <tr>
+              <td>{{ u.email }}</td>
+              <td>{{ u.name }} {{ u.surname }}</td>
+
+              <td>
+                <span class="muted">({{ u.m2m_languages.count }})</span>
+                {% if u.m2m_languages.exists %}
+                  <details>
+                    <summary>Dettaglio</summary>
+                    <ul>
+                      {% for l in u.m2m_languages.all|slice:":12" %}
+                        <li>{{ l }}</li>
+                      {% endfor %}
+                    </ul>
+                  </details>
+                {% else %}
+                  <span class="muted">Nessuna</span>
+                {% endif %}
+              </td>
+
+              <td class="row-actions">
+                <a class="btn" href="{% url 'accounts_edit' u.id %}">Modify</a>
+              </td>
+            </tr>
+
           </tr>
           {% empty %}<tr><td colspan="3" class="muted">No users</td></tr>{% endfor %}
         </tbody>
