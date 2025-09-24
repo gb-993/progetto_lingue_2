@@ -1,6 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Language data{% endblock %}
 {% block breadcrumb %}Languages / {{ language.id }} / Data{% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'js/show_motivation.js' %}"></script>
+{% endblock %}
 
 {% block content %}
   <div class="split">
@@ -52,7 +58,7 @@
             <div class="grid grid-3">
               <div>
                 <label for="resp_{{ q.id }}">Answer</label>
-                <select id="resp_{{ q.id }}" name="response_text">
+                <select id="resp_{{ q.id }}" name="response_text" class="resp-select" data-question-id="{{ q.id }}">
                   <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
                   <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
                 </select>
@@ -63,16 +69,30 @@
                 <input id="com_{{ q.id }}" name="comments" value="{{ q.ans.comments }}">
               </div>
 
-              <div>
+              <div class="mot-block" data-qid="{{ q.id }}" {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
                 <label for="mot_{{ q.id }}">Motivations (if NO)</label>
-                <select id="mot_{{ q.id }}" name="motivation_ids" multiple size="4" aria-describedby="hint_mot_{{ q.id }}">
-                  {% for m in motivations %}
-                    <option value="{{ m.id }}" {% if m.id in q.ans.motivation_ids %}selected{% endif %}>{{ m.label }}</option>
+                <select
+                    id="mot_{{ q.id }}"
+                    name="motivation_ids"
+                    multiple
+                    size="4"
+                    aria-describedby="hint_mot_{{ q.id }}"
+                    {% if q.ans.response_text != "no" %}disabled{% endif %}
+                    data-question-id="{{ q.id }}"
+                >
+                  {% for m in q.allowed_motivations_list %}
+                    <option
+                        value="{{ m.id }}"
+                        {% if m.id in q.ans.motivation_ids %}selected{% endif %}
+                    >{{ m.label }}</option>
                   {% endfor %}
                 </select>
-                <div id="hint_mot_{{ q.id }}" class="muted">Hold Ctrl/Cmd to select multiple.</div>
+                <div id="hint_mot_{{ q.id }}" class="muted">
+                  Hold Ctrl/Cmd to select multiple.
+                </div>
               </div>
-            </div>
+
+            </div> 
 
             <div class="grid grid-2">
               {% for ex in q.ans.examples %}

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from core.models import (
-    Language, ParameterDef, Question, Answer, Example, Motivation, AnswerMotivation
+    Language, ParameterDef, Question, Answer, Example, Motivation, AnswerMotivation, QuestionAllowedMotivation
 )
 from .forms import LanguageForm
 
@@ -102,14 +102,33 @@ def language_data(request, lang_id):
             messages.error(request, _("You don't have access to this language."))
             return redirect("language_list")
 
+    # ✅ Correzione prefetch: usa la reverse della tabella ponte
+    #    - "allowed_motivation_links" è il related_name sulla FK question
+    #    - queryset = QuestionAllowedMotivation (select_related('motivation'))
+    #    - to_attr="allowed_motivs_through" per avere a disposizione la lista dei link (ordinati)
     parameters = (
         ParameterDef.objects.filter(is_active=True)
         .order_by("position")
         .prefetch_related(
-            Prefetch("questions", queryset=Question.objects.order_by("id"))
+            Prefetch(
+                "questions",
+                queryset=(
+                    Question.objects.order_by("id")
+                    .prefetch_related(
+                        Prefetch(
+                            "allowed_motivation_links",
+                            queryset=QuestionAllowedMotivation.objects
+                                .select_related("motivation")
+                                .order_by("position", "id"),
+                            to_attr="allowed_motivs_through",
+                        )
+                    )
+                ),
+            )
         )
     )
 
+    # Risposte già presenti
     answers_qs = (
         Answer.objects.filter(language=lang)
         .select_related("question")
@@ -123,6 +142,11 @@ def language_data(request, lang_id):
         answered = 0
         for q in p.questions.all():
             total += 1
+
+            # 👉 Lista motivazioni ammesse PER QUESTA DOMANDA (estratte dalla ponte)
+            #    q.allowed_motivs_through è popolato dal Prefetch sopra
+            q.allowed_motivations_list = [thr.motivation for thr in getattr(q, "allowed_motivs_through", [])]
+
             a = by_qid.get(q.id)
             if a:
                 ans_ns = SimpleNamespace(
@@ -136,7 +160,7 @@ def language_data(request, lang_id):
                     answered += 1
             else:
                 ans_ns = SimpleNamespace(
-                    response_text="yes",
+                    response_text="yes",  # default
                     comments="",
                     motivation_ids=[],
                     examples=[],
@@ -153,9 +177,9 @@ def language_data(request, lang_id):
         else:
             p.status = "ok"
 
-    motivations = list(Motivation.objects.order_by("id"))
-    ctx = {"language": lang, "parameters": parameters, "motivations": motivations}
+    ctx = {"language": lang, "parameters": parameters}
     return render(request, "languages/data.html", ctx)
+
 
 
 
@@ -163,8 +187,10 @@ def language_data(request, lang_id):
 @require_http_methods(["POST"])
 def answer_save(request, lang_id, question_id):
     """
-    Salva Answer (yes/no), comments, motivazioni multiple, e aggiorna Examples esistenti.
-    Non crea nuovi Example in questa prima versione (si può aggiungere poi).
+    Salva Answer (yes/no), comments e motivazioni multiple.
+    - Mostriamo motivazioni solo se NO (client-side).
+    - Qui VALIDiamo lato server: le motivazioni inviate DEVONO essere tra le allowed per la domanda.
+    - Regola esclusiva: se è presente 'Motivazione1', scartiamo tutte le altre.
     """
     lang = get_object_or_404(Language, pk=lang_id)
     question = get_object_or_404(Question, pk=question_id)
@@ -176,11 +202,30 @@ def answer_save(request, lang_id, question_id):
 
     comments = (request.POST.get("comments") or "").strip()
 
-    # Motivazioni multiple
+    # Motivazioni inviate (da <select multiple name="motivation_ids">)
     try:
         motivation_ids = [int(x) for x in request.POST.getlist("motivation_ids")]
     except ValueError:
         motivation_ids = []
+
+    # Calcola l'insieme degli ID ammessi per questa domanda
+    allowed_ids = set(
+        QuestionAllowedMotivation.objects.filter(question=question)
+        .values_list("motivation_id", flat=True)
+    )
+
+    # Se YES, nessuna motivazione è ammessa
+    if response_text == "yes":
+        motivation_ids = []
+    else:
+        # Filtro al sottoinsieme ammesso
+        motivation_ids = [mid for mid in motivation_ids if mid in allowed_ids]
+
+        # Regola esclusiva: 'Motivazione1' disabilita le altre (se esiste tra le allowed)
+        # NB: usiamo la label perché non abbiamo un flag dedicato a DB
+        mot1 = Motivation.objects.filter(label="Motivazione1").first()
+        if mot1 and mot1.id in motivation_ids:
+            motivation_ids = [mot1.id]  # tieni solo lei
 
     # Upsert Answer
     answer, _created = Answer.objects.get_or_create(
@@ -192,7 +237,7 @@ def answer_save(request, lang_id, question_id):
     answer.comments = comments
     answer.save()
 
-    # Sync motivazioni
+    # Sync motivazioni (solo quelle validate)
     current_ids = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
     target_ids = set(motivation_ids)
 
@@ -206,11 +251,9 @@ def answer_save(request, lang_id, question_id):
         AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
     # Aggiorno Examples esistenti (pattern: ex_<id>_<field>)
-    # campi: textarea, transliteration, gloss, translation, reference
     for key, val in request.POST.items():
         if not key.startswith("ex_"):
             continue
-        # formato: ex_<id>_<field>
         try:
             _ex, ex_id, field = key.split("_", 2)
             ex_id = int(ex_id)
@@ -222,6 +265,7 @@ def answer_save(request, lang_id, question_id):
 
     messages.success(request, _("Answer saved."))
     return redirect("language_data", lang_id=lang.id)
+
 
 
 # Placeholder per compatibilità con i template

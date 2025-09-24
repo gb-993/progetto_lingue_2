@@ -310,19 +310,34 @@ class ParameterDef(models.Model):
 
 
 class Question(models.Model):
-    id = models.CharField(primary_key=True, max_length=40)  # 'FGMQ_a'...
-    parameter = models.ForeignKey(ParameterDef, on_delete=models.RESTRICT, related_name="questions")
+    id = models.CharField(primary_key=True, max_length=40)  # es. 'FGMQ_a'
+    parameter = models.ForeignKey(
+        ParameterDef,
+        on_delete=models.RESTRICT,
+        related_name="questions"
+    )
     text = models.TextField()
     example_yes = models.TextField(null=True, blank=True)
     instruction = models.TextField(null=True, blank=True)
     template_type = models.CharField(max_length=50, null=True, blank=True)
     is_stop_question = models.BooleanField(default=False)
 
+    # M2M ufficiale: il nome del campo è "allowed_motivations"
+    allowed_motivations = models.ManyToManyField(
+        "core.Motivation",
+        through="core.QuestionAllowedMotivation",
+        related_name="questions_allowed",
+        blank=True,
+    )
+
     class Meta:
         indexes = [
             models.Index(fields=["parameter"]),
             models.Index(fields=["parameter", "is_stop_question"]),
         ]
+
+    def __str__(self):
+        return f"{self.id} - {self.parameter_id}"
 
 
 # ==================================
@@ -403,12 +418,21 @@ class Motivation(models.Model):
     code = models.CharField(max_length=50, unique=True)  # es. 'MOT1'
     label = models.CharField(max_length=255)
 
-# motivazioni selezionabili per ogni domanda 
 class QuestionAllowedMotivation(models.Model):
     id = models.BigAutoField(primary_key=True)
-    question = models.ForeignKey("core.Question", on_delete=models.CASCADE, related_name="allowed_motivations")
-    motivation = models.ForeignKey("core.Motivation", on_delete=models.RESTRICT, related_name="allowed_for_questions")
-    position = models.PositiveIntegerField(default=1)  # opzionale: ordinamento locale per domanda
+
+    # ⚠️ Cambiato related_name per evitare clash con il campo M2M
+    question = models.ForeignKey(
+        "core.Question",
+        on_delete=models.CASCADE,
+        related_name="allowed_motivation_links"  # <-- prima era "allowed_motivations"
+    )
+    motivation = models.ForeignKey(
+        "core.Motivation",
+        on_delete=models.RESTRICT,
+        related_name="allowed_for_questions"
+    )
+    position = models.PositiveIntegerField(default=1)
 
     class Meta:
         constraints = [
@@ -419,7 +443,6 @@ class QuestionAllowedMotivation(models.Model):
             models.Index(fields=["motivation"]),
             models.Index(fields=["question", "position"]),
         ]
-
 
 class AnswerMotivation(models.Model):
     id = models.BigAutoField(primary_key=True)

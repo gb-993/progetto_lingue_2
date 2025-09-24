@@ -1,18 +1,28 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}{% if param %}Edit parameter {{ param.id }}{% else %}Add parameter{% endif %}{% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'js/add_question_form.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 <form method="post" class="parameter-form" novalidate aria-describedby="form-help">
   {% csrf_token %}
 
-  {# Errori globali #}
+  {# =======================
+     Errori globali parametro
+     ======================= #}
   {% if form.non_field_errors %}
     <div class="alert alert-danger" role="alert" aria-live="assertive">
       {{ form.non_field_errors }}
     </div>
   {% endif %}
 
-  {# === Sezione Parametro === #}
+  {# =======================
+     Sezione Parametro
+     ======================= #}
   {% if param %}
     <div class="grid grid-2">
       <div>
@@ -28,8 +38,7 @@
   {% else %}
     <div class="grid grid-2">
       <div class="{% if form.id.errors %}field-error{% endif %}">
-        {{ form.id.label_tag }}
-        {{ form.id }}
+        {{ form.id.label_tag }} {{ form.id }}
         {% if form.id.errors %}<div class="error" role="alert">{{ form.id.errors }}</div>{% endif %}
       </div>
     </div>
@@ -69,7 +78,9 @@
     {% if form.is_active.errors %}<div class="error" role="alert">{{ form.is_active.errors }}</div>{% endif %}
   </div>
 
-  {# === Sezione Domande (inline formset) === #}
+  {# =======================
+     Sezione Domande (formset)
+     ======================= #}
   <section class="card" aria-labelledby="q-heading" style="margin-top:1rem">
     <h2 id="q-heading">Domande del parametro</h2>
 
@@ -81,8 +92,13 @@
 
     <div id="questions-list">
       {% for qf in q_formset.forms %}
-        <fieldset class="question-block" aria-describedby="q-{{ forloop.counter }}-help" style="margin-bottom:1rem;border:1px solid var(--border);padding:1rem;border-radius:var(--r-sm);">
+        <fieldset class="question-block"
+                  aria-describedby="q-{{ forloop.counter }}-help"
+                  style="margin-bottom:1rem;border:1px solid var(--border);padding:1rem;border-radius:var(--r-sm);">
           <legend>Domanda {{ forloop.counter }}</legend>
+
+          {# campi hidden richiesti dal formset (id di riga, ecc.) #}
+          {% for hidden in qf.hidden_fields %}{{ hidden }}{% endfor %}
 
           {% if qf.non_field_errors %}
             <div class="alert alert-danger" role="alert">{{ qf.non_field_errors }}</div>
@@ -124,13 +140,18 @@
           <div class="{% if qf.template_type.errors %}field-error{% endif %}">
             {{ qf.template_type.label_tag }} {{ qf.template_type }}
             {% if qf.template_type.errors %}<div class="error" role="alert">{{ qf.template_type.errors }}</div>{% endif %}
-            <p id="q-{{ forloop.counter }}-help" class="muted">Scegli il template degli esempi utente. (Nessuna modifica al modello <code>Example</code>.)</p>
+            <p id="q-{{ forloop.counter }}-help" class="muted">
+              Scegli il template degli esempi utente. (Nessuna modifica al modello <code>Example</code>.)
+            </p>
           </div>
 
-          <div class="{% if qf.fields.motivations.errors %}field-error{% endif %}">
+          {# >>> IMPORTANTE: campo motivations reso esplicitamente #}
+          <div class="{% if qf.motivations.errors %}field-error{% endif %}">
             <label><strong>Motivazioni disponibili per NO</strong></label>
             {{ qf.motivations }}
-            {% if qf.motivations.errors %}<div class="error" role="alert">{{ qf.motivations.errors }}</div>{% endif %}
+            {% if qf.motivations.errors %}
+              <div class="error" role="alert">{{ qf.motivations.errors }}</div>
+            {% endif %}
             <p class="muted">Questo sottoinsieme verrà mostrato all'utente SOLO se risponde “NO”.</p>
           </div>
 
@@ -158,7 +179,9 @@
   </p>
 </form>
 
-{# Debug errori #}
+{# =======================
+   Debug errori (facoltativo)
+   ======================= #}
 {% if form.errors or q_formset.errors %}
   <pre style="margin-top:16px;padding:12px;border:1px dashed;">
 Param errors: {{ form.errors }}
@@ -167,14 +190,54 @@ Formset errors: {{ q_formset.non_form_errors }}
   </pre>
 {% endif %}
 
-
-{# Template invisibile della empty_form #}
+{# =======================
+   Template invisibile per empty_form (usato da add_question_form.js)
+   ======================= #}
 <template id="empty-form-template">
   <fieldset class="question-block" style="margin-bottom:1rem;border:1px solid var(--border);padding:1rem;border-radius:var(--r-sm);">
-    {{ q_formset.empty_form.as_p }}
+    {# Rende la empty_form con stessi campi, incluso motivations #}
+    {% for hidden in q_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+
+    <div class="grid grid-2">
+      <div>
+        {{ q_formset.empty_form.id.label_tag }} {{ q_formset.empty_form.id }}
+      </div>
+      <div>
+        <label class="form-check">
+          {{ q_formset.empty_form.is_stop_question }} <span>{{ q_formset.empty_form.is_stop_question.label }}</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      {{ q_formset.empty_form.text.label_tag }} {{ q_formset.empty_form.text }}
+    </div>
+
+    <div class="grid grid-2">
+      <div>
+        {{ q_formset.empty_form.instruction.label_tag }} {{ q_formset.empty_form.instruction }}
+      </div>
+      <div>
+        {{ q_formset.empty_form.example_yes.label_tag }} {{ q_formset.empty_form.example_yes }}
+      </div>
+    </div>
+
+    <div>
+      {{ q_formset.empty_form.template_type.label_tag }} {{ q_formset.empty_form.template_type }}
+    </div>
+
+    <div>
+      <label><strong>Motivazioni disponibili per NO</strong></label>
+      {{ q_formset.empty_form.motivations }}
+    </div>
+
+    {% if q_formset.empty_form.DELETE %}
+      <div class="form-check" style="margin-top:.5rem">
+        <label class="form-check">
+          {{ q_formset.empty_form.DELETE }} <span>Elimina questa domanda</span>
+        </label>
+      </div>
+    {% endif %}
   </fieldset>
 </template>
 {% endblock %}
-
-{% load static %}
-<script src="{% static 'js/formset.js' %}"></script>
