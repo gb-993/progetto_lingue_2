@@ -403,6 +403,23 @@ class Motivation(models.Model):
     code = models.CharField(max_length=50, unique=True)  # es. 'MOT1'
     label = models.CharField(max_length=255)
 
+# motivazioni selezionabili per ogni domanda 
+class QuestionAllowedMotivation(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    question = models.ForeignKey("core.Question", on_delete=models.CASCADE, related_name="allowed_motivations")
+    motivation = models.ForeignKey("core.Motivation", on_delete=models.RESTRICT, related_name="allowed_for_questions")
+    position = models.PositiveIntegerField(default=1)  # opzionale: ordinamento locale per domanda
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["question", "motivation"], name="uq_question_allowed_motivation"),
+        ]
+        indexes = [
+            models.Index(fields=["question"]),
+            models.Index(fields=["motivation"]),
+            models.Index(fields=["question", "position"]),
+        ]
+
 
 class AnswerMotivation(models.Model):
     id = models.BigAutoField(primary_key=True)

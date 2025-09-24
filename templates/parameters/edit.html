@@ -12,6 +12,7 @@
     </div>
   {% endif %}
 
+  {# === Sezione Parametro === #}
   {% if param %}
     <div class="grid grid-2">
       <div>
@@ -21,7 +22,7 @@
                readonly
                aria-describedby="id-help">
         {{ form.id.as_hidden }}
-        <p id="id-help" class="muted">Label non modificabile.</p>
+        <p id="id-help" class="muted">Label/ID non modificabile.</p>
       </div>
     </div>
   {% else %}
@@ -36,14 +37,11 @@
 
   <div class="grid grid-2">
     <div class="{% if form.name.errors %}field-error{% endif %}">
-      {{ form.name.label_tag }}
-      {{ form.name }}
+      {{ form.name.label_tag }} {{ form.name }}
       {% if form.name.errors %}<div class="error" role="alert">{{ form.name.errors }}</div>{% endif %}
     </div>
-
     <div class="{% if form.position.errors %}field-error{% endif %}">
-      {{ form.position.label_tag }}
-      {{ form.position }}
+      {{ form.position.label_tag }} {{ form.position }}
       {% if form.position.errors %}
         <div class="error" role="alert">{{ form.position.errors }}</div>
       {% else %}
@@ -55,14 +53,12 @@
   </div>
 
   <div class="{% if form.short_description.errors %}field-error{% endif %}">
-    {{ form.short_description.label_tag }}
-    {{ form.short_description }}
+    {{ form.short_description.label_tag }} {{ form.short_description }}
     {% if form.short_description.errors %}<div class="error" role="alert">{{ form.short_description.errors }}</div>{% endif %}
   </div>
 
   <div class="{% if form.implicational_condition.errors %}field-error{% endif %}">
-    {{ form.implicational_condition.label_tag }}
-    {{ form.implicational_condition }}
+    {{ form.implicational_condition.label_tag }} {{ form.implicational_condition }}
     {% if form.implicational_condition.errors %}<div class="error" role="alert">{{ form.implicational_condition.errors }}</div>{% endif %}
   </div>
 
@@ -73,7 +69,86 @@
     {% if form.is_active.errors %}<div class="error" role="alert">{{ form.is_active.errors }}</div>{% endif %}
   </div>
 
-  <div class="toolbar">
+  {# === Sezione Domande (inline formset) === #}
+  <section class="card" aria-labelledby="q-heading" style="margin-top:1rem">
+    <h2 id="q-heading">Domande del parametro</h2>
+
+    {{ q_formset.management_form }}
+
+    {% if q_formset.non_form_errors %}
+      <div class="alert alert-danger" role="alert">{{ q_formset.non_form_errors }}</div>
+    {% endif %}
+
+    <div id="questions-list">
+      {% for qf in q_formset.forms %}
+        <fieldset class="question-block" aria-describedby="q-{{ forloop.counter }}-help" style="margin-bottom:1rem;border:1px solid var(--border);padding:1rem;border-radius:var(--r-sm);">
+          <legend>Domanda {{ forloop.counter }}</legend>
+
+          {% if qf.non_field_errors %}
+            <div class="alert alert-danger" role="alert">{{ qf.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="grid grid-2">
+            <div class="{% if qf.id.errors %}field-error{% endif %}">
+              {{ qf.id.label_tag }} {{ qf.id }}
+              {% if qf.id.errors %}<div class="error" role="alert">{{ qf.id.errors }}</div>{% endif %}
+              {% if qf.instance.pk %}
+                <p class="muted">Consigliato non cambiare l'ID dopo la creazione.</p>
+              {% endif %}
+            </div>
+
+            <div class="{% if qf.is_stop_question.errors %}field-error{% endif %}" style="align-self:end;">
+              <label class="form-check">
+                {{ qf.is_stop_question }} <span>{{ qf.is_stop_question.label }}</span>
+              </label>
+              {% if qf.is_stop_question.errors %}<div class="error" role="alert">{{ qf.is_stop_question.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="{% if qf.text.errors %}field-error{% endif %}">
+            {{ qf.text.label_tag }} {{ qf.text }}
+            {% if qf.text.errors %}<div class="error" role="alert">{{ qf.text.errors }}</div>{% endif %}
+          </div>
+
+          <div class="grid grid-2">
+            <div class="{% if qf.instruction.errors %}field-error{% endif %}">
+              {{ qf.instruction.label_tag }} {{ qf.instruction }}
+              {% if qf.instruction.errors %}<div class="error" role="alert">{{ qf.instruction.errors }}</div>{% endif %}
+            </div>
+            <div class="{% if qf.example_yes.errors %}field-error{% endif %}">
+              {{ qf.example_yes.label_tag }} {{ qf.example_yes }}
+              {% if qf.example_yes.errors %}<div class="error" role="alert">{{ qf.example_yes.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="{% if qf.template_type.errors %}field-error{% endif %}">
+            {{ qf.template_type.label_tag }} {{ qf.template_type }}
+            {% if qf.template_type.errors %}<div class="error" role="alert">{{ qf.template_type.errors }}</div>{% endif %}
+            <p id="q-{{ forloop.counter }}-help" class="muted">Scegli il template degli esempi utente. (Nessuna modifica al modello <code>Example</code>.)</p>
+          </div>
+
+          <div class="{% if qf.fields.motivations.errors %}field-error{% endif %}">
+            <label><strong>Motivazioni disponibili per NO</strong></label>
+            {{ qf.motivations }}
+            {% if qf.motivations.errors %}<div class="error" role="alert">{{ qf.motivations.errors }}</div>{% endif %}
+            <p class="muted">Questo sottoinsieme verrà mostrato all'utente SOLO se risponde “NO”.</p>
+          </div>
+
+          {% if qf.DELETE %}
+            <div class="form-check" style="margin-top:.5rem">
+              <label class="form-check">
+                {{ qf.DELETE }} <span>Elimina questa domanda</span>
+              </label>
+            </div>
+          {% endif %}
+        </fieldset>
+      {% endfor %}
+    </div>
+
+    <button type="button" class="btn" id="add-question">+ Aggiungi domanda</button>
+  </section>
+
+  <div class="toolbar" style="margin-top:1rem">
     <a class="btn" href="{% url 'parameter_list' %}">Cancel</a>
     <button class="btn btn--primary" type="submit">Save</button>
   </div>
@@ -83,10 +158,23 @@
   </p>
 </form>
 
-{# Box debug temporaneo: lascia finché stai verificando #}
-{% if form.errors %}
+{# Debug errori #}
+{% if form.errors or q_formset.errors %}
   <pre style="margin-top:16px;padding:12px;border:1px dashed;">
-{{ form.errors }}
+Param errors: {{ form.errors }}
+Formset errors: {{ q_formset.non_form_errors }}
+{% for qf in q_formset.forms %}{{ qf.errors }}{% endfor %}
   </pre>
 {% endif %}
+
+
+{# Template invisibile della empty_form #}
+<template id="empty-form-template">
+  <fieldset class="question-block" style="margin-bottom:1rem;border:1px solid var(--border);padding:1rem;border-radius:var(--r-sm);">
+    {{ q_formset.empty_form.as_p }}
+  </fieldset>
+</template>
 {% endblock %}
+
+{% load static %}
+<script src="{% static 'js/formset.js' %}"></script>
