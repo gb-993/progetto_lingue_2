@@ -421,7 +421,6 @@ class Motivation(models.Model):
 class QuestionAllowedMotivation(models.Model):
     id = models.BigAutoField(primary_key=True)
 
-    # ⚠️ Cambiato related_name per evitare clash con il campo M2M
     question = models.ForeignKey(
         "core.Question",
         on_delete=models.CASCADE,
