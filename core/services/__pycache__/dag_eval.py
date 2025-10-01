@@ -93,7 +93,7 @@ def _collect_param_values_orig(lang: Language, active_ids: Set[str]) -> Dict[str
         values[pid] = v  # v è '+', '-', oppure None
     return values
 
-def _ensure_eval_row(lang: Language, pid: string, lp_id: int | None) -> LanguageParameterEval:
+def _ensure_eval_row(lang: Language, pid: str, lp_id: int | None) -> LanguageParameterEval:
     """
     Garantisce una LanguageParameterEval associata al LanguageParameter esistente.
     Se lp_id è None (cioè non esiste LP per quel parametro), la creiamo ad-hoc creando prima il LP con value_orig=None.

@@ -4,7 +4,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from core.models import Answer
-from core.services.param_consolidate import recompute_and_persist_language_parameter
+from core.services.param_consolidate import recompute_and_persist_language_parameter  # type: ignore[reportMissingImports]
 
 
 def _recompute_from_answer(answer: Answer):
