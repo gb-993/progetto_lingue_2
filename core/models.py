@@ -86,7 +86,6 @@ class Language(models.Model):
     id = models.CharField(primary_key=True, max_length=10)  # 'ita','en',...
     name_full = models.CharField(max_length=255)
 
-    # ⬇️ rimuoviamo unique=True e usiamo un vincolo deferrable (vedi Meta)
     position = models.PositiveIntegerField()
 
     grp = models.CharField(max_length=255, null=True, blank=True)
@@ -115,7 +114,7 @@ class Language(models.Model):
     def __str__(self):
         return self.name_full
 
-    # Advisory lock per serializzare gli shift (chiave a piacere ma costante)
+    # Advisory lock per serializzare gli shift 
     def _advisory_lock(self):
         with connection.cursor() as cur:
             cur.execute("SELECT pg_advisory_xact_lock(%s);", [123456789])
@@ -322,7 +321,7 @@ class Question(models.Model):
     template_type = models.CharField(max_length=50, null=True, blank=True)
     is_stop_question = models.BooleanField(default=False)
 
-    # M2M ufficiale: il nome del campo è "allowed_motivations"
+    # M2M ufficiale
     allowed_motivations = models.ManyToManyField(
         "core.Motivation",
         through="core.QuestionAllowedMotivation",
@@ -340,26 +339,36 @@ class Question(models.Model):
         return f"{self.id} - {self.parameter_id}"
 
 
-# ==================================
-# LANGUAGE_PARAMETER (originali)
-# ==================================
+# ===============================================
+# LANGUAGE_PARAMETER (originali per ogni lingua)
+# ===============================================
+# core/models.py  — SOSTITUISCI SOLO QUESTO MODEL
+
 class LanguageParameter(models.Model):
     # surrogate PK
     id = models.BigAutoField(primary_key=True)
     language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name="language_parameters")
     parameter = models.ForeignKey(ParameterDef, on_delete=models.RESTRICT, related_name="language_parameters")
-    value_orig = models.CharField(max_length=1)   # '+'|'-'
+
+    # MODIFICA: permettiamo NULL per rappresentare "indeterminato"
+    value_orig = models.CharField(max_length=1, null=True, blank=True)   # '+','-' oppure NULL (indeterminato)
     warning_orig = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["language", "parameter"], name="uq_lang_param"),
-            models.CheckConstraint(check=models.Q(value_orig__in=["+", "-"]), name="ck_value_orig_pm"),
+
+            # MODIFICA: aggiorniamo il check per consentire anche NULL
+            models.CheckConstraint(
+                check=(models.Q(value_orig__in=["+", "-"]) | models.Q(value_orig__isnull=True)),
+                name="ck_value_orig_pm_or_null",
+            ),
         ]
         indexes = [
             models.Index(fields=["language"]),
             models.Index(fields=["parameter"]),
         ]
+
 
 
 # =========
@@ -443,6 +452,7 @@ class QuestionAllowedMotivation(models.Model):
             models.Index(fields=["question", "position"]),
         ]
 
+# Unisce Answer alle sue Motivation (M2M tramite tabella esplicita)
 class AnswerMotivation(models.Model):
     id = models.BigAutoField(primary_key=True)
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE, related_name="answer_motivations")
