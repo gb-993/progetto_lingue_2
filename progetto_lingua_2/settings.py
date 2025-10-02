@@ -25,7 +25,6 @@ INSTALLED_APPS = [
 
 
     # Project apps
-    "core",
     "accounts",
     "languages_ui",
     "parameters_ui",
