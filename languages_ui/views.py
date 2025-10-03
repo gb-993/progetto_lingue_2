@@ -369,36 +369,51 @@ def language_debug(request, lang_id: str):
     )
     answers_by_qid = {a.question_id: a for a in answers}
 
-    # Initial & Final values:
-    # LanguageParameter (value_orig) con select_related('parameter','eval') per avere anche value_eval
+    # Initial & Final values + warnings
     lps = (
         LanguageParameter.objects
         .filter(language=lang)
         .select_related("parameter", "eval")
     )
-    init_by_pid = {lp.parameter_id: (lp.value_orig or "") for lp in lps}
-    final_by_pid = {lp.parameter_id: (lp.eval.value_eval if getattr(lp, "eval", None) else "") for lp in lps}
 
-    # Prepara righe per template
+    init_by_pid   = {}
+    warni_by_pid  = {}  # warning iniziale (warning_orig)
+    final_by_pid  = {}
+    warnf_by_pid  = {}  # warning finale (warning_eval)
+
+    for lp in lps:
+        pid = lp.parameter_id
+        init_by_pid[pid]  = (lp.value_orig or "")
+        warni_by_pid[pid] = bool(lp.warning_orig)
+        if getattr(lp, "eval", None):
+            final_by_pid[pid] = (lp.eval.value_eval or "")
+            warnf_by_pid[pid] = bool(lp.eval.warning_eval)
+        else:
+            final_by_pid[pid] = ""
+            warnf_by_pid[pid] = False
+
+    # Prepara righe per template (aggiungiamo i due flag)
     rows = []
     for p in params:
         q_ids, q_ans = [], []
         for q in p.questions.all():
             q_ids.append(q.id)
             a = answers_by_qid.get(q.id)
-            # nel DB sono 'yes'/'no' → mostriamo uppercase come nel tuo HTML Flask
             q_ans.append((a.response_text.upper() if (a and a.response_text in ("yes", "no")) else ""))
 
         rows.append({
             "position": p.position,
             "param_id": p.id,
             "name": p.name or "",
-            "questions": q_ids,                          # lista ID domanda
-            "answers": q_ans,                            # lista YES/NO/''
-            "initial": (init_by_pid.get(p.id, "") or ""),# '+', '-', o ''
-            "final":   (final_by_pid.get(p.id, "") or ""),# '+','-','0', o ''
-            "cond":    (p.implicational_condition or ""),# eventuale condizione raw
+            "questions": q_ids,
+            "answers": q_ans,
+            "initial":  (init_by_pid.get(p.id, "") or ""),
+            "final":    (final_by_pid.get(p.id, "") or ""),
+            "warn_init": bool(warni_by_pid.get(p.id, False)),  
+            "warn_final": bool(warnf_by_pid.get(p.id, False)), 
+            "cond": (p.implicational_condition or ""),
         })
+
 
     ctx = {"language": lang, "rows": rows}
     return render(request, "languages/debug_parameters.html", ctx)

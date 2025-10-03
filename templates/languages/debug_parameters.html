@@ -21,8 +21,11 @@
           <th>Questions</th>
           <th>Answers</th>
           <th class="w-10ch nowrap">Initial value</th>
+          <th class="w-8ch">Warn (init)</th>      
           <th>Implicational condition(s)</th>
           <th class="w-10ch">Final value</th>
+          <th class="w-8ch">Warn (final)</th>     
+
         </tr>
       </thead>
       <tbody>
@@ -36,7 +39,9 @@
                 {% for qid in r.questions %}
                   <div><code>{{ qid }}</code></div>
                 {% endfor %}
-              {% else %}<span class="muted">—</span>{% endif %}
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
             </td>
 
             <td>
@@ -44,25 +49,46 @@
                 {% for a in r.answers %}
                   <div>{{ a }}</div>
                 {% endfor %}
-              {% else %}<span class="muted">—</span>{% endif %}
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
             </td>
 
             <td class="num nowrap">
               {% if r.initial == '+' %}+{% elif r.initial == '-' %}-{% else %}<span class="muted"> </span>{% endif %}
             </td>
 
+            <td data-label="Warn (init)">
+              {% if r.warn_init %}
+                <span class="badge b-bad" aria-label="Initial warning true">⚠</span>
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </td>
+
             <td>
               {% if r.cond %}
                 <div><code>{{ r.cond }}</code></div>
-              {% else %}<span class="muted">—</span>{% endif %}
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
             </td>
 
             <td class="num nowrap">
               {% if r.final == '+' %}+{% elif r.final == '-' %}-{% elif r.final == '0' %}0{% else %}<span class="muted"> </span>{% endif %}
             </td>
+
+            <td data-label="Warn (final)">
+              {% if r.warn_final %}
+                <span class="badge b-bad" aria-label="Final warning true">⚠</span>
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </td>
           </tr>
         {% endfor %}
       </tbody>
+
     </table>
   </div>
 
