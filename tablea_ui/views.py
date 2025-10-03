@@ -5,26 +5,44 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from core.models import Language, LanguageParameter, ParameterDef  # importa i modelli reali che usi
 
+# tablea/views.py  — SOSTITUISCI tutta la funzione tablea_index con questa
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from core.models import Language, ParameterDef, LanguageParameterEval
+
 @login_required
 def tablea_index(request):
-    # 1) Prendiamo intestazioni
-    languages = list(Language.objects.order_by("position").only("id", "name_full"))
-    parameters = list(ParameterDef.objects.filter(is_active=True).order_by("position").only("id", "name"))
+    # Intestazioni colonne e righe (ordinati per position)
+    languages = list(
+        Language.objects.order_by("position").only("id", "name_full", "position")
+    )
+    parameters = list(
+        ParameterDef.objects.filter(is_active=True)
+        .order_by("position")
+        .only("id", "name", "implicational_condition", "position")
+    )
 
-    # 2) Qui costruisci la “px” (mappa param×lang -> valore).
-    #    Per ora metto un esempio vuoto che restituisce stringhe vuote.
-    #    Se hai già una fonte (es. LanguageParameterEval o altro), popola 'px' lì sotto.
-    px = {}
-    for lp in LanguageParameter.objects.select_related("language", "parameter"):
-        px[(lp.parameter_id, lp.language_id)] = lp.value_orig
-    # Esempio (se avessi dati): px[(param_id, lang_id)] = '+'
+    # Leggiamo i valori POST-DAG dalla tabella di eval
+    # values() per essere leggeri e veloci
+    eval_rows = LanguageParameterEval.objects.values(
+        "language_parameter__language_id",
+        "language_parameter__parameter_id",
+        "value_eval",
+    )
 
-    # 3) Costruisco righe pronte per il template
+    # Mappa (param_id, lang_id) -> value_eval ('+','-','0')
+    px = {
+        (row["language_parameter__parameter_id"], row["language_parameter__language_id"]): row["value_eval"]
+        for row in eval_rows
+    }
+
+    # Costruzione struttura per il template
     rows = []
     for p in parameters:
         cells = []
         for lang in languages:
-            cells.append(px.get((p.id, lang.id), ""))  # "" se mancante
+            cells.append(px.get((p.id, lang.id), ""))  # "" se non valutato
         rows.append({
             "p": p,
             "cells": cells,

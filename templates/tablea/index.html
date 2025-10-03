@@ -48,7 +48,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="{{ 3|add:languages|length }}">
+              <td colspan="{{ languages|length|add:3 }}">
                 Nessun dato disponibile per Table A.
               </td>
             </tr>
