@@ -295,3 +295,110 @@ def language_approve(request, lang_id):
 def language_reopen(request, lang_id):
     messages.info(request, _("Reopen flow not implemented yet."))
     return redirect("language_data", lang_id=lang_id)
+
+
+# languages_ui/views.py
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Prefetch
+
+from core.models import (
+    Language, ParameterDef, Question, Answer,
+    LanguageParameter,  # valore consolidato da risposte (+/-/0 o None)
+)
+
+# Se hai il modello con i valori del DAG, importalo.
+# Se NON esiste nel tuo progetto, lascia il try/except: la colonna finale rimarrà vuota.
+try:
+    from core.models import LanguageParameterEval  # valore DAG (+/-/0 o None)
+    HAS_EVAL = True
+except Exception:
+    LanguageParameterEval = None
+    HAS_EVAL = False
+
+# languages_ui/views.py
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Prefetch
+
+from core.models import (
+    Language, ParameterDef, Question, Answer,
+    LanguageParameter, LanguageParameterEval,  # usiamo entrambi
+)
+
+@login_required
+def language_debug(request, lang_id: str):
+    """
+    Debug per una lingua:
+      - per ogni parametro attivo in ordine di position
+      - mostra: domande (ID), risposte (yes/no), initial value (+/-), final value (+/-/0)
+    """
+    user = request.user
+    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
+
+    # lingua e controllo accessi (admin ok; altrimenti assegnata via M2M o FK)
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not is_admin:
+        allowed = False
+        # M2M: language.users
+        try:
+            allowed = lang.users.filter(pk=user.pk).exists()
+        except Exception:
+            allowed = False
+        # FK fallback: assigned_user
+        if not allowed:
+            allowed = (getattr(lang, "assigned_user_id", None) == user.id)
+        if not allowed:
+            # 404 per non rivelare info
+            get_object_or_404(Language, pk="__deny__")
+
+    # Parametri attivi (ordine di sito) + domande prefetchate
+    params = (
+        ParameterDef.objects
+        .filter(is_active=True)
+        .order_by("position", "id")
+        .prefetch_related(Prefetch("questions", queryset=Question.objects.order_by("id")))
+    )
+
+    # Tutte le risposte della lingua, indicizzate per question_id
+    answers = (
+        Answer.objects
+        .filter(language=lang)
+        .select_related("question")
+        .order_by("question__parameter__position", "question_id")
+    )
+    answers_by_qid = {a.question_id: a for a in answers}
+
+    # Initial & Final values:
+    # LanguageParameter (value_orig) con select_related('parameter','eval') per avere anche value_eval
+    lps = (
+        LanguageParameter.objects
+        .filter(language=lang)
+        .select_related("parameter", "eval")
+    )
+    init_by_pid = {lp.parameter_id: (lp.value_orig or "") for lp in lps}
+    final_by_pid = {lp.parameter_id: (lp.eval.value_eval if getattr(lp, "eval", None) else "") for lp in lps}
+
+    # Prepara righe per template
+    rows = []
+    for p in params:
+        q_ids, q_ans = [], []
+        for q in p.questions.all():
+            q_ids.append(q.id)
+            a = answers_by_qid.get(q.id)
+            # nel DB sono 'yes'/'no' → mostriamo uppercase come nel tuo HTML Flask
+            q_ans.append((a.response_text.upper() if (a and a.response_text in ("yes", "no")) else ""))
+
+        rows.append({
+            "position": p.position,
+            "param_id": p.id,
+            "name": p.name or "",
+            "questions": q_ids,                          # lista ID domanda
+            "answers": q_ans,                            # lista YES/NO/''
+            "initial": (init_by_pid.get(p.id, "") or ""),# '+', '-', o ''
+            "final":   (final_by_pid.get(p.id, "") or ""),# '+','-','0', o ''
+            "cond":    (p.implicational_condition or ""),# eventuale condizione raw
+        })
+
+    ctx = {"language": lang, "rows": rows}
+    return render(request, "languages/debug_parameters.html", ctx)
