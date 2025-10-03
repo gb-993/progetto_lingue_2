@@ -85,15 +85,23 @@ class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # In edit: congelare l'ID se la domanda esiste (evita problemi con PK)
-        if self.instance and self.instance.pk:
-            self.fields["id"].disabled = True
+        # === Gestione 'id' in modo robusto ===
+        if "id" in self.fields:
+            if self.instance and self.instance.pk:
+                # In EDIT: l'id deve essere postato ma non modificato
+                self.fields["id"].required = False
+                self.fields["id"].widget = forms.HiddenInput()  # va dentro hidden_fields
+                self.initial["id"] = self.instance.pk
+            else:
+                # In ADD: l'id deve essere inserito dall'utente
+                self.fields["id"].required = True
 
         # Pre-seleziona le motivazioni già collegate (via M2M ufficiale)
         if self.instance and self.instance.pk:
             self.fields["motivations"].initial = list(
                 self.instance.allowed_motivations.values_list("pk", flat=True)
             )
+
 
     def save(self, commit=True):
         """

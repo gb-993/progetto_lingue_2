@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %} 
 {% load static %}
 
 {% block title %}{% if param %}Edit parameter {{ param.id }}{% else %}Add parameter{% endif %}{% endblock %}
@@ -105,9 +105,18 @@
           {% endif %}
 
           <div class="grid grid-2">
-            <div class="{% if qf.id.errors %}field-error{% endif %}">
-              {{ qf.id.label_tag }} {{ qf.id }}
-              {% if qf.id.errors %}<div class="error" role="alert">{{ qf.id.errors }}</div>{% endif %}
+            {# === FIX: evitare doppio name="...-id" === #}
+            <div>
+              {% if qf.instance.pk %}
+                <label>ID</label>
+                <input class="form-control" value="{{ qf.instance.id }}" readonly>
+                {# Nota: NON renderizziamo {{ qf.id }} qui; l'id verrà inviato SOLO dal campo hidden del formset #}
+              {% else %}
+                <div class="{% if qf.id.errors %}field-error{% endif %}">
+                  {{ qf.id.label_tag }} {{ qf.id }}
+                  {% if qf.id.errors %}<div class="error" role="alert">{{ qf.id.errors }}</div>{% endif %}
+                </div>
+              {% endif %}
               {% if qf.instance.pk %}
                 <p class="muted">Consigliato non cambiare l'ID dopo la creazione.</p>
               {% endif %}
