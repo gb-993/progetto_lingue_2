@@ -1,3 +1,5 @@
+APRIRE PER VISUALIZZARE 
+
 STRUTTURA
 
 progetto_lingua/
