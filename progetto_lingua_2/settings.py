@@ -124,9 +124,45 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---------------------- Dev helpers ----------------------
-DEV_PORT = os.environ.get("DEV_PORT", "8000")
-CSRF_TRUSTED_ORIGINS = (
-    [f"http://{h}:{DEV_PORT}" for h in ALLOWED_HOSTS if h] +
-    [f"https://{h}" for h in ALLOWED_HOSTS if h]
+def envlist(key, default=""):
+    raw = os.environ.get(key, default)
+    return [x.strip() for x in raw.split(",") if x.strip()]
+
+# DEBUG da env
+DEBUG = os.environ.get("DJANGO_DEBUG", "0") in ("1", "true", "True")
+
+# Hosts e origini fidate da env (virgola-separate)
+ALLOWED_HOSTS = envlist("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+
+# Base da env, puoi aggiungere domini reali in produzione (es. https://mio.dominio.it)
+_csrf_from_env = envlist(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "http://localhost,http://127.0.0.1,http://localhost:8080,http://127.0.0.1:8080"
 )
-SESSION_COOKIE_AGE = 60 * 60 * 8
+
+# Costruiamo anche varianti utili automaticamente
+_auto = []
+for h in ALLOWED_HOSTS:
+    if not h:
+        continue
+    # senza porta
+    _auto += [f"http://{h}", f"https://{h}"]
+    # porte comuni in dev
+    _auto += [f"http://{h}:8080", f"http://{h}:8000"]
+
+# Unione (ordinale) tra env e auto
+_seen = set()
+CSRF_TRUSTED_ORIGINS = []
+for v in _csrf_from_env + _auto:
+    if v not in _seen:
+        CSRF_TRUSTED_ORIGINS.append(v)
+        _seen.add(v)
+
+# Cookie non secure in dev (su HTTP)
+if DEBUG:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+
+# (Se Nginx termina HTTPS e fa proxy verso Django)
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# USE_X_FORWARDED_HOST = True

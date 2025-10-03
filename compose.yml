@@ -23,15 +23,18 @@ services:
     env_file: .env
     environment:
       PYTHONUNBUFFERED: 1
-    command: ["gunicorn"]         
+      SEED_ON_START: "true"        # <— abilita il seed automatico
+    # ⚠️ rimuovi questa riga: "command: ['gunicorn']"
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
+      - ./data:/app/data:ro        # <— i CSV entrano nel container in sola lettura
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health/ || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 20
+
 
 
   nginx:

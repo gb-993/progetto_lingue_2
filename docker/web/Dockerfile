@@ -1,60 +1,55 @@
-# --- Base immagine: Debian bookworm slim, fissata a minor per stabilità
-FROM python:3.12.6-slim-bookworm AS base
+# docker/web/Dockerfile
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    TZ=Europe/Rome
+# ---- Base comune (runtime minimale) ----
+    FROM python:3.12-slim-bookworm AS base
 
-# Dipendenze runtime minime + gosu per drop-privileges
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      curl ca-certificates locales gosu \
- && sed -i '/it_IT.UTF-8/s/^# //g' /etc/locale.gen && locale-gen \
- && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# --- Stage deps: installa requirements con cache separata
-FROM base AS deps
-COPY requirements.txt /app/requirements.txt
-RUN python -m pip install --upgrade pip \
- && python -m pip install --only-binary=:all: -r /app/requirements.txt
-
-# --- Final: runtime pulito
-FROM base AS final
-
-# Porta con sé l'ambiente Python (site-packages, scripts)
-COPY --from=deps /usr/local /usr/local
-
-# Copia l'entrypoint da solo e normalizza permessi/EOL
-COPY entrypoint.sh /app/entrypoint.sh
-# Nota: se usi bash nel tuo script, assicurati che il base image lo abbia
-# e che la prima riga di entrypoint.sh sia corretta (es. '#!/usr/bin/env bash')
-RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod 755 /app/entrypoint.sh
-
-# Ora copia il resto del progetto
-COPY . /app
-
-# (se usi un utente non-root, mantieni pure USER appuser)
-# USER appuser
-
-# Assicurati che l'entrypoint usi la forma exec JSON
-ENTRYPOINT ["/app/entrypoint.sh"]
-
-# Copia il progetto
-COPY . /app
-
-# 🔧 FIX Windows: converti CRLF -> LF e rendi eseguibile l'entrypoint
-RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
-
-# Crea utente non-root con UID/GID stabili (1000:1000)
-RUN groupadd -g 1000 appuser && useradd -m -u 1000 -g 1000 appuser
-
-# Pre-crea le directory (nel layer immagine — NON nei volumi)
-RUN mkdir -p /app/staticfiles /app/media
-
-EXPOSE 8000
-
-# Lasciamo l'entrypoint partire come root: farà fix permessi e poi droppa
-ENTRYPOINT ["/app/entrypoint.sh"]
+    ENV PYTHONDONTWRITEBYTECODE=1 \
+        PYTHONUNBUFFERED=1 \
+        PIP_NO_CACHE_DIR=1 \
+        TZ=Europe/Rome
+    
+    # Strumenti minimi: curl per healthcheck (gosu rimosso perché non usato)
+    RUN apt-get update && apt-get install -y --no-install-recommends \
+          curl ca-certificates tzdata \
+      && rm -rf /var/lib/apt/lists/*
+    
+    WORKDIR /app
+    
+    
+    # ---- Stage deps (installa requirements con cache separata) ----
+    FROM base AS deps
+    
+    COPY requirements.txt /app/requirements.txt
+    
+    # Se vuoi massima robustezza, NON forzare only-binary (alcune ruote mancano per py3.12)
+    RUN python -m pip install --upgrade pip && \
+        pip install -r /app/requirements.txt && \
+        pip install "psycopg[binary]~=3.2"
+    
+    
+    # ---- Stage finale (runtime pulito) ----
+    FROM base AS final
+    
+    # Porta site-packages e script Python dallo stage deps
+    COPY --from=deps /usr/local /usr/local
+    
+    # Copia l'entrypoint e normalizza EOL/permessi PRIMA del resto
+    COPY entrypoint.sh /app/entrypoint.sh
+    RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod 755 /app/entrypoint.sh
+    
+    # Ora copia il resto del progetto (inclusa data/ per seed in prod)
+    COPY . /app
+    
+    # Utente non-root coerente
+    RUN groupadd -g 1000 appuser && useradd -m -u 1000 -g 1000 appuser \
+     && mkdir -p /app/staticfiles /app/media \
+     && chown -R appuser:appuser /app
+    
+    # Passa all'utente non-root
+    USER appuser
+    
+    EXPOSE 8000
+    
+    # L'entrypoint fa: wait DB, migrate, collectstatic, seed condizionato, avvio server
+    ENTRYPOINT ["/app/entrypoint.sh"]
+    

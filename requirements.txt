@@ -3,3 +3,4 @@ gunicorn
 psycopg[binary,pool]
 whitenoise
 pyparsing>=3.1
+psycopg[binary]~=3.2
