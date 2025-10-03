@@ -10,121 +10,41 @@ python manage.py runserver
 
 ```text
 progetto_lingua/
-├─ manage.py
-├─ venv/
-├─ progetto_lingua_2/
-│  ├─ __init__.py
-│  ├─ asgi.py
-│  ├─ settings.py
-│  ├─ urls.py
-│  └─ wsgi.py
+├─ manage.py               # il “pulsante di avvio” del progetto
+├─ venv/                   # la cartella dove vive Python per questo progetto
 │
-├─ data/
-│  └─ README.md
+├─ progetto_lingua_2/      # il cuore del sito: configurazioni generali
+│  ├─ settings.py          # le impostazioni (es. database, lingua, app attive)
+│  ├─ urls.py              # la mappa delle pagine del sito
+│  ├─ wsgi.py / asgi.py    # servono solo quando il sito va online
 │
-├─ core/
-│  ├─ __init__.py
-│  ├─ admin.py
-│  ├─ apps.py
-│  ├─ models.py
-│  ├─ views.py
-│  ├─ services/
-│  │  ├─ logic_parser.py
-│  │  ├─ param_consolidate.py
-│  │  └─ dag_eval.py
-│  ├─ management/
-│  │  └─ commands/
-│  │     ├─ seed_from_csv.py
-│  │     └─ rebuild_param_cache.py
-│  └─ migrations/
-│     └─ 0001_initial.py
+├─ data/                   # dati di esempio usati per testare
 │
-├─ accounts/
-│  ├─ __init__.py
-│  ├─ admin.py
-│  ├─ apps.py
-│  ├─ forms.py
-│  ├─ urls.py
-│  └─ views.py
+├─ core/                   # la “base dati” e le regole fondamentali
+│  ├─ models.py            # descrizione delle tabelle principali (utenti, lingue, domande…)
+│  ├─ services/            # logiche più complicate (es. calcoli sui parametri)
+│  └─ management/commands/ # piccoli comandi per caricare o aggiornare i dati
 │
-├─ languages_ui/
-│  ├─ __init__.py
-│  ├─ admin.py
-│  ├─ apps.py
-│  ├─ forms.py
-│  ├─ models.py
-│  ├─ tests.py
-│  ├─ urls.py
-│  └─ views.py
+├─ accounts/               # gestione degli utenti (registrazione, login, ruoli)
+├─ languages_ui/           # pagine dedicate alle lingue
+├─ parameters_ui/          # pagine dedicate ai parametri e alle domande
+├─ glossary_ui/            # glossario dei termini linguistici
+├─ submissions_ui/         # gestione degli invii/compilazioni fatti dagli utenti
+├─ tablea_ui/              # la tabella comparativa finale e l’esportazione
 │
-├─ parameters_ui/
-│  ├─ __init__.py
-│  ├─ apps.py
-│  ├─ forms.py
-│  ├─ urls.py
-│  └─ views.py
+├─ static/                 # grafica e funzioni lato utente
+│  ├─ css/                 # i fogli di stile (aspetto del sito)
+│  ├─ js/                  # gli script che rendono le pagine interattive
+│  └─ img/                 # eventuali immagini
 │
-├─ glossary_ui/
-│  ├─ __init__.py
-│  ├─ apps.py
-│  ├─ models.py
-│  ├─ forms.py
-│  ├─ urls.py
-│  └─ views.py
+├─ templates/              # i “modelli” delle pagine del sito
+│  ├─ base.html            # la struttura comune (menu, stile generale)
+│  ├─ accounts/            # pagine utenti (login, lista, modifica…)
+│  ├─ languages/           # pagine lingue
+│  ├─ parameters/          # pagine parametri
+│  ├─ glossary/            # pagine glossario
+│  └─ submissions/         # pagine invii
 │
-├─ submissions_ui/
-│  ├─ __init__.py
-│  ├─ apps.py
-│  ├─ forms.py
-│  ├─ urls.py
-│  └─ views.py
-│
-├─ tablea_ui/
-│  ├─ __init__.py
-│  ├─ apps.py
-│  ├─ urls.py
-│  └─ views.py
-│
-├─ static/
-│  ├─ css/
-│  │  ├─ style.css
-│  │  └─ mobile.css
-│  └─ js/
-│     ├─ add_question_form.js
-│     └─ show_motivation.js
-│
-├─ templates/
-│  ├─ base.html
-│  ├─ index.html
-│  ├─ _partials/
-│  │  └─ messages.html
-│  ├─ accounts/
-│  │  ├─ add.html
-│  │  ├─ dashboard.html
-│  │  ├─ edit.html
-│  │  ├─ list.html
-│  │  └─ login.html
-│  ├─ glossary/
-│  │  ├─ add.html
-│  │  ├─ confirm_delete.html
-│  │  ├─ edit.html
-│  │  ├─ list.html
-│  │  └─ view.html
-│  ├─ languages/
-│  │  ├─ add.html
-│  │  ├─ data.html
-│  │  ├─ debug_parameters.html
-│  │  ├─ edit.html
-│  │  └─ list.html
-│  ├─ parameters/
-│  │  ├─ edit.html
-│  │  └─ list.html
-│  └─ submissions/
-│     └─ list.html
-│
-└─ locale/
-   └─ it/
-      └─ LC_MESSAGES/
-         ├─ django.po
-         └─ django.mo
+└─ locale/                 # traduzioni (qui in italiano)
+
 ```
