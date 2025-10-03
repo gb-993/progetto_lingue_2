@@ -9,6 +9,7 @@ urlpatterns = [
     path("<str:lang_id>/answer/<str:question_id>/save/", views.answer_save, name="answer_save"),
     
     path("languages/<str:lang_id>/debug/", views.language_debug, name="language_debug"),
+    path("languages/<str:lang_id>/run-dag/", views.language_run_dag, name="language_run_dag"),
 
     # placeholder opzionali:
     path("<str:lang_id>/export/", views.language_export, name="language_export"),
@@ -16,4 +17,5 @@ urlpatterns = [
     path("<str:lang_id>/save-instructions/", views.language_save_instructions, name="language_save_instructions"),
     path("<str:lang_id>/approve/", views.language_approve, name="language_approve"),
     path("<str:lang_id>/reopen/", views.language_reopen, name="language_reopen"),
+
 ]

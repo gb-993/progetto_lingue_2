@@ -8,9 +8,17 @@
   </h1>
 
   <div class="toolbar" style="display:flex;gap:.5rem;flex-wrap:wrap">
-    {# Torna alla pagina dati lingua: sostituisci 'language_data' con il tuo nome URL #}
     <a class="btn" href="{% url 'language_data' language.id %}">Back to language data</a>
+
+    {# Run DAG (Apply implications) #}
+    <form method="post" action="{% url 'language_run_dag' language.id %}" class="d-inline" aria-label="Apply implications">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--primary" aria-live="polite">
+        Apply implications
+      </button>
+    </form>
   </div>
+
 
   <div class="card" style="overflow:auto">
     <table class="table">

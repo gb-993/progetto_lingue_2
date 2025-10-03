@@ -417,3 +417,47 @@ def language_debug(request, lang_id: str):
 
     ctx = {"language": lang, "rows": rows}
     return render(request, "languages/debug_parameters.html", ctx)
+
+
+
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.utils.translation import gettext as _
+# importa il servizio del DAG
+from core.services.dag_eval import run_dag_for_language
+
+@login_required
+@require_POST
+def language_run_dag(request, lang_id: str):
+    """
+    Esegue il DAG per la lingua e torna alla pagina di debug.
+    Consentito solo admin (o staff/superuser).
+    """
+    user = request.user
+    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
+
+    if not is_admin:
+        messages.error(request, _("You are not allowed to run the DAG."))
+        return redirect("language_debug", lang_id=lang_id)
+
+    # (opzionale) qui potresti fare anche un controllo di accesso aggiuntivo sulla lingua
+    # ma visto che è azione admin ha senso lasciarlo così.
+
+    try:
+        report = run_dag_for_language(lang_id)
+        # Messaggio riassuntivo amichevole
+        msg = _(
+            "DAG completed: processed %(p)d, forced to zero %(fz)d, missing orig %(mo)d, warnings propagated %(wp)d."
+        ) % {
+            "p": len(report.processed or []),
+            "fz": len(report.forced_zero or []),
+            "mo": len(report.missing_orig or []),
+            "wp": len(report.warnings_propagated or []),
+        }
+        # Se vuoi vedere elenco dettagli in debug:
+        if report.missing_orig:
+            msg += " Missing: " + ", ".join(report.missing_orig[:8]) + ("…" if len(report.missing_orig) > 8 else "")
+        messages.success(request, msg)
+    except Exception as e:
+        messages.error(request, _("DAG failed: %(err)s") % {"err": str(e)})
+    return redirect("language_debug", lang_id=lang_id)
