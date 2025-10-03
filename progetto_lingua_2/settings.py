@@ -1,15 +1,21 @@
 """
 Django settings for progetto_lingua_2 project.
 """
+import os
+def env(key, default=None): return os.environ.get(key, default)
+
 from pathlib import Path
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ---------------------- Base / Security ----------------------
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me")
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-change-me")
+DEBUG = env("DJANGO_DEBUG", "0") == "1"
+ALLOWED_HOSTS = [h.strip() for h in env("DJANGO_ALLOWED_HOSTS","localhost,127.0.0.1").split(",") if h.strip()]
+CSRF_TRUSTED_ORIGINS = [env("DJANGO_CSRF_TRUSTED_ORIGINS","http://localhost")]
+SECURE_SSL_REDIRECT = env("DJANGO_SECURE_SSL_REDIRECT","0") == "1"
+
 
 # ---------------------- Apps ----------------------
 INSTALLED_APPS = [
@@ -42,6 +48,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
 ]
 
 ROOT_URLCONF = "progetto_lingua_2.urls"
@@ -68,15 +76,15 @@ WSGI_APPLICATION = "progetto_lingua_2.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("PGDATABASE", "db_lingua_2"),
-        "USER": os.environ.get("PGUSER", "db_user"),
-        "PASSWORD": os.environ.get("PGPASSWORD", "passwordsicura"),
-        "HOST": os.environ.get("PGHOST", "127.0.0.1"),
-        "PORT": os.environ.get("PGPORT", "5432"),
-        "CONN_MAX_AGE": 60,   # mantiene viva la connessione per 60 secondi
-
+        "NAME": env("POSTGRES_DB"),
+        "USER": env("POSTGRES_USER"),
+        "PASSWORD": env("POSTGRES_PASSWORD"),
+        "HOST": env("POSTGRES_HOST", "db"),
+        "PORT": env("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 60,  # pooling semplice
     }
 }
+
 
 # ---------------------- Auth ----------------------
 AUTH_USER_MODEL = "core.User"   # <— Custom user basato su email
@@ -102,11 +110,15 @@ USE_TZ = True
 
 # ---------------------- Static / Media ----------------------
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
+STATIC_ROOT = BASE_DIR / "staticfiles"    # -> /app/staticfiles (montato in Nginx)
+# Se nel repo hai una cartella "static/" con asset sorgente, abilita questa riga:
+STATICFILES_DIRS = [ BASE_DIR / "static" ]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# WhiteNoise è opzionale con Nginx, ma se lo tieni:
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
 
 # ---------------------- Default PK ----------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

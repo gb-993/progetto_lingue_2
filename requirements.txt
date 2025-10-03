@@ -1,0 +1,5 @@
+Django>=5.0
+gunicorn
+psycopg[binary,pool]
+whitenoise
+pyparsing>=3.1
