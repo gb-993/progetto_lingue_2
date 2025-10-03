@@ -27,6 +27,21 @@ FROM base AS final
 # Porta con sé l'ambiente Python (site-packages, scripts)
 COPY --from=deps /usr/local /usr/local
 
+# Copia l'entrypoint da solo e normalizza permessi/EOL
+COPY entrypoint.sh /app/entrypoint.sh
+# Nota: se usi bash nel tuo script, assicurati che il base image lo abbia
+# e che la prima riga di entrypoint.sh sia corretta (es. '#!/usr/bin/env bash')
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod 755 /app/entrypoint.sh
+
+# Ora copia il resto del progetto
+COPY . /app
+
+# (se usi un utente non-root, mantieni pure USER appuser)
+# USER appuser
+
+# Assicurati che l'entrypoint usi la forma exec JSON
+ENTRYPOINT ["/app/entrypoint.sh"]
+
 # Copia il progetto
 COPY . /app
 

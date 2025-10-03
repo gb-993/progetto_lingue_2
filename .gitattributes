@@ -1,0 +1,8 @@
+# Forza gli shell script ad usare LF su tutti gli OS
+*.sh text eol=lf
+
+# (opzionale ma utile)
+*.py text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
