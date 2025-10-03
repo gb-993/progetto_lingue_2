@@ -17,7 +17,7 @@ progetto_lingua/
 │    → Lo spazio privato dove vive Python per questo progetto (non serve toccarlo).
 │
 ├─ progetto_lingua_2/
-│    → La cabina di regia: contiene le impostazioni generali del sito.
+│    → Contiene le impostazioni generali del sito.
 │    ├─ settings.py   → qui sono scritte le impostazioni (es. database, lingua, applicazioni attive).
 │    ├─ urls.py       → la mappa che dice quali pagine esistono e dove puntano.
 │    ├─ wsgi.py       → serve solo quando il sito è pubblicato online (modalità classica).
@@ -29,7 +29,7 @@ progetto_lingua/
 │
 ├─ core/
 │    → La parte fondamentale: contiene la descrizione dei dati e le regole principali.
-│    ├─ models.py     → descrive gli “oggetti” principali (utenti, lingue, parametri, risposte…).
+│    ├─ models.py     → descrive il db (utenti, lingue, parametri, risposte…).
 │    ├─ admin.py      → permette di gestire questi dati dall’area di amministrazione.
 │    ├─ views.py      → eventuali pagine comuni.
 │    ├─ services/     → logiche più complicate (es. come valutare le risposte).
