@@ -1,5 +1,3 @@
-PREMI EDIT PER VISUALIZZARE 
-
 STRUTTURA
 
 progetto_lingua/
@@ -41,11 +39,10 @@ progetto_lingua/
 │  ├─ admin.py
 │  ├─ apps.py
 │  ├─ forms.py
-│  ├─ models.py                       # (se usato per helper/minimodel)
+│  ├─ models.py                       # (eventuali helper/minimodel)
 │  ├─ tests.py
 │  ├─ urls.py
-│  ├─ views.py                        # language_list, language_data, debug DAG, …
-│  └─ migrations/
+│  └─ views.py                        # language_list, language_data, debug DAG, …
 ├─ parameters_ui/                     # CRUD ParameterDef + Question formset
 │  ├─ __init__.py
 │  ├─ apps.py
@@ -110,13 +107,3 @@ progetto_lingua/
       └─ LC_MESSAGES/
          ├─ django.po
          └─ django.mo
-
-
-PER AVVIARE 
-python manage.py runserver
-
-SE MODIFICHI DB
-python manage.py makemigrations
-python manage.py migrate
-python manage.py runserver
-
