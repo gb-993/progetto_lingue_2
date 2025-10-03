@@ -49,6 +49,29 @@ python manage.py migrate --noinput
 echo "Collect static"
 python manage.py collectstatic --noinput
 
+# --- SEED opzionale e idempotente ---
+SEED_FLAG="${SEED_ON_START:-0}"
+SEED_MARK="/app/data/seed.hash"
+
+if [ "$SEED_FLAG" = "1" ]; then
+  mkdir -p /app/data
+  if [ ! -f "$SEED_MARK" ]; then
+    echo "Seeding from CSV (prima volta)..."
+    set +e
+    python manage.py seed_from_csv
+    code=$?
+    set -e
+    if [ $code -eq 0 ]; then
+      date +"%Y-%m-%d %H:%M:%S %Z" > "$SEED_MARK"
+      echo "Seed OK, creato $SEED_MARK"
+    else
+      echo "Seed FALLITO (exit $code), avvio comunque l'app"
+    fi
+  else
+    echo "Seed già eseguito (trovato $SEED_MARK), salto."
+  fi
+fi
+
 if [ "$MODE" = "devserver" ]; then
   echo "Starting Django runserver (dev auto-reload)"
   exec python manage.py runserver 0.0.0.0:8000

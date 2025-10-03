@@ -23,6 +23,8 @@ services:
     env_file: .env
     environment:
       PYTHONUNBUFFERED: 1
+      SEED_ON_START: "1"   
+
     command: ["gunicorn"]         
     volumes:
       - staticfiles:/app/staticfiles
