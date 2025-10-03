@@ -1,12 +1,12 @@
 COMANDI RAPIDI
 
 # Avvio
-python manage.py runserver
+python manage.py runserver  
 
 # Se modifichi il DB
-python manage.py makemigrations
-python manage.py migrate
-python manage.py runserver
+python manage.py makemigrations  
+python manage.py migrate  
+python manage.py runserver  
 
 ```text
 progetto_lingua/
