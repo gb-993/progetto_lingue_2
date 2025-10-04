@@ -13,6 +13,8 @@ from core.models import (
 # =========================
 # PARAMETER FORM (ModelForm)
 # =========================
+from core.services.logic_parser import validate_expression, ParseException
+
 class ParameterForm(forms.ModelForm):
     class Meta:
         model = ParameterDef
@@ -31,7 +33,7 @@ class ParameterForm(forms.ModelForm):
             ),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "short_description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
-            "implicational_condition": forms.TextInput(attrs={"class": "form-control"}),
+            "implicational_condition": forms.TextInput(attrs={"class": "form-control", "placeholder": "(+FGM | +FGA) & -FGK"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check"}),
         }
 
@@ -40,6 +42,28 @@ class ParameterForm(forms.ModelForm):
         if pos is None or pos < 1:
             raise forms.ValidationError("Position deve essere un intero ≥ 1.")
         return pos
+
+    def clean_implicational_condition(self):
+        """
+        Regole:
+        - consentiti solo token senza spazi tra segno e parametro: +FGM, -FGK, 0ABC
+        - operatori: &, |, AND/OR/NOT (case-insensitive)
+        - niente spazi tra segno e parametro (anche NBSP, \u00A0)
+        """
+        raw = (self.cleaned_data.get("implicational_condition") or "").strip()
+        if not raw:
+            return ""  # condizione vuota = OK
+
+        try:
+            # valida con il parser robusto (usa Combine, no spazi interni)
+            validate_expression(raw)
+        except ParseException as e:
+            # Messaggio user-friendly
+            raise forms.ValidationError(
+                "Condizione invalida. Evita spazi tra segno e parametro (es. usa '-FGK', NON '- FGK'). "
+                f"Dettaglio: {e}"
+            )
+        return raw
 
 
 # =========================

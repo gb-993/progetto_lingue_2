@@ -98,6 +98,48 @@
       </tbody>
 
     </table>
+    {# ...lascia tutto il tuo template invariato fin qui... #}
+
+    <div class="card" style="margin-top:1rem; overflow:auto">
+      <details>
+        <summary class="btn btn--secondary" aria-controls="diag-table" aria-expanded="false">
+          Diagnostica parser/condizioni (solo admin)
+        </summary>
+        <div id="diag-table" style="margin-top:.75rem">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="w-5ch">Param</th>
+                <th>Condizione (raw)</th>
+                <th>Condizione (pretty)</th>
+                <th class="w-7ch">Eval cond</th>
+                <th class="w-6ch">Orig</th>
+                <th class="w-6ch">Eval</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for d in diag_rows %}
+              <tr>
+                <td><strong>{{ d.param_id }}</strong></td>
+                <td><code>{{ d.cond_raw }}</code></td>
+                <td><code>{{ d.cond_pretty }}</code></td>
+                <td>
+                  {% if d.cond_true is True %}<span class="badge b-good">TRUE</span>
+                  {% elif d.cond_true is False %}<span class="badge b-bad">FALSE</span>
+                  {% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                <td class="num nowrap">{{ d.value_orig|default:"" }}</td>
+                <td class="num nowrap">{{ d.value_eval|default:"" }}</td>
+                <td>{{ d.note|default:"" }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+
   </div>
 
   <button id="backToTop"

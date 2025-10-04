@@ -38,30 +38,21 @@ def parameter_add(request):
     if request.method == "POST":
         form = ParameterForm(request.POST)
         if form.is_valid():
-            # 1) salva PRIMA il ParameterDef
             param = form.save()
-            # 2) poi costruisci e valida il formset BINDATO all'istanza salvata
             formset = QuestionFormSet(request.POST, instance=param)
             if formset.is_valid():
-                formset.save()  # ogni Question sincronizza le proprie motivazioni
+                formset.save()
                 return redirect(reverse("parameter_list"))
             else:
-                # se il formset ha errori, render con istanza valida del parent
-                return render(
-                    request,
-                    "parameters/edit.html",
-                    {"param": param, "form": form, "q_formset": formset},
-                )
+                from django.contrib import messages
+                messages.error(request, "Errore nelle domande: controlla i campi evidenziati.")
+                return render(request, "parameters/edit.html", {"param": param, "form": form, "q_formset": formset})
         else:
-            # parent non valido: ricostruisci un formset non-bindato (o vuoto)
+            from django.contrib import messages
+            messages.error(request, "Errore nel parametro: controlla i campi evidenziati.")
             formset = QuestionFormSet()
-            return render(
-                request,
-                "parameters/edit.html",
-                {"param": None, "form": form, "q_formset": formset},
-            )
+            return render(request, "parameters/edit.html", {"param": None, "form": form, "q_formset": formset})
 
-    # GET
     form = ParameterForm()
     formset = QuestionFormSet()
     return render(request, "parameters/edit.html", {"param": None, "form": form, "q_formset": formset})
@@ -71,19 +62,18 @@ def parameter_add(request):
 @transaction.atomic
 def parameter_edit(request, param_id):
     param = get_object_or_404(ParameterDef, pk=param_id)
-
     if request.method == "POST":
         form = ParameterForm(request.POST, instance=param)
         formset = QuestionFormSet(request.POST, instance=param)
         if form.is_valid() and formset.is_valid():
             form.save()
-            formset.save()  # salva le Question e sincronizza motivazioni
+            formset.save()
             return redirect(reverse("parameter_list"))
+        else:
+            from django.contrib import messages
+            messages.error(request, "Errore di validazione: controlla i campi evidenziati.")
+            return render(request, "parameters/edit.html", {"param": param, "form": form, "q_formset": formset})
 
-        # errori di validazione
-        return render(request, "parameters/edit.html", {"param": param, "form": form, "q_formset": formset})
-
-    # GET
     form = ParameterForm(instance=param)
     formset = QuestionFormSet(instance=param)
     return render(request, "parameters/edit.html", {"param": param, "form": form, "q_formset": formset})

@@ -1,65 +1,108 @@
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Q, Prefetch
-from django.shortcuts import render, get_object_or_404, redirect
-from django.core.paginator import Paginator
-from django.views.decorators.http import require_http_methods
-from django.utils.translation import gettext as _
+# languages_ui/views.py  — versione pulita/robusta
+
+from __future__ import annotations
+
 from types import SimpleNamespace
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
+from django.db.models import Q, Prefetch
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_http_methods, require_POST
+from django.core.paginator import Paginator
+
 from core.models import (
-    Language, ParameterDef, Question, Answer, Example, Motivation, AnswerMotivation, QuestionAllowedMotivation
+    Language,
+    ParameterDef,
+    Question,
+    Answer,
+    Example,
+    Motivation,
+    AnswerMotivation,
+    QuestionAllowedMotivation,
+    LanguageParameter,          # consolidato (+/-/None)
 )
-from .forms import LanguageForm
+
+# Valori DAG (+/-/0): il modello potrebbe non esistere in ambienti vecchi
+try:
+    from core.models import LanguageParameterEval   # noqa
+    HAS_EVAL = True
+except Exception:
+    LanguageParameterEval = None  # type: ignore
+    HAS_EVAL = False  # non usato ma utile per futuri rami
+
+# Servizi
+from core.services.dag_eval import run_dag_for_language
+from core.services.dag_debug import diagnostics_for_language
 
 
+# -----------------------
+# Helpers & guardrail
+# -----------------------
+def _is_admin(user) -> bool:
+    """Ruolo amministrativo o staff/superuser."""
+    return (getattr(user, "role", "") == "admin") or bool(user.is_staff) or bool(user.is_superuser)
+
+
+def _check_language_access(user, lang: Language) -> bool:
+    """Admin sempre sì; altrimenti la lingua deve essere assegnata via FK o M2M."""
+    if _is_admin(user):
+        return True
+    if getattr(lang, "assigned_user_id", None) == user.id:
+        return True
+    try:
+        if lang.users.filter(pk=user.pk).exists():
+            return True
+    except Exception:
+        pass
+    return False
+
+
+# -----------------------
+# List / CRUD lingua
+# -----------------------
 @login_required
 def language_list(request):
     q = (request.GET.get("q") or "").strip()
     user = request.user
-    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
+    is_admin = _is_admin(user)
 
     qs = Language.objects.select_related("assigned_user").order_by("position")
 
-    # 🔒 Filtro di sicurezza: gli user vedono solo le lingue a loro attribuite
+    # 🔒 Solo proprie lingue se non admin
     if not is_admin:
-        qs = qs.filter(
-            Q(assigned_user=user) | Q(users=user)  # FK assigned_user OPPURE M2M user.m2m_languages
-        )
+        qs = qs.filter(Q(assigned_user=user) | Q(users=user))
 
-    # Ricerca
+    # 🔎 Ricerca (email assegnata visibile solo ad admin)
     if q:
-        search_filter = (
-            Q(id__icontains=q) |
-            Q(name_full__icontains=q) |
-            Q(isocode__icontains=q) |
-            Q(glottocode__icontains=q) |
-            Q(grp__icontains=q) |
-            Q(informant__icontains=q) |
-            Q(supervisor__icontains=q)
+        filt = (
+            Q(id__icontains=q)
+            | Q(name_full__icontains=q)
+            | Q(isocode__icontains=q)
+            | Q(glottocode__icontains=q)
+            | Q(grp__icontains=q)
+            | Q(informant__icontains=q)
+            | Q(supervisor__icontains=q)
         )
-        # Consenti di cercare per email assegnata solo agli admin (per privacy)
         if is_admin:
-            search_filter |= Q(assigned_user__email__icontains=q)
+            filt |= Q(assigned_user__email__icontains=q)
+        qs = qs.filter(filt)
 
-        qs = qs.filter(search_filter)
-
-    paginator = Paginator(qs, 20)
-    page_obj = paginator.get_page(request.GET.get("page"))
+    page_obj = Paginator(qs, 20).get_page(request.GET.get("page"))
     ctx = {
         "languages": page_obj.object_list,
         "page_obj": page_obj,
         "q": q,
-        "is_admin": is_admin,   # ➜ usato dal template per i bottoni
+        "is_admin": is_admin,
     }
     return render(request, "languages/list.html", ctx)
-
 
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def language_add(request):
+    from .forms import LanguageForm  # import locale per evitare cicli
     if request.method == "POST":
         form = LanguageForm(request.POST)
         if form.is_valid():
@@ -74,6 +117,7 @@ def language_add(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def language_edit(request, lang_id):
+    from .forms import LanguageForm  # import locale per evitare cicli
     lang = get_object_or_404(Language, pk=lang_id)
     if request.method == "POST":
         form = LanguageForm(request.POST, instance=lang)
@@ -86,26 +130,19 @@ def language_edit(request, lang_id):
     return render(request, "languages/edit.html", {"page_title": "Edit language", "form": form, "language": lang})
 
 
+# -----------------------
+# Pagina data/compilazione
+# -----------------------
 @login_required
 def language_data(request, lang_id):
     user = request.user
-    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
-
     lang = get_object_or_404(Language, pk=lang_id)
 
-    # 🔒 Access control: admin OK; altrimenti solo se assegnata via FK o M2M
-    if not is_admin:
-        if not (
-            (lang.assigned_user_id == user.id) or
-            lang.users.filter(pk=user.pk).exists()
-        ):
-            messages.error(request, _("You don't have access to this language."))
-            return redirect("language_list")
+    if not _check_language_access(user, lang):
+        messages.error(request, _("You don't have access to this language."))
+        return redirect("language_list")
 
-    # ✅ Correzione prefetch: usa la reverse della tabella ponte
-    #    - "allowed_motivation_links" è il related_name sulla FK question
-    #    - queryset = QuestionAllowedMotivation (select_related('motivation'))
-    #    - to_attr="allowed_motivs_through" per avere a disposizione la lista dei link (ordinati)
+    # Parametri attivi + domande + allowed motivations (ordinati, prefetch)
     parameters = (
         ParameterDef.objects.filter(is_active=True)
         .order_by("position")
@@ -117,9 +154,11 @@ def language_data(request, lang_id):
                     .prefetch_related(
                         Prefetch(
                             "allowed_motivation_links",
-                            queryset=QuestionAllowedMotivation.objects
+                            queryset=(
+                                QuestionAllowedMotivation.objects
                                 .select_related("motivation")
-                                .order_by("position", "id"),
+                                .order_by("position", "id")
+                            ),
                             to_attr="allowed_motivs_through",
                         )
                     )
@@ -128,7 +167,7 @@ def language_data(request, lang_id):
         )
     )
 
-    # Risposte già presenti
+    # Risposte già presenti per la lingua
     answers_qs = (
         Answer.objects.filter(language=lang)
         .select_related("question")
@@ -136,15 +175,14 @@ def language_data(request, lang_id):
     )
     by_qid = {a.question_id: a for a in answers_qs}
 
-    from types import SimpleNamespace
+    # Costruzione “view model” per il template
     for p in parameters:
         total = 0
         answered = 0
         for q in p.questions.all():
             total += 1
 
-            # 👉 Lista motivazioni ammesse PER QUESTA DOMANDA (estratte dalla ponte)
-            #    q.allowed_motivs_through è popolato dal Prefetch sopra
+            # Motivazioni ammesse (tramite ponte)
             q.allowed_motivations_list = [thr.motivation for thr in getattr(q, "allowed_motivs_through", [])]
 
             a = by_qid.get(q.id)
@@ -181,18 +219,23 @@ def language_data(request, lang_id):
     return render(request, "languages/data.html", ctx)
 
 
-
-
+# -----------------------
+# Salvataggio risposte
+# -----------------------
 @login_required
 @require_http_methods(["POST"])
 def answer_save(request, lang_id, question_id):
     """
     Salva Answer (yes/no), comments e motivazioni multiple.
-    - Mostriamo motivazioni solo se NO (client-side).
-    - Qui VALIDiamo lato server: le motivazioni inviate DEVONO essere tra le allowed per la domanda.
-    - Regola esclusiva: se è presente 'Motivazione1', scartiamo tutte le altre.
+    - Motivazioni visibili lato client solo se NO, ma qui validiamo lato server.
+    - Le motivazioni devono essere tra le allowed della domanda.
+    - 'Motivazione1' (se presente) è esclusiva.
     """
     lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        messages.error(request, _("You don't have access to this language."))
+        return redirect("language_list")
+
     question = get_object_or_404(Question, pk=question_id)
 
     response_text = (request.POST.get("response_text") or "").strip().lower()
@@ -202,30 +245,28 @@ def answer_save(request, lang_id, question_id):
 
     comments = (request.POST.get("comments") or "").strip()
 
-    # Motivazioni inviate (da <select multiple name="motivation_ids">)
+    # Motivazioni inviate
     try:
         motivation_ids = [int(x) for x in request.POST.getlist("motivation_ids")]
     except ValueError:
         motivation_ids = []
 
-    # Calcola l'insieme degli ID ammessi per questa domanda
+    # Ammissibilità per questa domanda
     allowed_ids = set(
-        QuestionAllowedMotivation.objects.filter(question=question)
-        .values_list("motivation_id", flat=True)
+        QuestionAllowedMotivation.objects.filter(question=question).values_list("motivation_id", flat=True)
     )
 
-    # Se YES, nessuna motivazione è ammessa
+    # Se YES, nessuna motivazione
     if response_text == "yes":
         motivation_ids = []
     else:
-        # Filtro al sottoinsieme ammesso
+        # Filtra al sottoinsieme ammesso
         motivation_ids = [mid for mid in motivation_ids if mid in allowed_ids]
 
-        # Regola esclusiva: 'Motivazione1' disabilita le altre (se esiste tra le allowed)
-        # NB: usiamo la label perché non abbiamo un flag dedicato a DB
-        mot1 = Motivation.objects.filter(label="Motivazione1").first()
+        # Esclusiva 'Motivazione1'
+        mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
         if mot1 and mot1.id in motivation_ids:
-            motivation_ids = [mot1.id]  # tieni solo lei
+            motivation_ids = [mot1.id]
 
     # Upsert Answer
     answer, _created = Answer.objects.get_or_create(
@@ -237,20 +278,24 @@ def answer_save(request, lang_id, question_id):
     answer.comments = comments
     answer.save()
 
-    # Sync motivazioni (solo quelle validate)
-    current_ids = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
+    # Sync motivazioni (delta)
+    current_ids = set(
+        AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
+    )
     target_ids = set(motivation_ids)
 
     to_add = target_ids - current_ids
     to_del = current_ids - target_ids
 
     if to_add:
-        rows = [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add]
-        AnswerMotivation.objects.bulk_create(rows, ignore_conflicts=True)
+        AnswerMotivation.objects.bulk_create(
+            [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
+            ignore_conflicts=True,
+        )
     if to_del:
         AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-    # Aggiorno Examples esistenti (pattern: ex_<id>_<field>)
+    # Aggiorna Examples (pattern: ex_<id>_<field>)
     for key, val in request.POST.items():
         if not key.startswith("ex_"):
             continue
@@ -267,92 +312,64 @@ def answer_save(request, lang_id, question_id):
     return redirect("language_data", lang_id=lang.id)
 
 
-
-# Placeholder per compatibilità con i template
+# -----------------------
+# Export / approvazioni (placeholder)
+# -----------------------
 @login_required
 def language_export(request, lang_id):
     lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        messages.error(request, _("You don't have access to this language."))
+        return redirect("language_list")
     messages.info(request, _("Export is not implemented yet."))
     return redirect("language_data", lang_id=lang.id)
 
-@login_required
-def language_debug(request, lang_id):
-    lang = get_object_or_404(Language, pk=lang_id)
-    messages.info(request, _("Debug page is not implemented yet."))
-    return redirect("language_data", lang_id=lang.id)
 
 @login_required
 def language_save_instructions(request, lang_id):
+    if not _is_admin(request.user):
+        messages.error(request, _("You are not allowed to perform this action."))
+        return redirect("language_list")
     messages.info(request, _("Instructions are not supported yet (no model to store them)."))
     return redirect("language_data", lang_id=lang_id)
 
+
 @login_required
 def language_approve(request, lang_id):
+    if not _is_admin(request.user):
+        messages.error(request, _("You are not allowed to perform this action."))
+        return redirect("language_list")
     messages.info(request, _("Approval flow not implemented yet."))
     return redirect("language_data", lang_id=lang_id)
 
+
 @login_required
 def language_reopen(request, lang_id):
+    if not _is_admin(request.user):
+        messages.error(request, _("You are not allowed to perform this action."))
+        return redirect("language_list")
     messages.info(request, _("Reopen flow not implemented yet."))
     return redirect("language_data", lang_id=lang_id)
 
 
-# languages_ui/views.py
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
-from django.db.models import Prefetch
-
-from core.models import (
-    Language, ParameterDef, Question, Answer,
-    LanguageParameter,  # valore consolidato da risposte (+/-/0 o None)
-)
-
-# Se hai il modello con i valori del DAG, importalo.
-# Se NON esiste nel tuo progetto, lascia il try/except: la colonna finale rimarrà vuota.
-try:
-    from core.models import LanguageParameterEval  # valore DAG (+/-/0 o None)
-    HAS_EVAL = True
-except Exception:
-    LanguageParameterEval = None
-    HAS_EVAL = False
-
-# languages_ui/views.py
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
-from django.db.models import Prefetch
-
-from core.models import (
-    Language, ParameterDef, Question, Answer,
-    LanguageParameter, LanguageParameterEval,  # usiamo entrambi
-)
-
+# -----------------------
+# Pagina DEBUG con diagnostica e run DAG
+# -----------------------
 @login_required
 def language_debug(request, lang_id: str):
     """
     Debug per una lingua:
-      - per ogni parametro attivo in ordine di position
-      - mostra: domande (ID), risposte (yes/no), initial value (+/-), final value (+/-/0)
+      - Per ogni parametro attivo (in ordine di position)
+      - Mostra: ID domande, risposte yes/no, value_orig (+/-), value_eval (+/-/0),
+        warning init/final, condizione raw e pretty, e l'esito della condizione.
     """
     user = request.user
-    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
-
-    # lingua e controllo accessi (admin ok; altrimenti assegnata via M2M o FK)
     lang = get_object_or_404(Language, pk=lang_id)
-    if not is_admin:
-        allowed = False
-        # M2M: language.users
-        try:
-            allowed = lang.users.filter(pk=user.pk).exists()
-        except Exception:
-            allowed = False
-        # FK fallback: assigned_user
-        if not allowed:
-            allowed = (getattr(lang, "assigned_user_id", None) == user.id)
-        if not allowed:
-            # 404 per non rivelare info
-            get_object_or_404(Language, pk="__deny__")
+    if not _check_language_access(user, lang):
+        # 404 per non rivelare l'esistenza della lingua
+        get_object_or_404(Language, pk="__deny__")
 
-    # Parametri attivi (ordine di sito) + domande prefetchate
+    # Parametri attivi + domande
     params = (
         ParameterDef.objects
         .filter(is_active=True)
@@ -360,7 +377,7 @@ def language_debug(request, lang_id: str):
         .prefetch_related(Prefetch("questions", queryset=Question.objects.order_by("id")))
     )
 
-    # Tutte le risposte della lingua, indicizzate per question_id
+    # Risposte per la lingua
     answers = (
         Answer.objects
         .filter(language=lang)
@@ -369,21 +386,19 @@ def language_debug(request, lang_id: str):
     )
     answers_by_qid = {a.question_id: a for a in answers}
 
-    # Initial & Final values + warnings
+    # initial/final + warnings
     lps = (
         LanguageParameter.objects
         .filter(language=lang)
         .select_related("parameter", "eval")
     )
 
-    init_by_pid   = {}
-    warni_by_pid  = {}  # warning iniziale (warning_orig)
-    final_by_pid  = {}
-    warnf_by_pid  = {}  # warning finale (warning_eval)
+    init_by_pid, warni_by_pid = {}, {}
+    final_by_pid, warnf_by_pid = {}, {}
 
     for lp in lps:
         pid = lp.parameter_id
-        init_by_pid[pid]  = (lp.value_orig or "")
+        init_by_pid[pid] = (lp.value_orig or "")
         warni_by_pid[pid] = bool(lp.warning_orig)
         if getattr(lp, "eval", None):
             final_by_pid[pid] = (lp.eval.value_eval or "")
@@ -392,15 +407,14 @@ def language_debug(request, lang_id: str):
             final_by_pid[pid] = ""
             warnf_by_pid[pid] = False
 
-    # Prepara righe per template (aggiungiamo i due flag)
+    # Righe per tabella principale
     rows = []
     for p in params:
         q_ids, q_ans = [], []
         for q in p.questions.all():
             q_ids.append(q.id)
             a = answers_by_qid.get(q.id)
-            q_ans.append((a.response_text.upper() if (a and a.response_text in ("yes", "no")) else ""))
-
+            q_ans.append(a.response_text.upper() if (a and a.response_text in ("yes", "no")) else "")
         rows.append({
             "position": p.position,
             "param_id": p.id,
@@ -409,43 +423,30 @@ def language_debug(request, lang_id: str):
             "answers": q_ans,
             "initial":  (init_by_pid.get(p.id, "") or ""),
             "final":    (final_by_pid.get(p.id, "") or ""),
-            "warn_init": bool(warni_by_pid.get(p.id, False)),  
-            "warn_final": bool(warnf_by_pid.get(p.id, False)), 
+            "warn_init": bool(warni_by_pid.get(p.id, False)),
+            "warn_final": bool(warnf_by_pid.get(p.id, False)),
             "cond": (p.implicational_condition or ""),
         })
 
+    # Diagnostica parser/condizioni (pretty + TRUE/FALSE)
+    diag_rows = diagnostics_for_language(lang)
 
-    ctx = {"language": lang, "rows": rows}
+    ctx = {"language": lang, "rows": rows, "diag_rows": diag_rows, "is_admin": _is_admin(user)}
     return render(request, "languages/debug_parameters.html", ctx)
 
 
-
-from django.views.decorators.http import require_POST
-from django.contrib import messages
-from django.utils.translation import gettext as _
-# importa il servizio del DAG
-from core.services.dag_eval import run_dag_for_language
-
+# -----------------------
+# Azione: esecuzione DAG
+# -----------------------
 @login_required
 @require_POST
 def language_run_dag(request, lang_id: str):
-    """
-    Esegue il DAG per la lingua e torna alla pagina di debug.
-    Consentito solo admin (o staff/superuser).
-    """
-    user = request.user
-    is_admin = (getattr(user, "role", "") == "admin") or user.is_staff or user.is_superuser
-
-    if not is_admin:
+    if not _is_admin(request.user):
         messages.error(request, _("You are not allowed to run the DAG."))
         return redirect("language_debug", lang_id=lang_id)
 
-    # (opzionale) qui potresti fare anche un controllo di accesso aggiuntivo sulla lingua
-    # ma visto che è azione admin ha senso lasciarlo così.
-
     try:
         report = run_dag_for_language(lang_id)
-        # Messaggio riassuntivo amichevole
         msg = _(
             "DAG completed: processed %(p)d, forced to zero %(fz)d, missing orig %(mo)d, warnings propagated %(wp)d."
         ) % {
@@ -454,10 +455,12 @@ def language_run_dag(request, lang_id: str):
             "mo": len(report.missing_orig or []),
             "wp": len(report.warnings_propagated or []),
         }
-        # Se vuoi vedere elenco dettagli in debug:
         if report.missing_orig:
             msg += " Missing: " + ", ".join(report.missing_orig[:8]) + ("…" if len(report.missing_orig) > 8 else "")
+        if report.parse_errors:
+            msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6]) + ("…" if len(report.parse_errors) > 6 else "")
         messages.success(request, msg)
     except Exception as e:
         messages.error(request, _("DAG failed: %(err)s") % {"err": str(e)})
+
     return redirect("language_debug", lang_id=lang_id)
