@@ -37,6 +37,14 @@ from core.services.dag_eval import run_dag_for_language
 from core.services.dag_debug import diagnostics_for_language
 from django.db import transaction
 
+from django.views.decorators.http import require_http_methods, require_POST
+from core.models import (
+    Language, ParameterDef, Question, Answer, Example,
+    Motivation, AnswerMotivation, QuestionAllowedMotivation,
+    LanguageParameter, AnswerStatus,   # <-- aggiungi AnswerStatus
+)
+from core.services.dag_eval import run_dag_for_language
+
 
 # -----------------------
 # Helpers & guardrail
@@ -104,6 +112,39 @@ def _missing_answered_question_ids(lang: Language):
         ).values_list("question_id", flat=True)
     )
     return sorted(active_qids - answered_qids)
+
+
+def _language_overall_status(lang: Language) -> dict:
+    """
+    Calcola lo stato 'overall' di una lingua in base alle Answer esistenti.
+    Regole:
+      - se esiste almeno una WAITING -> overall = waiting_for_approval
+      - altrimenti se esiste almeno una APPROVED -> overall = approved
+      - altrimenti se esiste almeno una REJECTED -> overall = rejected
+      - altrimenti -> pending
+    Ritorna anche i conteggi per completezza.
+    """
+    qs = Answer.objects.filter(language=lang).values_list("status", flat=True)
+    seen = set(qs)
+
+    if AnswerStatus.WAITING in seen:
+        overall = AnswerStatus.WAITING
+    elif AnswerStatus.APPROVED in seen:
+        overall = AnswerStatus.APPROVED
+    elif AnswerStatus.REJECTED in seen:
+        overall = AnswerStatus.REJECTED
+    else:
+        overall = AnswerStatus.PENDING
+
+    return {
+        "overall": overall,
+        "counts": {
+            "pending":   sum(1 for s in seen if s == AnswerStatus.PENDING),
+            "waiting":   sum(1 for s in seen if s == AnswerStatus.WAITING),
+            "approved":  sum(1 for s in seen if s == AnswerStatus.APPROVED),
+            "rejected":  sum(1 for s in seen if s == AnswerStatus.REJECTED),
+        }
+    }
 
 
 # -----------------------
@@ -267,7 +308,27 @@ def language_data(request, lang_id):
     status_summary = _language_status_summary(lang)
     all_ok = all(getattr(p, "status", "missing") == "ok" for p in parameters)
     
-    ctx = {"language": lang, "parameters": parameters, "is_admin": is_admin, "lang_status": SimpleNamespace(**status_summary),"all_answered": all_ok,}
+        # ---- Calcolo "all_answered" e stato globale per il template
+    # all_answered: tutte le domande attive hanno una risposta yes/no?
+    total_q = 0
+    answered_q = 0
+    for p in parameters:
+        for q in p.questions.all():
+            total_q += 1
+            if getattr(q, "ans", None) and q.ans.response_text in ("yes", "no"):
+                answered_q += 1
+    all_answered = (total_q > 0 and answered_q == total_q)
+
+    lang_status = _language_overall_status(lang)
+
+    ctx = {
+        "language": lang,
+        "parameters": parameters,
+        "is_admin": is_admin,
+        "all_answered": all_answered,
+        "lang_status": lang_status,
+    }
+
     return render(request, "languages/data.html", ctx)
 
 
@@ -613,81 +674,67 @@ def language_run_dag(request, lang_id: str):
 @login_required
 @require_POST
 def language_submit(request, lang_id):
-    """USER: pending|rejected -> waiting (lock) solo se tutte le domande attive hanno risposta."""
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _("You don't have access to this language."))
         return redirect("language_list")
 
-    # Precondizione: tutte le domande attive devono avere yes/no
-    missing = _missing_answered_question_ids(lang)
+    # Verifica che siano tutte risposte (yes/no) alle domande attive
+    active_q_ids = set(
+        Question.objects.filter(parameter__is_active=True).values_list("id", flat=True)
+    )
+    answered_ids = set(
+        Answer.objects.filter(language=lang, response_text__in=["yes", "no"])
+                      .values_list("question_id", flat=True)
+    )
+    missing = active_q_ids - answered_ids
     if missing:
-        first = ", ".join(missing[:8]) + ("…" if len(missing) > 8 else "")
-        messages.error(request, _("You must answer all active questions before submitting. Missing: ") + first)
+        messages.warning(request, _("You must answer all questions before submitting."))
         return redirect("language_data", lang_id=lang.id)
 
-    with transaction.atomic():
-        answers = list(Answer.objects.select_for_update().filter(language=lang))
-        changed = 0
-        for a in answers:
-            if a.status in ("pending", "rejected"):
-                a.status = "waiting_for_approval"
-                a.modifiable = False
-                a.save(update_fields=["status", "modifiable"])
-                changed += 1
-
-    if changed == 0:
-        messages.info(request, _("Nothing to submit."))
-    else:
-        messages.success(request, _(f"Submitted {changed} answers for approval."))
+    # Setta WAITING + modifiable=False solo per risposte dell'utente su questa lingua
+    changed = Answer.objects.filter(language=lang).update(
+        status=AnswerStatus.WAITING, modifiable=False
+    )
+    messages.success(request, _(f"Submitted {changed} answers for approval."))
     return redirect("language_data", lang_id=lang.id)
 
 
 @login_required
 @require_POST
 def language_approve(request, lang_id):
-    """ADMIN: waiting -> approved + run DAG (idempotente). Richiede tutte le risposte waiting (o già approved)."""
     if not _is_admin(request.user):
         messages.error(request, _("You are not allowed to perform this action."))
         return redirect("language_list")
 
     lang = get_object_or_404(Language, pk=lang_id)
 
-    # Verifica che non manchino risposte attive
-    missing = _missing_answered_question_ids(lang)
-    if missing:
-        first = ", ".join(missing[:8]) + ("…" if len(missing) > 8 else "")
-        messages.error(request, _("Cannot approve: missing answers: ") + first)
-        return redirect("language_data", lang_id=lang.id)
+    # Approva solo ciò che è in WAITING; resta modifiable=False
+    changed = Answer.objects.filter(language=lang, status=AnswerStatus.WAITING).update(
+        status=AnswerStatus.APPROVED, modifiable=False
+    )
 
-    with transaction.atomic():
-        answers = list(Answer.objects.select_for_update().filter(language=lang))
-        if not answers:
-            messages.error(request, _("No answers to approve."))
-            return redirect("language_data", lang_id=lang.id)
-
-        invalid = [a for a in answers if a.status not in ("waiting_for_approval", "approved")]
-        if invalid:
-            messages.error(request, _("All answers must be in 'waiting' to approve."))
-            return redirect("language_data", lang_id=lang.id)
-
-        changed = 0
-        for a in answers:
-            if a.status == "waiting_for_approval":
-                a.status = "approved"
-                a.modifiable = False
-                a.save(update_fields=["status", "modifiable"])
-                changed += 1
-
-    # Esegui DAG (idempotente). Se fallisce, lo segnaliamo ma non rollbackiamo l'approvazione.
+    # Esegui DAG e usa gli ATTRIBUTI (NO chiamate come funzione!)
     try:
-        _ = run_dag_for_language(lang_id)
-        messages.success(request, _(f"Approved {changed} answers and ran DAG."))
+        report = run_dag_for_language(lang_id)
+        # report è un dataclass: usa report.processed, report.forced_zero, ecc.
+        msg = _(
+            "Approved %(n)d answers. DAG: processed %(p)d, forced_to_zero %(fz)d, missing_orig %(mo)d, warnings %(wp)d."
+        ) % {
+            "n": changed,
+            "p": len(report.processed or []),
+            "fz": len(report.forced_zero or []),
+            "mo": len(report.missing_orig or []),
+            "wp": len(report.warnings_propagated or []),
+        }
+        if report.parse_errors:
+            msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6])
+        messages.success(request, msg)
     except Exception as e:
+        # NON chiamare report come funzione: gestisci e basta
         messages.warning(request, _("Approved, but DAG failed: %(err)s") % {"err": str(e)})
 
     return redirect("language_data", lang_id=lang.id)
-
 
 @login_required
 @require_POST
@@ -724,23 +771,31 @@ def language_reject(request, lang_id):
 @login_required
 @require_POST
 def language_reopen(request, lang_id):
-    """USER: rejected -> pending (sblocco dopo banner)."""
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _("You don't have access to this language."))
         return redirect("language_list")
 
-    with transaction.atomic():
-        answers = list(Answer.objects.select_for_update().filter(language=lang, status="rejected"))
-        changed = 0
-        for a in answers:
-            a.status = "pending"
-            a.modifiable = True
-            a.save(update_fields=["status", "modifiable"])
-            changed += 1
-
+    changed = Answer.objects.filter(language=lang, status=AnswerStatus.REJECTED).update(
+        status=AnswerStatus.PENDING, modifiable=True
+    )
     if changed == 0:
         messages.info(request, _("Nothing to reopen."))
     else:
-        messages.success(request, _(f"Reopened {changed} answers. You can edit again."))
+        messages.success(request, _(f"Reopened: {changed} answers set to pending."))
+    return redirect("language_data", lang_id=lang.id)
+
+@login_required
+@require_POST
+def language_reject(request, lang_id):
+    if not _is_admin(request.user):
+        messages.error(request, _("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    lang = get_object_or_404(Language, pk=lang_id)
+
+    changed = Answer.objects.filter(language=lang).update(
+        status=AnswerStatus.REJECTED, modifiable=True
+    )
+    messages.success(request, _(f"Rejected submission. {changed} answers are editable again."))
     return redirect("language_data", lang_id=lang.id)

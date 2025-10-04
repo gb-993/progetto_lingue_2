@@ -42,7 +42,6 @@
         <h2>{{ language.name_full }} ({{ language.id }})</h2>
         <p class="muted">Answer the questions below. Any “Save” button saves ALL visible fields.</p>
 
-        {# ==== BANNER STATO COMPILAZIONE ==== #}
         {% with s=lang_status.overall %}
           <div class="muted" role="status" aria-live="polite" style="margin-top:.25rem">
             <strong>Status:</strong>
@@ -60,13 +59,14 @@
             {% endif %}
           </div>
 
-          {# ==== TOOLBAR AZIONI (TOP) ==== #}
           <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap">
-            {% if not is_admin and s in "pending,rejected" and all_answered %}
-              <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
-                {% csrf_token %}
-                <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
-              </form>
+            {% if not is_admin and all_answered %}
+              {% if s == 'pending' or s == 'rejected' %}
+                <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
+                  {% csrf_token %}
+                  <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
+                </form>
+              {% endif %}
             {% endif %}
 
             {% if not is_admin and s == "rejected" %}
@@ -109,7 +109,7 @@
               <div>
                 <label for="resp_{{ q.id }}">Answer</label>
                 <select id="resp_{{ q.id }}" name="response_text_{{ q.id }}" class="resp-select" data-question-id="{{ q.id }}"
-                        {% if not is_admin and lang_status.overall in ('waiting_for_approval','approved') %}disabled{% endif %}>
+                        {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}disabled{% endif %}>
                   <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
                   <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
                   <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
@@ -119,7 +119,7 @@
               <div>
                 <label for="com_{{ q.id }}">Comments</label>
                 <input id="com_{{ q.id }}" name="comments_{{ q.id }}" value="{{ q.ans.comments }}"
-                       {% if not is_admin and lang_status.overall in ('waiting_for_approval','approved') %}readonly{% endif %}>
+                       {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
               </div>
 
               <div class="mot-block" data-qid="{{ q.id }}" {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
@@ -130,7 +130,7 @@
                   multiple
                   size="4"
                   aria-describedby="hint_mot_{{ q.id }}"
-                  {% if q.ans.response_text != "no" or (not is_admin and lang_status.overall in ('waiting_for_approval','approved')) %}disabled{% endif %}
+                  {% if q.ans.response_text != "no" or not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}disabled{% endif %}
                   data-question-id="{{ q.id }}"
                 >
                   {% for m in q.allowed_motivations_list %}
@@ -148,27 +148,27 @@
                     <div>
                       <label for="ex_{{ ex.id }}_textarea">Data</label>
                       <input id="ex_{{ ex.id }}_textarea" name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"
-                             {% if not is_admin and lang_status.overall in ('waiting_for_approval','approved') %}readonly{% endif %}>
+                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
                     </div>
                     <div>
                       <label for="ex_{{ ex.id }}_transliteration">Transliteration</label>
                       <input id="ex_{{ ex.id }}_transliteration" name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"
-                             {% if not is_admin and lang_status.overall in ('waiting_for_approval','approved') %}readonly{% endif %}>
+                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
                     </div>
                     <div>
                       <label for="ex_{{ ex.id }}_gloss">Gloss</label>
                       <input id="ex_{{ ex.id }}_gloss" name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"
-                             {% if not is_admin and lang_status.overall in ('waiting_for_approval','approved') %}readonly{% endif %}>
+                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
                     </div>
                     <div>
                       <label for="ex_{{ ex.id }}_translation">English translation</label>
                       <input id="ex_{{ ex.id }}_translation" name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"
-                             {% if not is_admin and lang_status.overall in ('waiting_for_approval','approved') %}readonly{% endif %}>
+                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
                     </div>
                     <div>
                       <label for="ex_{{ ex.id }}_reference">Reference</label>
                       <input id="ex_{{ ex.id }}_reference" name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"
-                             {% if not is_admin and lang_status.overall in ('waiting_for_approval','approved') %}readonly{% endif %}>
+                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
                     </div>
                   </div>
                 </div>
@@ -177,7 +177,7 @@
               {% endfor %}
             </div>
 
-            {% if is_admin or lang_status.overall in ('pending','rejected') %}
+            {% if is_admin or lang_status.overall == 'pending' or lang_status.overall == 'rejected' %}
               <div class="toolbar">
                 <button class="btn btn--primary" type="submit">Save</button>
               </div>
@@ -187,21 +187,22 @@
         </div>
         {% endfor %}
 
-        {% if is_admin or lang_status.overall in ('pending','rejected') %}
+        {% if is_admin or lang_status.overall == 'pending' or lang_status.overall == 'rejected' %}
           <div class="toolbar" style="margin-top:1rem">
             <button class="btn btn--primary" type="submit">Save all</button>
           </div>
         {% endif %}
       </form>
 
-      {# ==== TOOLBAR AZIONI (BOTTOM) ==== #}
       <div class="toolbar" style="margin-top:1rem; gap:.5rem; flex-wrap:wrap">
         {% with s=lang_status.overall %}
-          {% if not is_admin and s in "pending,rejected" and all_answered %}
-            <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
-              {% csrf_token %}
-              <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
-            </form>
+          {% if not is_admin and all_answered %}
+            {% if s == 'pending' or s == 'rejected' %}
+              <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
+                {% csrf_token %}
+                <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
+              </form>
+            {% endif %}
           {% endif %}
 
           {% if not is_admin and s == "rejected" %}
