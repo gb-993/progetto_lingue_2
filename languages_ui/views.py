@@ -35,6 +35,7 @@ except Exception:
 # Servizi
 from core.services.dag_eval import run_dag_for_language
 from core.services.dag_debug import diagnostics_for_language
+from django.db import transaction
 
 
 # -----------------------
@@ -57,6 +58,52 @@ def _check_language_access(user, lang: Language) -> bool:
     except Exception:
         pass
     return False
+
+def _language_status_summary(lang: Language):
+    """
+    Conteggi per stato e 'overall' derivato:
+    - 'approved' se tutte le answers esistenti sono approved
+    - 'waiting_for_approval' se tutte le answers esistenti sono waiting
+    - 'rejected' se esiste almeno una rejected e nessuna waiting
+    - 'pending' altrimenti (misti, presenti pending o nessuna answer)
+    """
+    qs = Answer.objects.filter(language=lang).values_list("status", flat=True)
+    counts = {"pending": 0, "waiting_for_approval": 0, "approved": 0, "rejected": 0}
+    total = 0
+    for s in qs:
+        counts[s] = counts.get(s, 0) + 1
+        total += 1
+
+    if total == 0:
+        overall = "pending"
+    elif counts["approved"] == total:
+        overall = "approved"
+    elif counts["waiting_for_approval"] == total:
+        overall = "waiting_for_approval"
+    elif counts["rejected"] > 0 and counts["waiting_for_approval"] == 0:
+        overall = "rejected"
+    else:
+        overall = "pending"
+
+    return {"counts": counts, "total": total, "overall": overall}
+
+
+def _missing_answered_question_ids(lang: Language):
+    """
+    Ritorna gli id delle domande attive che NON hanno una Answer yes/no per questa lingua.
+    Serve a impedire 'submit' con risposte mancanti.
+    """
+    active_qids = set(
+        Question.objects.filter(parameter__is_active=True).values_list("id", flat=True)
+    )
+    answered_qids = set(
+        Answer.objects.filter(
+            language=lang,
+            question_id__in=active_qids,
+            response_text__in=["yes", "no"]
+        ).values_list("question_id", flat=True)
+    )
+    return sorted(active_qids - answered_qids)
 
 
 # -----------------------
@@ -216,8 +263,11 @@ def language_data(request, lang_id):
             p.status = "warn"
         else:
             p.status = "ok"
-
-    ctx = {"language": lang, "parameters": parameters, "is_admin": is_admin}
+    # ---- Aggiunta: stato complessivo per la UI ----
+    status_summary = _language_status_summary(lang)
+    all_ok = all(getattr(p, "status", "missing") == "ok" for p in parameters)
+    
+    ctx = {"language": lang, "parameters": parameters, "is_admin": is_admin, "lang_status": SimpleNamespace(**status_summary),"all_answered": all_ok,}
     return render(request, "languages/data.html", ctx)
 
 
@@ -227,12 +277,6 @@ def language_data(request, lang_id):
 @login_required
 @require_http_methods(["POST"])
 def answer_save(request, lang_id, question_id):
-    """
-    Salva Answer (yes/no), comments e motivazioni multiple.
-    - Motivazioni visibili lato client solo se NO, ma qui validiamo lato server.
-    - Le motivazioni devono essere tra le allowed della domanda.
-    - 'Motivazione1' (se presente) è esclusiva.
-    """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _("You don't have access to this language."))
@@ -247,48 +291,45 @@ def answer_save(request, lang_id, question_id):
 
     comments = (request.POST.get("comments") or "").strip()
 
-    # Motivazioni inviate
+    # Rispetta 'modifiable' per gli utenti; gli ADMIN possono bypassare
+    answer = Answer.objects.filter(language=lang, question=question).first()
+    if answer and not answer.modifiable and not _is_admin(request.user):
+        messages.error(request, _("This answer is locked (waiting/approved)."))
+        return redirect("language_data", lang_id=lang.id)
+
+    # Motivazioni
     try:
         motivation_ids = [int(x) for x in request.POST.getlist("motivation_ids")]
     except ValueError:
         motivation_ids = []
 
-    # Ammissibilità per questa domanda
     allowed_ids = set(
-        QuestionAllowedMotivation.objects.filter(question=question).values_list("motivation_id", flat=True)
+        QuestionAllowedMotivation.objects.filter(question=question)
+        .values_list("motivation_id", flat=True)
     )
 
-    # Se YES, nessuna motivazione
     if response_text == "yes":
         motivation_ids = []
     else:
-        # Filtra al sottoinsieme ammesso
         motivation_ids = [mid for mid in motivation_ids if mid in allowed_ids]
-
-        # Esclusiva 'Motivazione1'
         mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
         if mot1 and mot1.id in motivation_ids:
             motivation_ids = [mot1.id]
 
-    # Upsert Answer
-    answer, _created = Answer.objects.get_or_create(
-        language=lang,
-        question=question,
-        defaults={"response_text": response_text, "comments": comments},
-    )
-    answer.response_text = response_text
-    answer.comments = comments
+    if answer is None:
+        answer = Answer(language=lang, question=question, response_text=response_text, comments=comments)
+    else:
+        answer.response_text = response_text
+        answer.comments = comments
     answer.save()
 
-    # Sync motivazioni (delta)
+    # Sync motivazioni
     current_ids = set(
         AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
     )
     target_ids = set(motivation_ids)
-
     to_add = target_ids - current_ids
     to_del = current_ids - target_ids
-
     if to_add:
         AnswerMotivation.objects.bulk_create(
             [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
@@ -297,7 +338,7 @@ def answer_save(request, lang_id, question_id):
     if to_del:
         AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-    # Aggiorna Examples (pattern: ex_<id>_<field>)
+    # Examples
     for key, val in request.POST.items():
         if not key.startswith("ex_"):
             continue
@@ -313,6 +354,7 @@ def answer_save(request, lang_id, question_id):
     messages.success(request, _("Answer saved."))
     return redirect("language_data", lang_id=lang.id)
 
+
 @login_required
 @require_POST
 def answers_bulk_save(request, lang_id):
@@ -321,7 +363,6 @@ def answers_bulk_save(request, lang_id):
         messages.error(request, _("You don't have access to this language."))
         return redirect("language_list")
 
-    # Tutte le domande attive per la lingua
     questions = (
         Question.objects
         .filter(parameter__is_active=True)
@@ -329,66 +370,67 @@ def answers_bulk_save(request, lang_id):
         .order_by("parameter__position", "id")
     )
 
-    # Cache allowed motivazioni per performance
     allowed_by_qid = {
         q.id: set(QuestionAllowedMotivation.objects.filter(question=q).values_list("motivation_id", flat=True))
         for q in questions
     }
 
-    from django.db import transaction
-    saved = 0
+    saved, skipped_locked = 0, 0
     with transaction.atomic():
+        answers_by_q = {
+            a.question_id: a
+            for a in Answer.objects.select_for_update().filter(language=lang, question__in=questions)
+        }
+
         for q in questions:
             rt = (request.POST.get(f"response_text_{q.id}") or "").strip().lower()
             cm = (request.POST.get(f"comments_{q.id}") or "").strip()
-
-            # Se vuoto → salta (lascia inalterato)
             if rt not in ("yes", "no"):
                 continue
 
-            # Motivazioni
-            mot_ids = []
+            a = answers_by_q.get(q.id)
+            # Utente non-admin non può modificare answer locked
+            if a and not a.modifiable and not _is_admin(request.user):
+                skipped_locked += 1
+                continue
+
             try:
                 mot_ids = [int(x) for x in request.POST.getlist(f"motivation_ids_{q.id}")]
             except ValueError:
                 mot_ids = []
 
-            # Se YES, nessuna motivazione
             if rt == "yes":
                 mot_ids = []
             else:
-                # Filtra ammissibili
                 allowed = allowed_by_qid.get(q.id, set())
                 mot_ids = [mid for mid in mot_ids if mid in allowed]
-                # Esclusiva 'Motivazione1'
                 mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
                 if mot1 and mot1.id in mot_ids:
                     mot_ids = [mot1.id]
 
-            # Upsert Answer
-            answer, _ = Answer.objects.get_or_create(
-                language=lang,
-                question=q,
-                defaults={"response_text": rt, "comments": cm},
-            )
-            answer.response_text = rt
-            answer.comments = cm
-            answer.save()
+            if a is None:
+                a = Answer(language=lang, question=q, response_text=rt, comments=cm)
+                a.save()
+                answers_by_q[q.id] = a
+            else:
+                a.response_text = rt
+                a.comments = cm
+                a.save()
 
             # Sync motivazioni
-            cur = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
+            cur = set(AnswerMotivation.objects.filter(answer=a).values_list("motivation_id", flat=True))
             tgt = set(mot_ids)
             to_add = tgt - cur
             to_del = cur - tgt
             if to_add:
                 AnswerMotivation.objects.bulk_create(
-                    [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
+                    [AnswerMotivation(answer=a, motivation_id=mid) for mid in to_add],
                     ignore_conflicts=True,
                 )
             if to_del:
-                AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
+                AnswerMotivation.objects.filter(answer=a, motivation_id__in=to_del).delete()
 
-            # Examples: già mappati come ex_<id>_<field> → identici alla single-save
+            # Examples
             for key, val in request.POST.items():
                 if not key.startswith("ex_"):
                     continue
@@ -399,11 +441,15 @@ def answers_bulk_save(request, lang_id):
                     continue
                 if field not in {"textarea", "transliteration", "gloss", "translation", "reference"}:
                     continue
-                Example.objects.filter(id=ex_id, answer=answer).update(**{field: val})
+                Example.objects.filter(id=ex_id, answer=a).update(**{field: val})
 
             saved += 1
 
-    messages.success(request, _(f"Saved {saved} answers (others left unchanged)."))
+    if skipped_locked:
+        messages.warning(request, _(f"Saved {saved} answers. Skipped {skipped_locked} locked answers (waiting/approved)."))
+    else:
+        messages.success(request, _(f"Saved {saved} answers (others left unchanged)."))
+
     return redirect("language_data", lang_id=lang.id)
 
 # -----------------------
@@ -562,3 +608,139 @@ def language_run_dag(request, lang_id: str):
         messages.error(request, _("DAG failed: %(err)s") % {"err": str(e)})
 
     return redirect("language_debug", lang_id=lang_id)
+
+
+@login_required
+@require_POST
+def language_submit(request, lang_id):
+    """USER: pending|rejected -> waiting (lock) solo se tutte le domande attive hanno risposta."""
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        messages.error(request, _("You don't have access to this language."))
+        return redirect("language_list")
+
+    # Precondizione: tutte le domande attive devono avere yes/no
+    missing = _missing_answered_question_ids(lang)
+    if missing:
+        first = ", ".join(missing[:8]) + ("…" if len(missing) > 8 else "")
+        messages.error(request, _("You must answer all active questions before submitting. Missing: ") + first)
+        return redirect("language_data", lang_id=lang.id)
+
+    with transaction.atomic():
+        answers = list(Answer.objects.select_for_update().filter(language=lang))
+        changed = 0
+        for a in answers:
+            if a.status in ("pending", "rejected"):
+                a.status = "waiting_for_approval"
+                a.modifiable = False
+                a.save(update_fields=["status", "modifiable"])
+                changed += 1
+
+    if changed == 0:
+        messages.info(request, _("Nothing to submit."))
+    else:
+        messages.success(request, _(f"Submitted {changed} answers for approval."))
+    return redirect("language_data", lang_id=lang.id)
+
+
+@login_required
+@require_POST
+def language_approve(request, lang_id):
+    """ADMIN: waiting -> approved + run DAG (idempotente). Richiede tutte le risposte waiting (o già approved)."""
+    if not _is_admin(request.user):
+        messages.error(request, _("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    lang = get_object_or_404(Language, pk=lang_id)
+
+    # Verifica che non manchino risposte attive
+    missing = _missing_answered_question_ids(lang)
+    if missing:
+        first = ", ".join(missing[:8]) + ("…" if len(missing) > 8 else "")
+        messages.error(request, _("Cannot approve: missing answers: ") + first)
+        return redirect("language_data", lang_id=lang.id)
+
+    with transaction.atomic():
+        answers = list(Answer.objects.select_for_update().filter(language=lang))
+        if not answers:
+            messages.error(request, _("No answers to approve."))
+            return redirect("language_data", lang_id=lang.id)
+
+        invalid = [a for a in answers if a.status not in ("waiting_for_approval", "approved")]
+        if invalid:
+            messages.error(request, _("All answers must be in 'waiting' to approve."))
+            return redirect("language_data", lang_id=lang.id)
+
+        changed = 0
+        for a in answers:
+            if a.status == "waiting_for_approval":
+                a.status = "approved"
+                a.modifiable = False
+                a.save(update_fields=["status", "modifiable"])
+                changed += 1
+
+    # Esegui DAG (idempotente). Se fallisce, lo segnaliamo ma non rollbackiamo l'approvazione.
+    try:
+        _ = run_dag_for_language(lang_id)
+        messages.success(request, _(f"Approved {changed} answers and ran DAG."))
+    except Exception as e:
+        messages.warning(request, _("Approved, but DAG failed: %(err)s") % {"err": str(e)})
+
+    return redirect("language_data", lang_id=lang.id)
+
+
+@login_required
+@require_POST
+def language_reject(request, lang_id):
+    """ADMIN: waiting -> rejected (riapre editing per USER)."""
+    if not _is_admin(request.user):
+        messages.error(request, _("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    lang = get_object_or_404(Language, pk=lang_id)
+    with transaction.atomic():
+        answers = list(Answer.objects.select_for_update().filter(language=lang))
+        if not answers:
+            messages.error(request, _("No answers to reject."))
+            return redirect("language_data", lang_id=lang.id)
+
+        invalid = [a for a in answers if a.status not in ("waiting_for_approval", "rejected")]
+        if invalid:
+            messages.error(request, _("All answers must be in 'waiting' to reject."))
+            return redirect("language_data", lang_id=lang.id)
+
+        changed = 0
+        for a in answers:
+            if a.status == "waiting_for_approval":
+                a.status = "rejected"
+                a.modifiable = True
+                a.save(update_fields=["status", "modifiable"])
+                changed += 1
+
+    messages.success(request, _(f"Rejected {changed} answers. Users can edit again."))
+    return redirect("language_data", lang_id=lang.id)
+
+
+@login_required
+@require_POST
+def language_reopen(request, lang_id):
+    """USER: rejected -> pending (sblocco dopo banner)."""
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        messages.error(request, _("You don't have access to this language."))
+        return redirect("language_list")
+
+    with transaction.atomic():
+        answers = list(Answer.objects.select_for_update().filter(language=lang, status="rejected"))
+        changed = 0
+        for a in answers:
+            a.status = "pending"
+            a.modifiable = True
+            a.save(update_fields=["status", "modifiable"])
+            changed += 1
+
+    if changed == 0:
+        messages.info(request, _("Nothing to reopen."))
+    else:
+        messages.success(request, _(f"Reopened {changed} answers. You can edit again."))
+    return redirect("language_data", lang_id=lang.id)
