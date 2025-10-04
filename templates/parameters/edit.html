@@ -3,9 +3,6 @@
 
 {% block title %}{% if param %}Edit parameter {{ param.id }}{% else %}Add parameter{% endif %}{% endblock %}
 
-{% block extra_head %}
-  <script src="{% static 'js/add_question_form.js' %}"></script>
-{% endblock %}
 
 {% block content %}
 <form method="post" class="parameter-form" novalidate aria-describedby="form-help">
@@ -175,7 +172,6 @@
       {% endfor %}
     </div>
 
-    <button type="button" class="btn" id="add-question">+ Aggiungi domanda</button>
   </section>
 
   <div class="toolbar" style="margin-top:1rem">
@@ -199,54 +195,5 @@ Formset errors: {{ q_formset.non_form_errors }}
   </pre>
 {% endif %}
 
-{# =======================
-   Template invisibile per empty_form (usato da add_question_form.js)
-   ======================= #}
-<template id="empty-form-template">
-  <fieldset class="question-block" style="margin-bottom:1rem;border:1px solid var(--border);padding:1rem;border-radius:var(--r-sm);">
-    {# Rende la empty_form con stessi campi, incluso motivations #}
-    {% for hidden in q_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
 
-    <div class="grid grid-2">
-      <div>
-        {{ q_formset.empty_form.id.label_tag }} {{ q_formset.empty_form.id }}
-      </div>
-      <div>
-        <label class="form-check">
-          {{ q_formset.empty_form.is_stop_question }} <span>{{ q_formset.empty_form.is_stop_question.label }}</span>
-        </label>
-      </div>
-    </div>
-
-    <div>
-      {{ q_formset.empty_form.text.label_tag }} {{ q_formset.empty_form.text }}
-    </div>
-
-    <div class="grid grid-2">
-      <div>
-        {{ q_formset.empty_form.instruction.label_tag }} {{ q_formset.empty_form.instruction }}
-      </div>
-      <div>
-        {{ q_formset.empty_form.example_yes.label_tag }} {{ q_formset.empty_form.example_yes }}
-      </div>
-    </div>
-
-    <div>
-      {{ q_formset.empty_form.template_type.label_tag }} {{ q_formset.empty_form.template_type }}
-    </div>
-
-    <div>
-      <label><strong>Motivazioni disponibili per NO</strong></label>
-      {{ q_formset.empty_form.motivations }}
-    </div>
-
-    {% if q_formset.empty_form.DELETE %}
-      <div class="form-check" style="margin-top:.5rem">
-        <label class="form-check">
-          {{ q_formset.empty_form.DELETE }} <span>Elimina questa domanda</span>
-        </label>
-      </div>
-    {% endif %}
-  </fieldset>
-</template>
 {% endblock %}
