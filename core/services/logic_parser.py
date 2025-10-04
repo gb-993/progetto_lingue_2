@@ -1,26 +1,39 @@
 # core/services/logic_parser.py
+from __future__ import annotations
+from typing import Any
 from pyparsing import (
-    Word, alphanums, oneOf, Literal,
+    Word, alphanums, oneOf, Literal, CaselessKeyword, White,
     Forward, infixNotation, opAssoc, ParserElement, ParseException
 )
 
 ParserElement.enablePackrat()
 
+
 def build_parser():
-    # Un operando è: (<segno>, <parametro>)
-    # Esempi: +FGM, -FGA, 0SCO
+    """
+    Parser per espressioni booleane su token tri-stato:
+      +P  => P vale '+'
+      -P  => P vale '-'
+      0P  => P vale '0'
+    Vincolo: nessuno spazio tra segno e parametro (es. '-FGK' OK, '- FGK' ERRORE).
+    Operatori supportati (entrambi): & |  e  AND OR NOT (case-insensitive).
+    Precedenza: NOT > AND > OR.
+    """
+    # Operando: <segno><param> SENZA spazi interni
     sign = oneOf("+ - 0")
     param = Word(alphanums + "_")
-    operand = (sign + param).setParseAction(lambda t: (t[0], t[1]))
+    # Rifiuta spazi fra segno e parametro
+    operand = (sign + ~White() + param).setParseAction(
+        lambda t: (t[0], t[2].upper())   # normalizza IDs a MAIUSCOLO
+    )
 
     expr = Forward()
-    NOT = Literal("not")   # al momento solo minuscolo, come nel tuo codice
-    AND = Literal("&")
-    OR  = Literal("|")
 
-    # ATTENZIONE: in pyparsing la precedenza è data dall'ordine delle righe.
-    # Qui manteniamo il tuo ordine originale (NOT, poi AND e OR allo stesso livello),
-    # per evitare cambi di comportamento inattesi. Se vorrai AND>OR lo facciamo dopo.
+    NOT = CaselessKeyword("not")
+    AND = (Literal("&") | CaselessKeyword("and"))
+    OR  = (Literal("|") | CaselessKeyword("or"))
+
+    # Ordine delle righe = dalla precedenza più alta alla più bassa
     expr <<= infixNotation(
         operand,
         [
@@ -31,64 +44,118 @@ def build_parser():
     )
     return expr
 
-def _as_list(node):
-    """
-    Converte in list i ParseResults e, in generale, qualsiasi sequenza non-tuple.
-    Lascia intatte le tuple (che rappresentano gli operandi (sign, param)).
-    """
+
+def _as_list(node: Any):
+    """Converte ParseResults in list; lascia intatte le tuple (operandi)."""
     if isinstance(node, tuple):
         return node
     try:
         return list(node)
     except TypeError:
-        return node  # foglia non iterabile: lasciamo così
+        return node
 
-def eval_node(node, values: dict[str, str]):
+
+def eval_node(node, values: dict[str, str]) -> bool:
     """
-    Valuta ricorsivamente l'AST prodotto da pyparsing.
-    - Operando: tuple (sign, param) => confronto con values[param]
-    - Nodo unario: ['not', expr]
-    - Nodo binario: [left, '&'|'|', right]
-    Nota: i nodi possono arrivare come list o ParseResults: vengono normalizzati.
+    Valuta ricorsivamente l'AST:
+      - Operando: tuple (sign, PARAM)
+      - Unario:   ['not', expr]
+      - Binario:  [left, op, right] con op in {'&','|','and','or'} (case-insensitive)
     """
-    # Caso foglia: operando
     if isinstance(node, tuple):
         sign, param = node
         return values.get(param) == sign
 
-    # Normalizza a lista eventuali ParseResults
     node = _as_list(node)
 
-    # Nodi unari: NOT <expr>
+    # NOT <expr>
     if isinstance(node, list) and len(node) == 2 and str(node[0]).lower() == 'not':
         return not eval_node(node[1], values)
 
-    # Nodi binari: <left> (& or |) <right>
+    # <left> (AND/OR) <right>
     if isinstance(node, list) and len(node) == 3:
         left, op, right = node
-        op_str = str(op)
-        if op_str == '&':
+        op_str = str(op).lower()
+        if op_str in ('&', 'and'):
             return eval_node(left, values) and eval_node(right, values)
-        if op_str == '|':
+        if op_str in ('|', 'or'):
             return eval_node(left, values) or eval_node(right, values)
 
-    # Se arriviamo qui, la forma non è gestita
     raise ValueError(f"Nodo non gestito: {node}")
+
+
+from pyparsing import ParseException
 
 def evaluate_with_parser(expression: str, values: dict[str, str]) -> bool:
     """
-    True se l'espressione (booleana su +P, -Q, 0R) è soddisfatta dai valori correnti.
-    In caso di parsing fallito, torna False (puoi cambiare in log+False).
+    True se l'espressione è soddisfatta dai valori correnti.
+    Robustezza: se parsing fallisce o produce 0 elementi, ritorna False.
     """
-    if not (expression or "").strip():
-        return True  # condizione vuota = vera (comportamento esistente)
+    expr = (expression or "").strip()
+    if not expr:
+        return True  # condizione vuota = vera
+
     parser = build_parser()
     try:
-        # pyparsing ritorna ParseResults; prendiamo l'elemento radice
-        parsed_root = parser.parseString(expression, parseAll=True)[0]
-        # Normalizziamo il nodo radice per evitare il crash visto
-        root = _as_list(parsed_root)
-        return eval_node(root, values)
+        res = parser.parseString(expr, parseAll=True)
     except ParseException:
-        # Espressione invalida => consideriamo FALSA (oppure log e warning in UI)
+        return False  # oppure: loggare e poi False
+
+    if len(res) == 0:
+        return False  # evita IndexError
+
+    root = _as_list(res[0])
+    try:
+        return eval_node(root, values)
+    except Exception:
+        # Qualsiasi altra forma imprevista -> prudenzialmente False
         return False
+
+
+
+# ---------- UTIL per validazione e preview umana ----------
+
+def validate_expression(expression: str) -> None:
+    """
+    Valida l'espressione. Regole:
+      - Nessuno spazio fra segno e parametro (es. '- FGK' è ERRORE).
+      - Solo token ammessi (+P, -P, 0P) e operatori (&, |, AND/OR/NOT).
+    Solleva ParseException in caso di invalidità.
+    """
+    parser = build_parser()
+    # Questo parse fallirà se ci sono spazi vietati o token non ammessi
+    parser.parseString((expression or ""), parseAll=True)
+
+
+def pretty_print_expression(expression: str) -> str:
+    """
+    Ritorna una rappresentazione canonica "umana":
+      +FGM | +FGA  ->  (FGM=+ OR FGA=+)
+      ... & -FGK   ->  ... AND FGK=-
+      not +FGM     ->  NOT (FGM=+)
+    Mantiene le parentesi per preservare la struttura.
+    Solleva ParseException se l'espressione è invalida.
+    """
+    parser = build_parser()
+    root = _as_list(parser.parseString((expression or ""), parseAll=True)[0])
+
+    def render(n) -> str:
+        if isinstance(n, tuple):
+            s, p = n
+            return f"{p}={s}"
+        n = _as_list(n)
+        if isinstance(n, list) and len(n) == 2 and str(n[0]).lower() == 'not':
+            return f"NOT ({render(n[1])})"
+        if isinstance(n, list) and len(n) == 3:
+            left, op, right = n
+            op_str = str(op).lower()
+            if op_str in ('&', 'and'):
+                op_txt = 'AND'
+            elif op_str in ('|', 'or'):
+                op_txt = 'OR'
+            else:
+                raise ValueError(f"Operatore non gestito in render: {op}")
+            return f"({render(left)} {op_txt} {render(right)})"
+        raise ValueError(f"Nodo non gestito in render: {n}")
+
+    return render(root)

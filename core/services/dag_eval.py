@@ -13,8 +13,14 @@ from core.models import (
 )
 from .logic_parser import evaluate_with_parser
 
+import logging
+logger = logging.getLogger(__name__)
+
 # Token parametri nelle condizioni: +FGM, -SCO, 0ABC
-TOKEN_RE = re.compile(r"[+\-0]([A-Z0-9_]+)")
+TOKEN_RE = re.compile(r"[+\-0]([A-Za-z0-9_]+)")
+
+from dataclasses import dataclass
+from typing import Dict, List, Set, Tuple
 
 @dataclass
 class DagReport:
@@ -23,6 +29,8 @@ class DagReport:
     forced_zero: list[str]
     missing_orig: list[str]
     warnings_propagated: list[str]
+    parse_errors: list[tuple[str, str, str]]  # (param_id, cond, error)
+
 
 def _active_parameter_ids() -> Set[str]:
     return set(
@@ -30,7 +38,9 @@ def _active_parameter_ids() -> Set[str]:
     )
 
 def _extract_refs(cond: str) -> Set[str]:
-    return set(TOKEN_RE.findall(cond or ""))
+    # normalizza a MAIUSCOLO per allinearsi agli id in DB e al parser
+    return {m.upper() for m in TOKEN_RE.findall(cond or "")}
+
 
 def _build_graph_active_scope(active_ids: Set[str]) -> Dict[str, List[str]]:
     """
@@ -144,6 +154,7 @@ def run_dag_for_language(language_id: str) -> DagReport:
     forced_zero: list[str] = []
     missing_orig: list[str] = [pid for pid, v in orig_values.items() if v is None]
     warnings_propagated: set[str] = set()
+    parse_errors: list[tuple[str, str, str]] = []
 
     # Pre-carichiamo mappa param_id -> (lp_id, value_orig)
     lp_map: dict[str, Tuple[int | None, str | None]] = {pid: (None, orig_values[pid]) for pid in active_ids}
@@ -181,7 +192,15 @@ def run_dag_for_language(language_id: str) -> DagReport:
             continue
 
         # Valuta condizione con i valori correnti
-        cond_ok = evaluate_with_parser(cond, cond_values)
+        try:
+            cond_ok = evaluate_with_parser(cond, cond_values)
+        except Exception as e:
+            # Traccia l’errore e continua in modo sicuro (condizione = falsa)
+            logger.warning("DAG parse error for %s: %r (param=%s): %s",
+                        language_id, cond, target, repr(e))
+            parse_errors.append((target, cond, str(e)))
+            cond_ok = False
+
         if not cond_ok:
             # forza zero
             if lpe.value_eval != "0":
@@ -213,4 +232,6 @@ def run_dag_for_language(language_id: str) -> DagReport:
         forced_zero=forced_zero,
         missing_orig=missing_orig,
         warnings_propagated=sorted(warnings_propagated),
+        parse_errors=parse_errors,
     )
+
