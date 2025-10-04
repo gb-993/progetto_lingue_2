@@ -59,6 +59,7 @@
               <div>
                 <label for="resp_{{ q.id }}">Answer</label>
                 <select id="resp_{{ q.id }}" name="response_text" class="resp-select" data-question-id="{{ q.id }}">
+                  <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
                   <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
                   <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
                 </select>

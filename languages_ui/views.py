@@ -198,7 +198,7 @@ def language_data(request, lang_id):
                     answered += 1
             else:
                 ans_ns = SimpleNamespace(
-                    response_text="yes",  # default
+                    response_text="",  # default
                     comments="",
                     motivation_ids=[],
                     examples=[],

@@ -58,6 +58,8 @@
     // Collega handler ai select YES/NO
     $all('select.resp-select[data-question-id]').forEach(sel => {
       sel.addEventListener('change', onRespChange);
+      toggleMotivations(sel.dataset.questionId, sel.value === 'no');
+
     });
 
     // Collega handler ai select delle motivazioni
