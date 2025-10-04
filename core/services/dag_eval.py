@@ -130,8 +130,8 @@ def run_dag_for_language(language_id: str) -> DagReport:
     - Non esiste auto-propagazione dello '0' oltre alle regole esplicite.
     - WARNING: si propaga: se una ref è in warning_orig/valutato, i target diventano warning_eval=True.
 
-    Vincolo operativo (coerente con tua idea): conviene che TUTTI i parametri attivi abbiano value_orig non NULL.
-    Se mancano, li elenchiamo in report.missing_orig ma procediamo comunque (quelle cond risulteranno FALSE).
+    Regola extra: se in una condizione compare un parametro con valore '0',
+    la condizione viene considerata subito falsa (short-circuit).
     """
     lang = Language.objects.select_for_update().get(pk=language_id)
     active_ids = _active_parameter_ids()
@@ -144,7 +144,6 @@ def run_dag_for_language(language_id: str) -> DagReport:
     order = _topo_sort(graph)
 
     # warning set per propagazione
-    # partenza: warning_orig del LP; se LP mancante, non warning
     warnings: Set[str] = set(
         LanguageParameter.objects.filter(language=lang, parameter_id__in=active_ids, warning_orig=True)
         .values_list("parameter_id", flat=True)
@@ -157,63 +156,63 @@ def run_dag_for_language(language_id: str) -> DagReport:
     parse_errors: list[tuple[str, str, str]] = []
 
     # Pre-carichiamo mappa param_id -> (lp_id, value_orig)
-    lp_map: dict[str, Tuple[int | None, str | None]] = {pid: (None, orig_values[pid]) for pid in active_ids}
-    for lp in LanguageParameter.objects.filter(language=lang, parameter_id__in=active_ids).only("id", "parameter_id", "value_orig"):
+    lp_map: dict[str, Tuple[int | None, str | None]] = {
+        pid: (None, orig_values[pid]) for pid in active_ids
+    }
+    for lp in LanguageParameter.objects.filter(
+        language=lang, parameter_id__in=active_ids
+    ).only("id", "parameter_id", "value_orig"):
         lp_map[lp.parameter_id] = (lp.id, lp.value_orig)
 
-    # Valori "correnti" da passare al parser durante l'analisi delle condizioni:
-    # usiamo '+','-' e '0' come stato "non allineato" quando manca l'orig.
-    # Nota: qui scegliamo di trattare None come '0' nel contesto delle cond, così
-    # una cond che richiede '+X' fallisce se X non è determinato.
+    # Valori correnti da passare al parser (basati su orig)
     cond_values: dict[str, str] = {}
     for pid, (_, v) in lp_map.items():
         cond_values[pid] = v if v in ("+", "-") else "0"
 
     # Mappa target->cond
     cond_map: dict[str, str] = {
-        p.id: (p.implicational_condition or "") for p in ParameterDef.objects.filter(id__in=active_ids)
+        p.id: (p.implicational_condition or "")
+        for p in ParameterDef.objects.filter(id__in=active_ids)
     }
 
-    # Valutazione: visitiamo tutti, ma un target senza cond resta a value_orig
+    # Valutazione
     for target in order:
-        # ensure eval row exists
         lp_id, v_orig = lp_map[target]
         lpe = _ensure_eval_row(lang, target, lp_id)
 
         cond = (cond_map.get(target) or "").strip()
         if not cond:
-            # Nessuna condizione: eval = orig (se None → '0' per rispettare il check della tabella eval)
+            # Nessuna condizione: eval = orig (se None → '0')
             lpe.value_eval = v_orig if v_orig in ("+", "-") else "0"
-            # warning_eval = warning_orig o warning ereditato
             lpe.warning_eval = (target in warnings)
             lpe.save(update_fields=["value_eval", "warning_eval"])
             processed.append(target)
-            # Propagazione warning: se target è warning, i suoi dipendenti lo erediteranno di seguito
             continue
 
-        # Valuta condizione con i valori correnti
-        try:
-            cond_ok = evaluate_with_parser(cond, cond_values)
-        except Exception as e:
-            # Traccia l’errore e continua in modo sicuro (condizione = falsa)
-            logger.warning("DAG parse error for %s: %r (param=%s): %s",
-                        language_id, cond, target, repr(e))
-            parse_errors.append((target, cond, str(e)))
+        # --- Nuova regola: short-circuit sugli zeri ---
+        refs = _extract_refs(cond)
+        if any(cond_values.get(r) == "0" for r in refs):
             cond_ok = False
+        else:
+            try:
+                cond_ok = evaluate_with_parser(cond, cond_values)
+            except Exception as e:
+                logger.warning("DAG parse error for %s: %r (param=%s): %s",
+                               language_id, cond, target, repr(e))
+                parse_errors.append((target, cond, str(e)))
+                cond_ok = False
+        # ---------------------------------------------
 
         if not cond_ok:
-            # forza zero
             if lpe.value_eval != "0":
                 lpe.value_eval = "0"
                 lpe.save(update_fields=["value_eval"])
             forced_zero.append(target)
         else:
-            # cond vera: mantieni l'originale (+/-), se non c'è orig → '0'
             lpe.value_eval = v_orig if v_orig in ("+", "-") else "0"
             lpe.save(update_fields=["value_eval"])
 
-        # Propagazione warning: se una QUALSIASI ref è warning → target warning
-        refs = _extract_refs(cond)
+        # Propagazione warning
         if any(r in warnings for r in refs):
             if target not in warnings:
                 warnings.add(target)
@@ -223,7 +222,7 @@ def run_dag_for_language(language_id: str) -> DagReport:
         lpe.save(update_fields=["warning_eval"])
         processed.append(target)
 
-        # Aggiorna cond_values del target per eventuali nodi a valle (anche se non serve spesso)
+        # Manteniamo il comportamento originale: cond_values aggiornato a value_eval
         cond_values[target] = lpe.value_eval
 
     return DagReport(
