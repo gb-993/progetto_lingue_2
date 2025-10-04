@@ -136,6 +136,8 @@ def language_edit(request, lang_id):
 @login_required
 def language_data(request, lang_id):
     user = request.user
+    is_admin = _is_admin(user)  # <-- aggiungi
+
     lang = get_object_or_404(Language, pk=lang_id)
 
     if not _check_language_access(user, lang):
@@ -215,7 +217,7 @@ def language_data(request, lang_id):
         else:
             p.status = "ok"
 
-    ctx = {"language": lang, "parameters": parameters}
+    ctx = {"language": lang, "parameters": parameters, "is_admin": is_admin}
     return render(request, "languages/data.html", ctx)
 
 
@@ -311,6 +313,98 @@ def answer_save(request, lang_id, question_id):
     messages.success(request, _("Answer saved."))
     return redirect("language_data", lang_id=lang.id)
 
+@login_required
+@require_POST
+def answers_bulk_save(request, lang_id):
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        messages.error(request, _("You don't have access to this language."))
+        return redirect("language_list")
+
+    # Tutte le domande attive per la lingua
+    questions = (
+        Question.objects
+        .filter(parameter__is_active=True)
+        .select_related("parameter")
+        .order_by("parameter__position", "id")
+    )
+
+    # Cache allowed motivazioni per performance
+    allowed_by_qid = {
+        q.id: set(QuestionAllowedMotivation.objects.filter(question=q).values_list("motivation_id", flat=True))
+        for q in questions
+    }
+
+    from django.db import transaction
+    saved = 0
+    with transaction.atomic():
+        for q in questions:
+            rt = (request.POST.get(f"response_text_{q.id}") or "").strip().lower()
+            cm = (request.POST.get(f"comments_{q.id}") or "").strip()
+
+            # Se vuoto → salta (lascia inalterato)
+            if rt not in ("yes", "no"):
+                continue
+
+            # Motivazioni
+            mot_ids = []
+            try:
+                mot_ids = [int(x) for x in request.POST.getlist(f"motivation_ids_{q.id}")]
+            except ValueError:
+                mot_ids = []
+
+            # Se YES, nessuna motivazione
+            if rt == "yes":
+                mot_ids = []
+            else:
+                # Filtra ammissibili
+                allowed = allowed_by_qid.get(q.id, set())
+                mot_ids = [mid for mid in mot_ids if mid in allowed]
+                # Esclusiva 'Motivazione1'
+                mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
+                if mot1 and mot1.id in mot_ids:
+                    mot_ids = [mot1.id]
+
+            # Upsert Answer
+            answer, _ = Answer.objects.get_or_create(
+                language=lang,
+                question=q,
+                defaults={"response_text": rt, "comments": cm},
+            )
+            answer.response_text = rt
+            answer.comments = cm
+            answer.save()
+
+            # Sync motivazioni
+            cur = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
+            tgt = set(mot_ids)
+            to_add = tgt - cur
+            to_del = cur - tgt
+            if to_add:
+                AnswerMotivation.objects.bulk_create(
+                    [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
+                    ignore_conflicts=True,
+                )
+            if to_del:
+                AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
+
+            # Examples: già mappati come ex_<id>_<field> → identici alla single-save
+            for key, val in request.POST.items():
+                if not key.startswith("ex_"):
+                    continue
+                try:
+                    _ex, ex_id, field = key.split("_", 2)
+                    ex_id = int(ex_id)
+                except ValueError:
+                    continue
+                if field not in {"textarea", "transliteration", "gloss", "translation", "reference"}:
+                    continue
+                Example.objects.filter(id=ex_id, answer=answer).update(**{field: val})
+
+            saved += 1
+
+    messages.success(request, _(f"Saved {saved} answers (others left unchanged)."))
+    return redirect("language_data", lang_id=lang.id)
 
 # -----------------------
 # Export / approvazioni (placeholder)
@@ -365,10 +459,14 @@ def language_debug(request, lang_id: str):
     """
     user = request.user
     lang = get_object_or_404(Language, pk=lang_id)
+    
     if not _check_language_access(user, lang):
         # 404 per non rivelare l'esistenza della lingua
         get_object_or_404(Language, pk="__deny__")
-
+    
+    # SOLO admin
+    if not _is_admin(user):
+        get_object_or_404(Language, pk="__deny__")
     # Parametri attivi + domande
     params = (
         ParameterDef.objects
