@@ -1,5 +1,8 @@
 // static/js/examples.js
 (function () {
+  "use strict";
+
+  // ---------- helpers numerazione ----------
   function nextLinear(nums) {
     const ints = nums.map(n => {
       const m = n.match(/^(\d+)$/);
@@ -10,8 +13,7 @@
   }
 
   function nextPaired(nums) {
-    // sequence: 1a,1b,2a,2b,...
-    // find last valid "Xa"/"Xb"
+    // 1a,1b,2a,2b...
     let lastN = 0, lastSfx = "b";
     nums.forEach(n => {
       const m = n.match(/^(\d+)([ab])$/i);
@@ -29,13 +31,12 @@
   }
 
   function nextDecimal(nums) {
-    // sequence: 1.1,1.2,2.1,2.2,...
+    // 1.1,1.2,2.1,2.2...
     let lastI = 0, lastJ = 2;
     nums.forEach(n => {
       const m = n.match(/^(\d+)\.(\d+)$/);
       if (m) {
-        const i = parseInt(m[1], 10);
-        const j = parseInt(m[2], 10);
+        const i = parseInt(m[1], 10), j = parseInt(m[2], 10);
         if (i > lastI || (i === lastI && j > lastJ)) {
           lastI = i; lastJ = j;
         }
@@ -47,29 +48,71 @@
   }
 
   function computeNextNumber(templateType, existing) {
-    const vals = Array.from(existing).map(el => el.value.trim()).filter(Boolean);
+    const vals = Array.from(existing)
+      .map(el => (el.value || "").trim())
+      .filter(Boolean);
     switch ((templateType || "").toLowerCase()) {
-      case "plain":      // manteniamo compatibilità: plain => lineare
       case "numbered":
       case "linear":
-        return nextLinear(vals);
-      case "glossed":    // se vuoi, glossed può ancora essere lineare
+      case "plain":
+      case "glossed":
         return nextLinear(vals);
       case "paired":
         return nextPaired(vals);
       case "decimal":
         return nextDecimal(vals);
-      // mapping dei tuoi placeholder attuali ai tre tipi richiesti:
-      // "Plain text" => lineare; "Glossed line" => lineare; "Numbered list" => lineare
       default:
         return nextLinear(vals);
     }
   }
 
+  // ---------- rinumerazione completa dopo add/delete ----------
+  function renumberExamplesForQuestion(qid) {
+    const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
+    if (!block) return;
+    const templateType = (block.getAttribute("data-template") || "").toLowerCase();
+    const list = block.querySelector(`.examples-list[data-qid="${qid}"]`);
+    if (!list) return;
+
+    // prendi SOLO le righe NON marcate per delete
+    const rows = Array.from(list.querySelectorAll(".example-row"))
+      .filter(r => !r.classList.contains("is-marked-delete"));
+
+    rows.forEach((row, idx) => {
+      let label = "";
+      if (templateType === "paired") {
+        const n = Math.floor(idx / 2) + 1;
+        const sfx = (idx % 2 === 0) ? "a" : "b";
+        label = `${n}${sfx}`;
+      } else if (templateType === "decimal") {
+        const n = Math.floor(idx / 2) + 1;
+        const sub = (idx % 2) + 1; // 1 o 2
+        label = `${n}.${sub}`;
+      } else {
+        label = String(idx + 1); // linear di default
+      }
+
+      // esistente: ex_<id>_number | nuovo: newex_<qid>_<uid>_number
+      const numInput = row.querySelector('input[name$="_number"]');
+      if (numInput) numInput.value = label;
+    });
+  }
+
+  function toggleExamplesBlock(selectEl) {
+    const qid = selectEl.getAttribute("data-question-id");
+    const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
+    if (!block) return;
+    const show = (selectEl.value === "yes");
+    block.style.display = show ? "" : "none";
+    const sr = block.querySelector(".examples-hint");
+    if (sr) sr.textContent = show ? "Examples section shown." : "Examples section hidden.";
+  }
+
   function buildExampleRow(qid, uid, numberValue) {
-    // Ritorna un <div> con inputs per un nuovo esempio (nuovi nomi newex_<qid>_<uid>_*)
     const wrapper = document.createElement("div");
     wrapper.className = "card example-row";
+    wrapper.setAttribute("data-qid", qid);
+    wrapper.setAttribute("data-uid", uid);
     wrapper.style.marginBottom = ".5rem";
     wrapper.innerHTML = `
       <div class="grid">
@@ -97,46 +140,87 @@
           <label>Reference</label>
           <input name="newex_${qid}_${uid}_reference" value="">
         </div>
+      </div>
+      <div class="toolbar" style="margin-top:.25rem">
+        <button class="btn btn-newex-delete" type="button" data-qid="${qid}" data-uid="${uid}">Delete</button>
+        <span class="sr-only" aria-live="polite"></span>
       </div>`;
     return wrapper;
   }
 
-  function toggleExamplesBlock(selectEl) {
-    const qid = selectEl.getAttribute("data-question-id");
-    const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
-    if (!block) return;
-    const show = (selectEl.value === "yes");
-    block.style.display = show ? "" : "none";
-    // ARIA live hint
-    const sr = block.querySelector(".examples-hint");
-    if (sr) sr.textContent = show ? "Examples section shown." : "Examples section hidden.";
-  }
-
-  // on load: wire select changes
   document.addEventListener("DOMContentLoaded", function () {
-    // attach to answer selects
+    // show/hide blocco examples
     document.querySelectorAll(".resp-select").forEach(sel => {
       sel.addEventListener("change", () => toggleExamplesBlock(sel));
-      // init state
       toggleExamplesBlock(sel);
     });
 
-    // Add example buttons
+    // Add example
     document.querySelectorAll(".add-example-btn").forEach(btn => {
       btn.addEventListener("click", e => {
         e.preventDefault();
+        if (btn.hasAttribute("disabled")) return;
         const qid = btn.getAttribute("data-qid");
         const container = document.querySelector(`.examples-list[data-qid="${qid}"]`);
-        const templateType = btn.getAttribute("data-template") || "";
+        const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
+        if (!container || !block) return;
+
+        const templateType = block.getAttribute("data-template") || "";
         const existingNumberInputs = container.querySelectorAll('input[name$="_number"]');
         const nextNum = computeNextNumber(templateType, existingNumberInputs);
         const uid = String(Date.now()) + "_" + Math.floor(Math.random() * 10000);
         const row = buildExampleRow(qid, uid, nextNum);
         container.appendChild(row);
-        // focus sul primo campo “Data” del nuovo esempio
+
+        // focus + rinumerazione completa (garantisce sequenza contigua)
         const firstInput = row.querySelector(`input[name="newex_${qid}_${uid}_textarea"]`);
         if (firstInput) firstInput.focus();
+        renumberExamplesForQuestion(qid);
       });
+    });
+
+    // Delegated clicks (robusto ai click sui figli dentro il bottone)
+    document.addEventListener("click", function (e) {
+      // Delete NUOVO esempio (non salvato): rimuovi dal DOM + renumera
+      const delNewBtn = e.target.closest(".btn-newex-delete");
+      if (delNewBtn) {
+        e.preventDefault();
+        if (delNewBtn.hasAttribute("disabled")) return;
+        const row = delNewBtn.closest(".example-row");
+        const qid = delNewBtn.getAttribute("data-qid");
+        if (row) row.remove();
+        renumberExamplesForQuestion(qid);
+        return;
+      }
+
+      // Toggle Delete/Undo per ESEMPIO ESISTENTE
+      const toggleBtn = e.target.closest(".btn-ex-toggle-delete");
+      if (toggleBtn) {
+        e.preventDefault();
+        if (toggleBtn.hasAttribute("disabled")) return;
+        const row = toggleBtn.closest(".example-row");
+        const qid = toggleBtn.getAttribute("data-qid");
+        const exid = toggleBtn.getAttribute("data-exid");
+        if (!row || !qid || !exid) return;
+
+        // hidden flag
+        let hidden = row.querySelector(`input[type="hidden"][name="del_ex_${exid}"]`);
+        if (!hidden) {
+          hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.name = `del_ex_${exid}`;
+          row.appendChild(hidden);
+        }
+        // toggle
+        const isDel = row.classList.toggle("is-marked-delete");
+        hidden.value = isDel ? "1" : "0";
+        toggleBtn.textContent = isDel ? "Undo delete" : "Delete";
+        row.style.opacity = isDel ? "0.5" : "";
+        row.style.filter = isDel ? "grayscale(1)" : "";
+
+        // rinumera escludendo le righe marcate
+        renumberExamplesForQuestion(qid);
+      }
     });
   });
 })();

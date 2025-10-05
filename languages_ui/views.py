@@ -491,8 +491,21 @@ def answers_bulk_save(request, lang_id):
             if to_del:
                 AnswerMotivation.objects.filter(answer=a, motivation_id__in=to_del).delete()
 
-            # --- Examples: update esistenti + crea nuovi --------------------
-            # 1) Update degli esempi esistenti (nominati "ex_<id>_<field>")
+            # --- Examples: delete, update, create ---------------------------------
+
+            # 0) Delete: del_ex_<id> = "1"
+            del_ids = []
+            for key, val in request.POST.items():
+                if key.startswith("del_ex_") and val == "1":
+                    try:
+                        del_ids.append(int(key.split("_", 2)[2]))
+                    except ValueError:
+                        pass
+            if del_ids:
+                Example.objects.filter(answer=a, id__in=del_ids).delete()
+
+            # 1) Update esempi esistenti: ex_<ID>_<field>
+            FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
             for key, val in request.POST.items():
                 if not key.startswith("ex_"):
                     continue
@@ -501,42 +514,51 @@ def answers_bulk_save(request, lang_id):
                     ex_id = int(ex_id)
                 except ValueError:
                     continue
-                if field not in {"textarea", "transliteration", "gloss", "translation", "reference"}:
+                if field not in FIELDS:
                     continue
                 Example.objects.filter(id=ex_id, answer=a).update(**{field: val})
 
-            # 2) Creazione di nuovi esempi (nominati "newex_<questionId>_<uid>_<field>")
-            #    Usiamo un prefisso esatto per gestire questionId con underscore (es. "FGM_Qa").
+            # 2) Crea esempi nuovi: newex_<QID>_<UID>_<field>
+            #    QID può contenere underscore → usiamo prefix preciso e rsplit da destra
             prefix = f"newex_{q.id}_"
             buckets = {}
             for key, val in request.POST.items():
                 if not key.startswith(prefix):
                     continue
-                # remainder: "<uid>_<field>"
-                remainder = key[len(prefix):]
+                remainder = key[len(prefix):]              # es: "1759686090420_7450_textarea"
                 try:
-                    uid, field = remainder.rsplit("_", 1)  # split solo una volta!
+                    uid, field = remainder.rsplit("_", 1)  # prendi ultimo "_": field=textarea/gloss/...
                 except ValueError:
                     continue
-
-                if field not in {"number", "textarea", "transliteration", "gloss", "translation", "reference"}:
+                if field not in FIELDS:
                     continue
-
                 buckets.setdefault(uid, {})[field] = val
 
             if buckets:
-                ex_to_create = []
+                to_create = []
                 for uid, data in buckets.items():
-                    ex_to_create.append(Example(
+                    has_payload = any((
+                        (data.get("textarea") or "").strip(),
+                        (data.get("transliteration") or "").strip(),
+                        (data.get("gloss") or "").strip(),
+                        (data.get("translation") or "").strip(),
+                        (data.get("reference") or "").strip(),
+                    ))
+                    num = (data.get("number") or "").strip()
+                    if not has_payload and not num:
+                        continue
+                    to_create.append(Example(
                         answer=a,
-                        number=(data.get("number") or "").strip(),
+                        number=num or "1",
                         textarea=(data.get("textarea") or "").strip(),
                         transliteration=(data.get("transliteration") or "").strip(),
                         gloss=(data.get("gloss") or "").strip(),
                         translation=(data.get("translation") or "").strip(),
                         reference=(data.get("reference") or "").strip(),
                     ))
-                Example.objects.bulk_create(ex_to_create, ignore_conflicts=True)
+                if to_create:
+                    Example.objects.bulk_create(to_create, ignore_conflicts=True)
+
 
 
             # 3) Validazione “YES richiede almeno 1 esempio”
