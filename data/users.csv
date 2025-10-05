@@ -1,4 +1,0 @@
-email,password,name,surname,role,is_staff,is_superuser,is_active
-super@example.com,super123,Super,User,admin,1,1,1
-admin@example.com,admin123,Admin,User,admin,1,0,1
-user@example.com,user123,User,User,user,0,0,1

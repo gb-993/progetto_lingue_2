@@ -1,4 +1,0 @@
-id,name,short_description,position,is_active,implicational_condition,warning_default
-FGM,grammaticalized morphology,FGM_description,1,1,,0
-FGA,grammaticalized agreement,FGA_description,2,1,,0
-FGK,grammaticalized case,FGK_description,3,1,,0

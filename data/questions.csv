@@ -1,6 +1,0 @@
-id,parameter_id,text,example_yes,instruction,template_type,is_stop_question
-FGM_Qa,FGM,"1. danger - dangerous
-2. sing - song",,,textarea,0
-FGM_Qb,FGM,"(testo della domanda FGM_Qb)",,,textarea,0
-FGA_Qa,FGA,"(testo della domanda FGA_Qa)",,,textarea,0
-FGK_Qa,FGK,"(testo della domanda FGK_Qa)",,,textarea,0
