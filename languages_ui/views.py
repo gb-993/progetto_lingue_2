@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _t
 from django.views.decorators.http import require_http_methods, require_POST
 from django.core.paginator import Paginator
 
@@ -195,7 +195,7 @@ def language_add(request):
         form = LanguageForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, _("Language created."))
+            messages.success(request, _t("Language created."))
             return redirect("language_list")
     else:
         form = LanguageForm()
@@ -211,7 +211,7 @@ def language_edit(request, lang_id):
         form = LanguageForm(request.POST, instance=lang)
         if form.is_valid():
             form.save()
-            messages.success(request, _("Language updated."))
+            messages.success(request, _t("Language updated."))
             return redirect("language_list")
     else:
         form = LanguageForm(instance=lang)
@@ -229,7 +229,7 @@ def language_data(request, lang_id):
     lang = get_object_or_404(Language, pk=lang_id)
 
     if not _check_language_access(user, lang):
-        messages.error(request, _("You don't have access to this language."))
+        messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
     # Parametri attivi + domande + allowed motivations (ordinati, prefetch)
@@ -340,14 +340,14 @@ def language_data(request, lang_id):
 def answer_save(request, lang_id, question_id):
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
-        messages.error(request, _("You don't have access to this language."))
+        messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
     question = get_object_or_404(Question, pk=question_id)
 
     response_text = (request.POST.get("response_text") or "").strip().lower()
     if response_text not in ("yes", "no"):
-        messages.error(request, _("Invalid answer value."))
+        messages.error(request, _t("Invalid answer value."))
         return redirect("language_data", lang_id=lang.id)
 
     comments = (request.POST.get("comments") or "").strip()
@@ -355,7 +355,7 @@ def answer_save(request, lang_id, question_id):
     # Rispetta 'modifiable' per gli utenti; gli ADMIN possono bypassare
     answer = Answer.objects.filter(language=lang, question=question).first()
     if answer and not answer.modifiable and not _is_admin(request.user):
-        messages.error(request, _("This answer is locked (waiting/approved)."))
+        messages.error(request, _t("This answer is locked (waiting/approved)."))
         return redirect("language_data", lang_id=lang.id)
 
     # Motivazioni
@@ -412,7 +412,7 @@ def answer_save(request, lang_id, question_id):
             continue
         Example.objects.filter(id=ex_id, answer=answer).update(**{field: val})
 
-    messages.success(request, _("Answer saved."))
+    messages.success(request, _t("Answer saved."))
     return redirect("language_data", lang_id=lang.id)
 
 
@@ -421,7 +421,7 @@ def answer_save(request, lang_id, question_id):
 def answers_bulk_save(request, lang_id):
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
-        messages.error(request, _("You don't have access to this language."))
+        messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
     questions = (
@@ -491,7 +491,8 @@ def answers_bulk_save(request, lang_id):
             if to_del:
                 AnswerMotivation.objects.filter(answer=a, motivation_id__in=to_del).delete()
 
-            # Examples
+            # --- Examples: update esistenti + crea nuovi --------------------
+            # 1) Update degli esempi esistenti (nominati "ex_<id>_<field>")
             for key, val in request.POST.items():
                 if not key.startswith("ex_"):
                     continue
@@ -504,12 +505,70 @@ def answers_bulk_save(request, lang_id):
                     continue
                 Example.objects.filter(id=ex_id, answer=a).update(**{field: val})
 
+            # 2) Creazione di nuovi esempi (nominati "newex_<questionId>_<uid>_<field>")
+            #    Usiamo un prefisso esatto per gestire questionId con underscore (es. "FGM_Qa").
+            prefix = f"newex_{q.id}_"
+            buckets = {}
+            for key, val in request.POST.items():
+                if not key.startswith(prefix):
+                    continue
+                # remainder: "<uid>_<field>"
+                remainder = key[len(prefix):]
+                try:
+                    uid, field = remainder.rsplit("_", 1)  # split solo una volta!
+                except ValueError:
+                    continue
+
+                if field not in {"number", "textarea", "transliteration", "gloss", "translation", "reference"}:
+                    continue
+
+                buckets.setdefault(uid, {})[field] = val
+
+            if buckets:
+                ex_to_create = []
+                for uid, data in buckets.items():
+                    ex_to_create.append(Example(
+                        answer=a,
+                        number=(data.get("number") or "").strip(),
+                        textarea=(data.get("textarea") or "").strip(),
+                        transliteration=(data.get("transliteration") or "").strip(),
+                        gloss=(data.get("gloss") or "").strip(),
+                        translation=(data.get("translation") or "").strip(),
+                        reference=(data.get("reference") or "").strip(),
+                    ))
+                Example.objects.bulk_create(ex_to_create, ignore_conflicts=True)
+
+
+            # 3) Validazione “YES richiede almeno 1 esempio”
+            if rt == "yes":
+                ex_count = Example.objects.filter(answer=a).count()
+                if ex_count == 0:
+                    # Niente esempi: non salviamo questa risposta; segnaliamo all'utente
+                    # Ripristiniamo eventualmente il valore precedente (se esiste)
+                    if a.id and a.response_text != (a.__class__.objects.filter(pk=a.id).values_list("response_text", flat=True).first() or ""):
+                        a.refresh_from_db(fields=["response_text", "comments"])
+                    # Segnala: accumula ID e passa oltre senza contare 'saved'
+                    request._missing_examples_for_yes = getattr(request, "_missing_examples_for_yes", [])
+                    request._missing_examples_for_yes.append(q.id)
+                    # opzionale: potresti anche mettere a blank, ma meglio lasciare com'è
+                    continue
+
             saved += 1
 
     if skipped_locked:
-        messages.warning(request, _(f"Saved {saved} answers. Skipped {skipped_locked} locked answers (waiting/approved)."))
+        messages.warning(request, _t(f"Saved {saved} answers. Skipped {skipped_locked} locked answers (waiting/approved)."))
     else:
-        messages.success(request, _(f"Saved {saved} answers (others left unchanged)."))
+        messages.success(request, _t(f"Saved {saved} answers (others left unchanged)."))
+    
+    # Messaggi per YES senza esempi
+    miss = getattr(request, "_missing_examples_for_yes", [])
+    if miss:
+        messages.error(
+            request,
+            _t("Answers set to YES require at least one example. Missing for: %(qs)s") % {
+                "qs": ", ".join(miss[:10]) + ("…" if len(miss) > 10 else "")
+            }
+        )
 
     return redirect("language_data", lang_id=lang.id)
 
@@ -520,36 +579,36 @@ def answers_bulk_save(request, lang_id):
 def language_export(request, lang_id):
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
-        messages.error(request, _("You don't have access to this language."))
+        messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
-    messages.info(request, _("Export is not implemented yet."))
+    messages.info(request, _t("Export is not implemented yet."))
     return redirect("language_data", lang_id=lang.id)
 
 
 @login_required
 def language_save_instructions(request, lang_id):
     if not _is_admin(request.user):
-        messages.error(request, _("You are not allowed to perform this action."))
+        messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
-    messages.info(request, _("Instructions are not supported yet (no model to store them)."))
+    messages.info(request, _t("Instructions are not supported yet (no model to store them)."))
     return redirect("language_data", lang_id=lang_id)
 
 
 @login_required
 def language_approve(request, lang_id):
     if not _is_admin(request.user):
-        messages.error(request, _("You are not allowed to perform this action."))
+        messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
-    messages.info(request, _("Approval flow not implemented yet."))
+    messages.info(request, _t("Approval flow not implemented yet."))
     return redirect("language_data", lang_id=lang_id)
 
 
 @login_required
 def language_reopen(request, lang_id):
     if not _is_admin(request.user):
-        messages.error(request, _("You are not allowed to perform this action."))
+        messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
-    messages.info(request, _("Reopen flow not implemented yet."))
+    messages.info(request, _t("Reopen flow not implemented yet."))
     return redirect("language_data", lang_id=lang_id)
 
 
@@ -647,12 +706,12 @@ def language_debug(request, lang_id: str):
 @require_POST
 def language_run_dag(request, lang_id: str):
     if not _is_admin(request.user):
-        messages.error(request, _("You are not allowed to run the DAG."))
+        messages.error(request, _t("You are not allowed to run the DAG."))
         return redirect("language_debug", lang_id=lang_id)
 
     try:
         report = run_dag_for_language(lang_id)
-        msg = _(
+        msg = _t(
             "DAG completed: processed %(p)d, forced to zero %(fz)d, missing orig %(mo)d, warnings propagated %(wp)d."
         ) % {
             "p": len(report.processed or []),
@@ -666,7 +725,7 @@ def language_run_dag(request, lang_id: str):
             msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6]) + ("…" if len(report.parse_errors) > 6 else "")
         messages.success(request, msg)
     except Exception as e:
-        messages.error(request, _("DAG failed: %(err)s") % {"err": str(e)})
+        messages.error(request, _t("DAG failed: %(err)s") % {"err": str(e)})
 
     return redirect("language_debug", lang_id=lang_id)
 
@@ -676,7 +735,7 @@ def language_run_dag(request, lang_id: str):
 def language_submit(request, lang_id):
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
-        messages.error(request, _("You don't have access to this language."))
+        messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
     # Verifica che siano tutte risposte (yes/no) alle domande attive
@@ -689,14 +748,14 @@ def language_submit(request, lang_id):
     )
     missing = active_q_ids - answered_ids
     if missing:
-        messages.warning(request, _("You must answer all questions before submitting."))
+        messages.warning(request, _t("You must answer all questions before submitting."))
         return redirect("language_data", lang_id=lang.id)
 
     # Setta WAITING + modifiable=False solo per risposte dell'utente su questa lingua
     changed = Answer.objects.filter(language=lang).update(
         status=AnswerStatus.WAITING, modifiable=False
     )
-    messages.success(request, _(f"Submitted {changed} answers for approval."))
+    messages.success(request, _t(f"Submitted {changed} answers for approval."))
     return redirect("language_data", lang_id=lang.id)
 
 
@@ -704,7 +763,7 @@ def language_submit(request, lang_id):
 @require_POST
 def language_approve(request, lang_id):
     if not _is_admin(request.user):
-        messages.error(request, _("You are not allowed to perform this action."))
+        messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
 
     lang = get_object_or_404(Language, pk=lang_id)
@@ -718,7 +777,7 @@ def language_approve(request, lang_id):
     try:
         report = run_dag_for_language(lang_id)
         # report è un dataclass: usa report.processed, report.forced_zero, ecc.
-        msg = _(
+        msg = _t(
             "Approved %(n)d answers. DAG: processed %(p)d, forced_to_zero %(fz)d, missing_orig %(mo)d, warnings %(wp)d."
         ) % {
             "n": changed,
@@ -732,7 +791,7 @@ def language_approve(request, lang_id):
         messages.success(request, msg)
     except Exception as e:
         # NON chiamare report come funzione: gestisci e basta
-        messages.warning(request, _("Approved, but DAG failed: %(err)s") % {"err": str(e)})
+        messages.warning(request, _t("Approved, but DAG failed: %(err)s") % {"err": str(e)})
 
     return redirect("language_data", lang_id=lang.id)
 
@@ -741,19 +800,19 @@ def language_approve(request, lang_id):
 def language_reject(request, lang_id):
     """ADMIN: waiting -> rejected (riapre editing per USER)."""
     if not _is_admin(request.user):
-        messages.error(request, _("You are not allowed to perform this action."))
+        messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
 
     lang = get_object_or_404(Language, pk=lang_id)
     with transaction.atomic():
         answers = list(Answer.objects.select_for_update().filter(language=lang))
         if not answers:
-            messages.error(request, _("No answers to reject."))
+            messages.error(request, _t("No answers to reject."))
             return redirect("language_data", lang_id=lang.id)
 
         invalid = [a for a in answers if a.status not in ("waiting_for_approval", "rejected")]
         if invalid:
-            messages.error(request, _("All answers must be in 'waiting' to reject."))
+            messages.error(request, _t("All answers must be in 'waiting' to reject."))
             return redirect("language_data", lang_id=lang.id)
 
         changed = 0
@@ -764,7 +823,7 @@ def language_reject(request, lang_id):
                 a.save(update_fields=["status", "modifiable"])
                 changed += 1
 
-    messages.success(request, _(f"Rejected {changed} answers. Users can edit again."))
+    messages.success(request, _t(f"Rejected {changed} answers. Users can edit again."))
     return redirect("language_data", lang_id=lang.id)
 
 
@@ -773,23 +832,23 @@ def language_reject(request, lang_id):
 def language_reopen(request, lang_id):
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
-        messages.error(request, _("You don't have access to this language."))
+        messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
     changed = Answer.objects.filter(language=lang, status=AnswerStatus.REJECTED).update(
         status=AnswerStatus.PENDING, modifiable=True
     )
     if changed == 0:
-        messages.info(request, _("Nothing to reopen."))
+        messages.info(request, _t("Nothing to reopen."))
     else:
-        messages.success(request, _(f"Reopened: {changed} answers set to pending."))
+        messages.success(request, _t(f"Reopened: {changed} answers set to pending."))
     return redirect("language_data", lang_id=lang.id)
 
 @login_required
 @require_POST
 def language_reject(request, lang_id):
     if not _is_admin(request.user):
-        messages.error(request, _("You are not allowed to perform this action."))
+        messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
 
     lang = get_object_or_404(Language, pk=lang_id)
@@ -797,5 +856,5 @@ def language_reject(request, lang_id):
     changed = Answer.objects.filter(language=lang).update(
         status=AnswerStatus.REJECTED, modifiable=True
     )
-    messages.success(request, _(f"Rejected submission. {changed} answers are editable again."))
+    messages.success(request, _t(f"Rejected submission. {changed} answers are editable again."))
     return redirect("language_data", lang_id=lang.id)

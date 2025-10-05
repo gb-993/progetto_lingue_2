@@ -6,6 +6,7 @@
 
 {% block extra_head %}
   <script src="{% static 'js/show_motivation.js' %}"></script>
+  <script src="{% static 'js/examples.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -141,40 +142,70 @@
               </div>
             </div>
 
-            <div class="grid grid-2">
-              {% for ex in q.ans.examples %}
-                <div class="card">
-                  <div class="grid">
-                    <div>
-                      <label for="ex_{{ ex.id }}_textarea">Data</label>
-                      <input id="ex_{{ ex.id }}_textarea" name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"
-                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                    </div>
-                    <div>
-                      <label for="ex_{{ ex.id }}_transliteration">Transliteration</label>
-                      <input id="ex_{{ ex.id }}_transliteration" name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"
-                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                    </div>
-                    <div>
-                      <label for="ex_{{ ex.id }}_gloss">Gloss</label>
-                      <input id="ex_{{ ex.id }}_gloss" name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"
-                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                    </div>
-                    <div>
-                      <label for="ex_{{ ex.id }}_translation">English translation</label>
-                      <input id="ex_{{ ex.id }}_translation" name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"
-                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                    </div>
-                    <div>
-                      <label for="ex_{{ ex.id }}_reference">Reference</label>
-                      <input id="ex_{{ ex.id }}_reference" name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"
-                             {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
+            {# --- BLOCCO ESEMPI: visibile solo se YES --- #}
+            <div class="examples-block"
+                 data-qid="{{ q.id }}"
+                 {% if q.ans.response_text != "yes" %}style="display:none"{% endif %}>
+              <div class="toolbar" style="margin:.5rem 0">
+                <strong>Examples</strong>
+                <span class="sr-only examples-hint" aria-live="polite"></span>
+                {# pulsante che conosce il template_type della domanda #}
+                <button class="btn add-example-btn"
+                        data-qid="{{ q.id }}"
+                        data-template="{{ q.template_type|default:'' }}"
+                        type="button"
+                        {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}disabled{% endif %}>
+                  Add example
+                </button>
+              </div>
+
+              {# elenco esempi esistenti (EDIT in-place) + elenco nuovi esempi (append qui) #}
+              <div class="examples-list" data-qid="{{ q.id }}">
+                {% for ex in q.ans.examples %}
+                  <div class="card example-row" style="margin-bottom:.5rem">
+                    <div class="grid">
+                      <div>
+                        <label for="ex_{{ ex.id }}_number">Number</label>
+                        <input id="ex_{{ ex.id }}_number" name="ex_{{ ex.id }}_number" value="{{ ex.number }}" readonly>
+                      </div>
+                      <div>
+                        <label for="ex_{{ ex.id }}_textarea">Data</label>
+                        <input id="ex_{{ ex.id }}_textarea" name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"
+                               {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
+                      </div>
+                      <div>
+                        <label for="ex_{{ ex.id }}_transliteration">Transliteration</label>
+                        <input id="ex_{{ ex.id }}_transliteration" name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"
+                               {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
+                      </div>
+                      <div>
+                        <label for="ex_{{ ex.id }}_gloss">Gloss</label>
+                        <input id="ex_{{ ex.id }}_gloss" name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"
+                               {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
+                      </div>
+                      <div>
+                        <label for="ex_{{ ex.id }}_translation">English translation</label>
+                        <input id="ex_{{ ex.id }}_translation" name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"
+                               {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
+                      </div>
+                      <div>
+                        <label for="ex_{{ ex.id }}_reference">Reference</label>
+                        <input id="ex_{{ ex.id }}_reference" name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"
+                               {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
+                      </div>
                     </div>
                   </div>
-                </div>
-              {% empty %}
-                <div class="muted">No examples yet</div>
-              {% endfor %}
+                {% empty %}
+                  <div class="muted">No examples yet</div>
+                {% endfor %}
+                {# Qui JS aggiungerà i nuovi esempi (newex_...) #}
+              </div>
+
+              {# Suggerimento di impaginazione:
+                 - layout "lineare": va bene così (uno sotto l'altro)
+                 - layout "coppie"/"decimale": puoi applicare via CSS grid con media queries
+                   raggruppando per prefisso (es. 1a/1b sulla stessa riga).
+                 Presentazione puramente estetica, DB invariato. #}
             </div>
 
             {% if is_admin or lang_status.overall == 'pending' or lang_status.overall == 'rejected' %}

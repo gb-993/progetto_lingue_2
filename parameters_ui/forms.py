@@ -72,10 +72,10 @@ class ParameterForm(forms.ModelForm):
 class QuestionForm(forms.ModelForm):
     # Scelte template per esempio/visualizzazione
     TEMPLATE_CHOICES = [
-        ("", "— nessun template —"),
-        ("plain", "Plain text"),
-        ("glossed", "Glossed line"),
-        ("numbered", "Numbered list"),
+        ("", "— nessun template —"),  # lascia questa
+        ("linear", "Numerazione semplice (1, 2, 3, ...)"),
+        ("paired", "Coppie (1a, 1b, 2a, 2b, ...)"),
+        ("decimal", "Decimale (1.1, 1.2, 2.1, 2.2, ...)"),
     ]
     template_type = forms.ChoiceField(choices=TEMPLATE_CHOICES, required=False)
 
