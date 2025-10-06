@@ -59,12 +59,11 @@ def accounts_list(request):
 @login_required
 @user_passes_test(_is_admin)
 def accounts_add(request):
-    """
-    Crea nuovo account. Password obbligatoria in create.
-    Gestione lingue opzionale se esiste User.languages M2M.
-    """
+
+    # se admin ha inviato il form
     if request.method == "POST":
         form = AccountForm(request.POST)
+        # controllo subito password obbligatoria
         if not request.POST.get("password"):
             form.add_error("password", "La password è obbligatoria per creare un account.")
         if form.is_valid():
@@ -76,9 +75,11 @@ def accounts_add(request):
                 user.m2m_languages.set(langs)
             messages.success(request, "Account creato correttamente.")
             return redirect("accounts_list")
+    # richiesta GET, admin apre la pagina per la prima volta    
     else:
         form = AccountForm()
 
+    # serve per il multi-select delle lingue
     languages = Language.objects.all().order_by("id") if HAS_LANGUAGE else []
     selected_lang_ids = []
 
@@ -95,22 +96,23 @@ def accounts_add(request):
 @login_required
 @user_passes_test(_is_admin)
 def accounts_edit(request, user_id):
-    """
-    Modifica account esistente. Password opzionale: se vuota non cambia.
-    Lingue gestite se M2M presente.
-    """
+
     user = get_object_or_404(User, pk=user_id)
 
+    # se admin ha inviato il form
     if request.method == "POST":
+        # form collegato all'istanza esistente di User così da fare update
         form = AccountForm(request.POST, instance=user)
         if form.is_valid():
-            user = form.save(commit=True)
+            user = form.save(commit=True) # scrive subito sul db
             if HAS_LANGUAGE and hasattr(user, "m2m_languages"):
                 lang_ids = request.POST.getlist("lang_ids")
                 langs = Language.objects.filter(id__in=lang_ids)
                 user.m2m_languages.set(langs)
             messages.success(request, "Account aggiornato.")
             return redirect("accounts_list")
+        
+    # se richiesta GET, mostra il form con i dati esistenti
     else:
         form = AccountForm(instance=user)
 

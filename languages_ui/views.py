@@ -152,17 +152,19 @@ def _language_overall_status(lang: Language) -> dict:
 # -----------------------
 @login_required
 def language_list(request):
+
+    # cerca di capire se admin 
     q = (request.GET.get("q") or "").strip()
     user = request.user
     is_admin = _is_admin(user)
 
     qs = Language.objects.select_related("assigned_user").order_by("position")
 
-    # 🔒 Solo proprie lingue se non admin
+    # Solo proprie lingue se non admin
     if not is_admin:
         qs = qs.filter(Q(assigned_user=user) | Q(users=user))
 
-    # 🔎 Ricerca (email assegnata visibile solo ad admin)
+    # Ricerca (email assegnata visibile solo ad admin)
     if q:
         filt = (
             Q(id__icontains=q)
@@ -205,9 +207,10 @@ def language_add(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def language_edit(request, lang_id):
-    from .forms import LanguageForm  # import locale per evitare cicli
+    from .forms import LanguageForm  # import locale del form
     lang = get_object_or_404(Language, pk=lang_id)
     if request.method == "POST":
+        # instance=lang per fare update e non creare elemento nuovo
         form = LanguageForm(request.POST, instance=lang)
         if form.is_valid():
             form.save()
@@ -223,16 +226,19 @@ def language_edit(request, lang_id):
 # -----------------------
 @login_required
 def language_data(request, lang_id):
-    user = request.user
-    is_admin = _is_admin(user)  # <-- aggiungi
 
+    # identifica user attuale e verifica che sia admin
+    user = request.user
+    is_admin = _is_admin(user)  
+
+    # recupera la lingua specificata in url o 404
     lang = get_object_or_404(Language, pk=lang_id)
 
     if not _check_language_access(user, lang):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
-    # Parametri attivi + domande + allowed motivations (ordinati, prefetch)
+    # Raccolta parametri attivi + domande + allowed motivations per ognuno
     parameters = (
         ParameterDef.objects.filter(is_active=True)
         .order_by("position")
@@ -257,12 +263,14 @@ def language_data(request, lang_id):
         )
     )
 
-    # Risposte già presenti per la lingua
+    # raccolta risposte già presenti per la lingua
     answers_qs = (
         Answer.objects.filter(language=lang)
         .select_related("question")
         .prefetch_related("answer_motivations__motivation", "examples")
     )
+
+    # mappa domande → answer per accesso veloce
     by_qid = {a.question_id: a for a in answers_qs}
 
     # Costruzione “view model” per il template
@@ -277,6 +285,7 @@ def language_data(request, lang_id):
 
             a = by_qid.get(q.id)
             if a:
+                # per ogni domanda, aggiungi un attributo 'ans' con i dati dell'eventuale risposta
                 ans_ns = SimpleNamespace(
                     response_text=a.response_text,
                     comments=a.comments or "",
@@ -296,6 +305,7 @@ def language_data(request, lang_id):
                 )
             q.ans = ans_ns
 
+        # Stato del parametro per lo status (ok/missing/warn)
         if total == 0:
             p.status = "ok"
         elif answered == 0:
@@ -304,11 +314,11 @@ def language_data(request, lang_id):
             p.status = "warn"
         else:
             p.status = "ok"
-    # ---- Aggiunta: stato complessivo per la UI ----
+
     status_summary = _language_status_summary(lang)
     all_ok = all(getattr(p, "status", "missing") == "ok" for p in parameters)
     
-        # ---- Calcolo "all_answered" e stato globale per il template
+    # Calcolo "all_answered" e stato globale per il template
     # all_answered: tutte le domande attive hanno una risposta yes/no?
     total_q = 0
     answered_q = 0
@@ -345,6 +355,7 @@ def answer_save(request, lang_id, question_id):
 
     question = get_object_or_404(Question, pk=question_id)
 
+    # legge dati dal form
     response_text = (request.POST.get("response_text") or "").strip().lower()
     if response_text not in ("yes", "no"):
         messages.error(request, _t("Invalid answer value."))
@@ -374,9 +385,12 @@ def answer_save(request, lang_id, question_id):
     else:
         motivation_ids = [mid for mid in motivation_ids if mid in allowed_ids]
         mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
+        
+        # ATTENZIONE: DA VERIFICARE (esclusione delle altre motivazoini se c'è la uno)
         if mot1 and mot1.id in motivation_ids:
             motivation_ids = [mot1.id]
 
+    # crea o aggiorna l'oggetto Answer
     if answer is None:
         answer = Answer(language=lang, question=question, response_text=response_text, comments=comments)
     else:
@@ -384,7 +398,7 @@ def answer_save(request, lang_id, question_id):
         answer.comments = comments
     answer.save()
 
-    # Sync motivazioni
+    # Sync motivazioni, evita di cancellare tutto e riscrivere a ogni submit
     current_ids = set(
         AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
     )
@@ -465,6 +479,8 @@ def answers_bulk_save(request, lang_id):
             else:
                 allowed = allowed_by_qid.get(q.id, set())
                 mot_ids = [mid for mid in mot_ids if mid in allowed]
+
+                # ATTENZIONE: DA VERIFICARE (esclusione delle altre motivazoini se c'è la 1)
                 mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
                 if mot1 and mot1.id in mot_ids:
                     mot_ids = [mot1.id]
