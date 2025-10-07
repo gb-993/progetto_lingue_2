@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "glossary_ui",
     "tablea_ui",
     "submissions_ui",
+    "queries",
 
 ]
 

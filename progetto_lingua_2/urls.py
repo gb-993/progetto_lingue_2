@@ -14,7 +14,7 @@ urlpatterns = [
     path("glossary/", include("glossary_ui.urls")),
     path("table-a/", include("tablea_ui.urls")),
     path("submissions/", include("submissions_ui.urls")),
-
+    path("queries/", include("queries.urls")),
     path("health/", views_health.health, name="health"),
 ]
 

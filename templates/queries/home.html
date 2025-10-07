@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Interrogazioni" %}{% endblock %}
+{% block breadcrumb %}Queries{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar Filtri -->
+    <aside class="col-12 col-md-3 mb-3">
+      <div class="card">
+        <div class="card-header"><strong>{% trans "Filtri" %}</strong></div>
+        <div class="card-body">
+          <form method="get" class="vstack gap-2" role="search" aria-label="{% trans 'Filtri interrogazione' %}">
+            {{ form.non_field_errors }}
+
+            <!-- Dataset -->
+            <div>
+              <label class="form-label" for="{{ form.dataset.id_for_label }}">{{ form.dataset.label }}</label>
+              {{ form.dataset }}
+            </div>
+
+            <!-- Tutti gli altri campi, esclusi dataset e page -->
+            {% for field in form %}
+              {% if field.name != "dataset" and field.name != "page" %}
+                <div>
+                  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                  {{ field.errors }}
+                </div>
+              {% endif %}
+            {% endfor %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">{% trans "Cerca" %}</button>
+              <a class="btn btn-outline-secondary" href="{% url 'queries:home' %}">{% trans "Reset" %}</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Risultati -->
+    <section class="col-12 col-md-9">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>{% trans "Risultati" %}</strong>
+          <span class="text-muted">
+            {% trans "Pagina" %} {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </span>
+        </div>
+
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            {% comment %}
+              Tabella per dataset, senza usare getattr dinamico.
+              Colonne fisse per ciascun dataset supportato.
+            {% endcomment %}
+
+            {% if dataset == "user" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">email</th>
+                    <th scope="col">role</th>
+                    <th scope="col">is_staff</th>
+                    <th scope="col">is_active</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.email }}</td>
+                      <td>{{ obj.role }}</td>
+                      <td>{{ obj.is_staff }}</td>
+                      <td>{{ obj.is_active }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="4">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% elif dataset == "language" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">name_full</th>
+                    <th scope="col">grp</th>
+                    <th scope="col">isocode</th>
+                    <th scope="col">glottocode</th>
+                    <th scope="col">assigned_user</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.id }}</td>
+                      <td>{{ obj.name_full }}</td>
+                      <td>{{ obj.grp }}</td>
+                      <td>{{ obj.isocode }}</td>
+                      <td>{{ obj.glottocode }}</td>
+                      <td>{% if obj.assigned_user %}{{ obj.assigned_user }}{% else %}—{% endif %}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="6">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% elif dataset == "parameter" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">name</th>
+                    <th scope="col">is_active</th>
+                    <th scope="col">position</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.id }}</td>
+                      <td>{{ obj.name }}</td>
+                      <td>{{ obj.is_active }}</td>
+                      <td>{{ obj.position }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="4">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% elif dataset == "question" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">parameter</th>
+                    <th scope="col">is_stop_question</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.id }}</td>
+                      <td>{{ obj.parameter }}</td>
+                      <td>{{ obj.is_stop_question }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="3">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% elif dataset == "answer" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">language</th>
+                    <th scope="col">question</th>
+                    <th scope="col">response_text</th>
+                    <th scope="col">status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.id }}</td>
+                      <td>{{ obj.language }}</td>
+                      <td>{{ obj.question }}</td>
+                      <td>{{ obj.response_text }}</td>
+                      <td>{{ obj.status }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="5">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% elif dataset == "example" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">answer</th>
+                    <th scope="col">gloss</th>
+                    <th scope="col">translation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.id }}</td>
+                      <td>{{ obj.answer }}</td>
+                      <td>{{ obj.gloss }}</td>
+                      <td>{{ obj.translation }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="4">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% elif dataset == "motivation" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">code</th>
+                    <th scope="col">label</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.code }}</td>
+                      <td>{{ obj.label }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="2">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% elif dataset == "langparam" %}
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">language</th>
+                    <th scope="col">parameter</th>
+                    <th scope="col">value_orig</th>
+                    <th scope="col">warning_orig</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obj in page_obj.object_list %}
+                    <tr>
+                      <td>{{ obj.language }}</td>
+                      <td>{{ obj.parameter }}</td>
+                      <td>
+                        {% if obj.value_orig is None %}—{% else %}{{ obj.value_orig }}{% endif %}
+                      </td>
+                      <td>{{ obj.warning_orig }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td class="p-3" colspan="4">{% trans "Nessun risultato" %}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+            {% else %}
+              <div class="p-3">{% trans "Seleziona un dataset e applica i filtri." %}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Paginazione senza tag custom:
+             usiamo due form GET che replicano i valori correnti e cambiano solo 'page' -->
+        <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="text-muted small">
+            {% trans "Totale righe" %}: {{ page_obj.paginator.count }}
+          </div>
+
+          <div class="d-flex gap-2">
+            {% if page_obj.has_previous %}
+              <form method="get" class="d-inline">
+                {% for field in form %}
+                  {% if field.name != "page" %}
+                    {# replichiamo i valori correnti dei filtri #}
+                    {% if field.value %}
+                      <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                <input type="hidden" name="page" value="{{ page_obj.previous_page_number }}">
+                <button type="submit" class="btn btn-sm btn-outline-primary">&laquo; {% trans "Precedente" %}</button>
+              </form>
+            {% else %}
+              <span></span>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+              <form method="get" class="d-inline">
+                {% for field in form %}
+                  {% if field.name != "page" %}
+                    {% if field.value %}
+                      <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                <input type="hidden" name="page" value="{{ page_obj.next_page_number }}">
+                <button type="submit" class="btn btn-sm btn-outline-primary">{% trans "Successiva" %} &raquo;</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

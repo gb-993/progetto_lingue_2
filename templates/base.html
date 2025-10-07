@@ -67,12 +67,20 @@
             </a>
           </li>
           <li>
+            <a class="btn" href="{% url 'queries:home' %}"
+              {% if request.resolver_match and request.resolver_match.namespace == 'queries' %}aria-current="page"{% endif %}>
+              Queries
+            </a>
+          </li>
+
+          <li>
             <a class="btn" href="{% url 'accounts_list' %}"
               {% if current == 'accounts_list' %}aria-current="page"{% endif %}>
               Accounts
             </a>
           </li>
         {% endif %}
+
 
         <li>
           <form action="{% url 'logout' %}" method="post" aria-label="Esegui il logout">
