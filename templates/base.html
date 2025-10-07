@@ -1,117 +1,69 @@
+{# templates/base.html — base pulita, tema chiaro, header + breadcrumb #}
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>{% block title %}Admin{% endblock %}</title>
+  <title>{% block title %}Parametric Comparison Method (PCM){% endblock %}</title>
   {% load static %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  {# CSS principali #}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
-  <link rel="stylesheet" href="{% static 'css/mobile.css' %}" media="(max-width: 768px)">
-
-  {# Slot opzionale per CSS/JS extra nelle pagine figlie #}
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  {# Link di salto al contenuto, visibile al focus #}
-  <a href="#main" class="sr-only">Salta al contenuto principale</a>
 
-  <div class="wrap">
-    <header role="banner" class="site-header">
-      <div class="site-brand">
-        <strong>Admin</strong>
-        <span class="muted" aria-current="page">
-          {% block breadcrumb %}{% endblock %}
-        </span>
-      </div>
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="container">
+      <h1 class="site-title">
+        Parametric Comparison Method (PCM)
+        <span class="site-subtitle">Data collection and storage</span>
+      </h1>
 
-      {# Navigazione principale #}
-      {% with current=request.resolver_match.url_name %}
-      <nav class="nav" role="navigation" aria-label="Navigazione principale">
+      <nav class="nav" aria-label="Main">
         <ul class="nav-list">
+          <li><a class="btn" href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a></li>
+          <li><a class="btn" href="{% url 'language_list' %}">Languages</a></li>
+          <li><a class="btn" href="{% url 'glossary_list' %}">Glossary</a></li>
+          <li><a class="btn" href="{% url 'parameter_list' %}">Parameters</a></li>
+          <li><a class="btn" href="{% url 'tablea_index' %}">Table A</a></li>
+          <li><a class="btn" href="{% url 'queries:home' %}">Queries</a></li>
+          <li><a class="btn" href="{% url 'submissions_list' %}">Submissions</a></li>
+          <li><a class="btn" href="{% url 'accounts_list' %}">Accounts</a></li>
           <li>
-            <a class="btn" href="{% url 'dashboard' %}"
-               {% if current == 'dashboard' %}aria-current="page"{% endif %}>
-              Dashboard
-            </a>
-          </li>
-
-          {# ---- voci sempre visibili agli USER ---- #}
-          <li>
-            <a class="btn" href="{% url 'language_list' %}"
-               {% if current == 'language_list' %}aria-current="page"{% endif %}>
-               Languages
-            </a>
-          </li>
-          <li>
-            <a class="btn" href="{% url 'glossary_list' %}"
-               {% if current == 'glossary_list' %}aria-current="page"{% endif %}>
-               Glossary
-            </a>
-          </li>
-
-          {# ---- ADMIN/Staff soltanto ---- #}
-          {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
-            <li>
-              <a class="btn" href="{% url 'parameter_list' %}"
-                 {% if current == 'parameter_list' %}aria-current="page"{% endif %}>
-                 Parameters
-              </a>
-            </li>
-            <li>
-              <a class="btn" href="{% url 'tablea_index' %}"
-                 {% if current == 'tablea_index' %}aria-current="page"{% endif %}>
-                 Table A
-              </a>
-            </li>
-            <li>
-              <a class="btn" href="{% url 'queries:home' %}"
-                 {% if request.resolver_match and request.resolver_match.namespace == 'queries' %}aria-current="page"{% endif %}>
-                 Queries
-              </a>
-            </li>
-            <li>
-              <a class="btn" href="{% url 'submissions_list' %}"
-                 {% if current == 'submissions_list' or current == 'submission_detail' %}aria-current="page"{% endif %}>
-                 Submissions
-              </a>
-            </li>
-            <li>
-              <a class="btn" href="{% url 'accounts_list' %}"
-                 {% if current == 'accounts_list' %}aria-current="page"{% endif %}>
-                 Accounts
-              </a>
-            </li>
-          {% endif %}
-
-          <li>
-            <form action="{% url 'logout' %}" method="post" aria-label="Esegui il logout">
-              {% csrf_token %}
-              <button type="submit" class="btn">Logout</button>
+            <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
+              <button class="btn" type="submit">Logout</button>
             </form>
           </li>
         </ul>
       </nav>
-      {% endwith %}
-    </header>
 
-    {# Messaggi flash: area annunci live e accessibile #}
-    <section role="status" aria-live="polite" aria-atomic="true">
-      {% include "_partials/messages.html" %}
-    </section>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        {% block breadcrumb %}<span>Dashboard</span>{% endblock %}
+      </nav>
+    </div>
+  </header>
 
-    {# Contenuto principale della pagina #}
-    <main id="main" role="main" tabindex="-1">
-      {% block content %}{% endblock %}
-    </main>
+  <a href="#main" class="sr-only">Skip to main content</a>
 
-    {# Footer #}
-    {% block footer %}
-    <footer role="contentinfo" class="site-footer">
+  <!-- FLASH MESSAGES -->
+  <section role="status" aria-live="polite" aria-atomic="true">
+    {% include "_partials/messages.html" %}
+  </section>
+
+  <!-- MAIN -->
+  <main id="main" role="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- FOOTER -->
+  {% block footer %}
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
       <p class="muted">© {% now "Y" %} – Admin area</p>
-    </footer>
-    {% endblock %}
-  </div>
+    </div>
+  </footer>
+  {% endblock %}
+
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

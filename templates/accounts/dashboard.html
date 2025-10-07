@@ -1,100 +1,65 @@
-{% extends "base.html" %} 
+{% extends "base.html" %}
+{% load static %}
+
 {% block title %}Dashboard{% endblock %}
-{% block breadcrumb %}Dashboard{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'dashboard' %}">Dashboard</a>
+{% endblock %}
 
 {% block content %}
+<div class="container dashboard" role="main">
+  <header class="dashboard-hero">
+    <h1>Dashboard</h1>
+    <p class="muted">Data collection and storage</p>
+  </header>
 
-
-  <div class="grid grid-3" role="navigation" aria-label="Dashboard shortcuts">
-
-    {# ---- visibili a tutti ---- #}
-    <a class="card btn" href="{% url 'language_list' %}" aria-label="Apri la lista delle lingue">
-      <h3>Languages</h3>
-      <p class="muted">Gestisci/visualizza lingue e dati</p>
+  <nav class="nav-tiles" role="navigation" aria-label="Dashboard shortcuts">
+    <a class="card btn tile" href="{% url 'language_list' %}" aria-label="Open languages">
+      <strong>Languages</strong><span class="tile-sub">Gestisci/visualizza lingue e dati</span>
     </a>
 
-    <a class="card btn" href="{% url 'glossary_list' %}" aria-label="Apri il glossario">
-      <h3>Glossary</h3>
-      <p class="muted">Termini e definizioni</p>
+    <a class="card btn tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
+      <strong>Parameters</strong><span class="tile-sub">Definizioni e domande</span>
     </a>
 
-    <a class="card btn" href="{% url 'my_account' %}" aria-label="Modifica il tuo account">
-      <h3>My Account</h3>
-      <p class="muted">Modifica i tuoi dati</p>
+    <a class="card btn tile" href="{% url 'glossary_list' %}" aria-label="Open glossary">
+      <strong>Glossary</strong><span class="tile-sub">Termini e definizioni</span>
     </a>
 
-    {# ---- solo admin/staff ---- #}
-    {% if is_admin %}
-      <a class="card btn" href="{% url 'parameter_list' %}" aria-label="Apri la gestione dei parametri">
-        <h3>Parameters</h3>
-        <p class="muted">Definizioni e domande</p>
-      </a>
+    <a class="card btn tile" href="{% url 'tablea_index' %}" aria-label="Open Table A">
+      <strong>Table A</strong><span class="tile-sub">Riepilogo parametri × lingue</span>
+    </a>
 
-      <a class="card btn" href="{% url 'tablea_index' %}" aria-label="Apri Tabella A riepilogo parametri per lingua">
-        <h3>Table A</h3>
-        <p class="muted">Riepilogo parametri × lingue</p>
-      </a>
+    <a class="card btn tile" href="{% url 'accounts_list' %}" aria-label="Open accounts">
+      <strong>Accounts</strong><span class="tile-sub">Admin &amp; Users</span>
+    </a>
 
-      <a class="card btn" href="{% url 'accounts_list' %}" aria-label="Apri la gestione degli account">
-        <h3>Accounts</h3>
-        <p class="muted">Admin &amp; Users</p>
-      </a>
+    <a class="card btn tile" href="{% url 'queries:home' %}" aria-label="Open queries">
+      <strong>Queries</strong><span class="tile-sub">Interrogazioni al database</span>
+    </a>
 
-      <a class="card btn" href="{% url 'queries:home' %}" aria-label="Apri interrogazioni (faceted search)">
-        <h3>Queries</h3>
-        <p class="muted">Interrogazioni al database</p>
-      </a>
+    <a class="card btn tile" href="{% url 'submissions_list' %}" aria-label="Open submissions">
+      <strong>Submissions</strong><span class="tile-sub">Gestisci/visualizza submissions</span>
+    </a>
+  </nav>
 
-      <a class="card btn" href="{% url 'submissions_list' %}" aria-label="Apri la lista delle submissions">
-        <h3>Submissions</h3>
-        <p class="muted">Gestisci/visualizza submissions</p>
-      </a>
-    {% endif %}
-  </div>
-
-
-  {% if is_admin %}
-  <section class="card mt-3" aria-labelledby="last-changes-heading">
+  {% if is_admin and recent_param_changes %}
+  <section class="card mt-2" aria-labelledby="last-changes-heading">
     <h3 id="last-changes-heading">Ultime modifiche</h3>
-
-    {% if recent_param_changes %}
-      <ul class="list">
-        {% for log in recent_param_changes %}
-          <li>
-            <div>
-              <strong>{{ log.parameter_id }}</strong>
-              <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span>
-            </div>
-            <div class="muted">
-              di {{ log.changed_by.email|default:"(utente sconosciuto)" }}
-            </div>
-
-            <details class="mt-1">
-              <summary>Recap</summary>
-              <p>{{ log.recap }}</p>
-            </details>
-
-            {% if log.diff %}
-              <details class="mt-1">
-                <summary>Dettaglio campi modificati</summary>
-                <ul class="list">
-                  {% for field, vals in log.diff.items %}
-                    <li>
-                      <code>{{ field }}</code>:
-                      <em>old</em> = "{{ vals.old }}",
-                      <em>new</em> = "{{ vals.new }}"
-                    </li>
-                  {% endfor %}
-                </ul>
-              </details>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="muted">Nessuna modifica recente ai parametri.</p>
-    {% endif %}
+    <ul class="list">
+      {% for log in recent_param_changes %}
+        <li>
+          <div>
+            <strong>{{ log.parameter_id }}</strong>
+            <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span>
+          </div>
+          <div class="muted">di {{ log.changed_by.email|default:"(utente sconosciuto)" }}</div>
+          {% if log.recap %}<p class="mt-1">{{ log.recap }}</p>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
   </section>
   {% endif %}
-
+</div>
 {% endblock %}
