@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% trans "Interrogazioni" %}{% endblock %}
 {% block breadcrumb %}Queries{% endblock %}
-
+{% block extra_head %}
+  <script src="{% static 'js/change_queries.js' %}"></script>
+{% endblock %}
 {% block content %}
 <div class="container-fluid">
   <div class="row">
@@ -12,32 +15,52 @@
       <div class="card">
         <div class="card-header"><strong>{% trans "Filtri" %}</strong></div>
         <div class="card-body">
-          <form method="get" class="vstack gap-2" role="search" aria-label="{% trans 'Filtri interrogazione' %}">
+            <form method="get" class="vstack gap-2" role="search" aria-label="{% trans 'Filtri interrogazione' %}">
             {{ form.non_field_errors }}
 
             <!-- Dataset -->
             <div>
-              <label class="form-label" for="{{ form.dataset.id_for_label }}">{{ form.dataset.label }}</label>
-              {{ form.dataset }}
+                <label class="form-label" for="{{ form.dataset.id_for_label }}">{{ form.dataset.label }}</label>
+                {{ form.dataset }}
             </div>
 
-            <!-- Tutti gli altri campi, esclusi dataset e page -->
-            {% for field in form %}
-              {% if field.name != "dataset" and field.name != "page" %}
-                <div>
-                  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                  {{ field }}
-                  {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-                  {{ field.errors }}
-                </div>
-              {% endif %}
-            {% endfor %}
+            <!-- Contenitore gruppi dinamici -->
+            <div id="filters-groups" class="vstack gap-2">
+
+                {# Per ciascun dataset stampiamo i suoi campi ESCLUSO dataset e page #}
+                {% for ds_key, ds_form in forms_by_ds.items %}
+                <fieldset
+                class="filters-group {% if ds_key != dataset %}d-none{% endif %}"
+                data-ds="{{ ds_key }}"
+                aria-hidden="{% if ds_key == dataset %}false{% else %}true{% endif %}"
+                {% if ds_key != dataset %}hidden{% endif %}
+                >
+
+                    <legend class="visually-hidden">{{ ds_key }}</legend>
+
+                    {% for field in ds_form %}
+                    {% if field.name != "dataset" and field.name != "page" %}
+                        <div>
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {{ field.errors }}
+                        </div>
+                    {% endif %}
+                    {% endfor %}
+                </fieldset>
+                {% endfor %}
+            </div>
+
+            <!-- Hidden page per azzerare a 1 quando cambi dataset via JS -->
+            <input type="hidden" name="page" value="{{ page_obj.number|default:1 }}">
 
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">{% trans "Cerca" %}</button>
-              <a class="btn btn-outline-secondary" href="{% url 'queries:home' %}">{% trans "Reset" %}</a>
+                <button type="submit" class="btn btn-primary">{% trans "Cerca" %}</button>
+                <a class="btn btn-outline-secondary" href="{% url 'queries:home' %}">{% trans "Reset" %}</a>
             </div>
-          </form>
+            </form>
+
         </div>
       </div>
     </aside>

@@ -1,6 +1,11 @@
 from __future__ import annotations
 from typing import Any, Dict, Tuple
-
+from .forms import (
+    DATASET_CHOICES,              
+    BaseFilterForm, UserFilterForm, LanguageFilterForm, ParameterFilterForm,
+    QuestionFilterForm, AnswerFilterForm, ExampleFilterForm,
+    MotivationFilterForm, LangParamFilterForm,
+)
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db.models import Q, Exists, OuterRef
@@ -241,23 +246,51 @@ BUILDERS = {
     "langparam": build_langparam_qs,
 }
 
+# --- SOSTITUISCI SOLO LA VIEW QUI SOTTO ---
+
 @login_required
 @user_passes_test(_is_linguist_or_admin)
 def search_home(request):
-    dataset = request.GET.get("dataset") or "language"
-    FormCls = FORM_BY_DATASET.get(dataset, LanguageFilterForm)
+    # dataset richiesto (default: language)
+    ds_req = (request.GET.get("dataset") or "language").strip()
+    if ds_req not in FORM_BY_DATASET:
+        ds_req = "language"
 
+    # Form attiva (quella che userai davvero in backend)
+    FormCls = FORM_BY_DATASET.get(ds_req, LanguageFilterForm)
     form = FormCls(request.GET or None)
-    qs = None
+
+    # Mantieni sempre tutte le scelte nel select "dataset"
+    try:
+        all_choices = DATASET_CHOICES
+    except NameError:
+        all_choices = list(BaseFilterForm.base_fields["dataset"].choices)
+    if "dataset" in form.fields:
+        form.fields["dataset"].choices = all_choices
+    else:
+        from django import forms as _forms
+        form.fields["dataset"] = _forms.ChoiceField(
+            choices=all_choices, required=True, label=_("Dataset")
+        )
+        form.initial["dataset"] = ds_req
+
+    # Costruisci queryset risultati
     if form.is_valid():
         data = form.cleaned_data
+        dataset = (data.get("dataset") or ds_req).strip()
+        if dataset not in BUILDERS:
+            dataset = "language"
         qs = BUILDERS[dataset](data)
+    else:
+        dataset = ds_req
+        qs = BUILDERS[dataset]({})
 
+    # Paginazione
     page = int(request.GET.get("page") or 1)
-    paginator = Paginator(qs or [], 25)  # 25 per pagina
+    paginator = Paginator(qs or [], 25)
     page_obj = paginator.get_page(page)
 
-    # colonne minime per dataset (puoi estendere)
+    # Colonne per tabella (template già le gestisce per dataset)
     columns_by_ds = {
         "user": ["email", "role", "is_staff", "is_active"],
         "language": ["id", "name_full", "grp", "isocode", "glottocode", "assigned_user"],
@@ -270,9 +303,21 @@ def search_home(request):
     }
     columns = columns_by_ds.get(dataset, [])
 
+    # NOVITÀ: costruisci TUTTI i form (vuoti), uno per dataset, da mostrare/nascondere lato client.
+    # NOTE: metti "dataset" inizializzato nel rispettivo form per comodità del template.
+    forms_by_ds = {}
+    for key, F in FORM_BY_DATASET.items():
+        f = F()
+        if "dataset" in f.fields:
+            f.fields["dataset"].choices = all_choices
+            f.initial["dataset"] = key
+        forms_by_ds[key] = f
+
     return render(request, "queries/home.html", {
-        "form": form,
+        "form": form,                 # form attivo (per submit)
+        "forms_by_ds": forms_by_ds,   # tutti i gruppi filtri da mostrare/nascondere
         "dataset": dataset,
         "page_obj": page_obj,
         "columns": columns,
     })
+
