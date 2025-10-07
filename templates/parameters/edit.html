@@ -1,199 +1,125 @@
-{% extends "base.html" %} 
-{% load static %}
+{% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}{% if param %}Edit parameter {{ param.id }}{% else %}Add parameter{% endif %}{% endblock %}
-
+{% block title %}{% if is_create %}Add parameter{% else %}Edit parameter{% endif %}{% endblock %}
+{% block breadcrumb %}Parameters / {% if is_create %}Add{% else %}{{ parameter.id }}{% endif %}{% endblock %}
 
 {% block content %}
-<form method="post" class="parameter-form" novalidate aria-describedby="form-help">
-  {% csrf_token %}
+<section class="card" aria-labelledby="param-heading">
+  <h2 id="param-heading">{% if is_create %}Add parameter{% else %}Parameter {{ parameter.id }}{% endif %}</h2>
 
-  {# =======================
-     Errori globali parametro
-     ======================= #}
-  {% if form.non_field_errors %}
-    <div class="alert alert-danger" role="alert" aria-live="assertive">
-      {{ form.non_field_errors }}
-    </div>
-  {% endif %}
+  <form method="post" novalidate>
+    {% csrf_token %}
 
-  {# =======================
-     Sezione Parametro
-     ======================= #}
-  {% if param %}
-    <div class="grid grid-2">
-      <div>
-        {{ form.id.label_tag }}
-        <input class="form-control"
-               value="{{ form.id.value|default_if_none:'' }}"
-               readonly
-               aria-describedby="id-help">
-        {{ form.id.as_hidden }}
-        <p id="id-help" class="muted">Label/ID non modificabile.</p>
-      </div>
+  {% if is_create %}
+    <div class="form-row">
+      {{ form.id.label_tag }} {{ form.id }}
+      {% if form.id.errors %}<div class="form-error">{{ form.id.errors }}</div>{% endif %}
     </div>
   {% else %}
-    <div class="grid grid-2">
-      <div class="{% if form.id.errors %}field-error{% endif %}">
-        {{ form.id.label_tag }} {{ form.id }}
-        {% if form.id.errors %}<div class="error" role="alert">{{ form.id.errors }}</div>{% endif %}
-      </div>
+    <div class="form-row">
+      {{ form.id.label_tag }}
+      <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
+      {{ form.id.as_hidden }}
+      <p class="muted">ID non modificabile.</p>
     </div>
   {% endif %}
 
-  <div class="grid grid-2">
-    <div class="{% if form.name.errors %}field-error{% endif %}">
+
+    <div class="form-row">
       {{ form.name.label_tag }} {{ form.name }}
-      {% if form.name.errors %}<div class="error" role="alert">{{ form.name.errors }}</div>{% endif %}
+      {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
     </div>
-    <div class="{% if form.position.errors %}field-error{% endif %}">
-      {{ form.position.label_tag }} {{ form.position }}
-      {% if form.position.errors %}
-        <div class="error" role="alert">{{ form.position.errors }}</div>
-      {% else %}
-        <p class="muted" id="pos-help">
-          Ordine di visualizzazione (intero ≥ 1). Se la posizione è occupata, lo shift è automatico.
+
+    <div class="form-row">
+      {{ form.short_description.label_tag }} {{ form.short_description }}
+      {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      {{ form.implicational_condition.label_tag }} {{ form.implicational_condition }}
+      {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
+      <p class="help">Usa token tipo <code>+FGM</code>, <code>-SCO</code>, <code>0ABC</code>, senza spazi tra segno e ID.</p>
+    </div>
+
+    <div class="form-row">
+      <label for="{{ form.is_active.id_for_label }}">Active</label>
+      <input
+        id="{{ form.is_active.id_for_label }}"
+        name="{{ form.is_active.html_name }}"
+        type="checkbox"
+        value="1"
+        {% if form.instance.is_active %}checked{% endif %}
+        {% if not can_deactivate and form.instance.is_active %}disabled aria-disabled="true"{% endif %}
+      />
+      {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
+
+      {% if form.instance.is_active and not can_deactivate %}
+        <p class="hint b-bad" role="note">
+          Non disattivabile: esistono parametri che citano questo ID.
+          Consulta l’elenco qui sotto e ripulisci manualmente le condizioni degli altri parametri.
         </p>
       {% endif %}
     </div>
-  </div>
 
-  <div class="{% if form.short_description.errors %}field-error{% endif %}">
-    {{ form.short_description.label_tag }} {{ form.short_description }}
-    {% if form.short_description.errors %}<div class="error" role="alert">{{ form.short_description.errors }}</div>{% endif %}
-  </div>
-
-  <div class="{% if form.implicational_condition.errors %}field-error{% endif %}">
-    {{ form.implicational_condition.label_tag }} {{ form.implicational_condition }}
-    {% if form.implicational_condition.errors %}<div class="error" role="alert">{{ form.implicational_condition.errors }}</div>{% endif %}
-  </div>
-
-  <div class="{% if form.is_active.errors %}field-error{% endif %}">
-    <label class="form-check">
-      {{ form.is_active }} <span>{{ form.is_active.label }}</span>
-    </label>
-    {% if form.is_active.errors %}<div class="error" role="alert">{{ form.is_active.errors }}</div>{% endif %}
-  </div>
-
-  {# =======================
-     Sezione Domande (formset)
-     ======================= #}
-  <section class="card" aria-labelledby="q-heading" style="margin-top:1rem">
-    <h2 id="q-heading">Domande del parametro</h2>
-
-    {{ q_formset.management_form }}
-
-    {% if q_formset.non_form_errors %}
-      <div class="alert alert-danger" role="alert">{{ q_formset.non_form_errors }}</div>
-    {% endif %}
-
-    <div id="questions-list">
-      {% for qf in q_formset.forms %}
-        <fieldset class="question-block"
-                  aria-describedby="q-{{ forloop.counter }}-help"
-                  style="margin-bottom:1rem;border:1px solid var(--border);padding:1rem;border-radius:var(--r-sm);">
-          <legend>Domanda {{ forloop.counter }}</legend>
-
-          {# campi hidden richiesti dal formset (id di riga, ecc.) #}
-          {% for hidden in qf.hidden_fields %}{{ hidden }}{% endfor %}
-
-          {% if qf.non_field_errors %}
-            <div class="alert alert-danger" role="alert">{{ qf.non_field_errors }}</div>
-          {% endif %}
-
-          <div class="grid grid-2">
-            {# === FIX: evitare doppio name="...-id" === #}
-            <div>
-              {% if qf.instance.pk %}
-                <label>ID</label>
-                <input class="form-control" value="{{ qf.instance.id }}" readonly>
-                {# Nota: NON renderizziamo {{ qf.id }} qui; l'id verrà inviato SOLO dal campo hidden del formset #}
-              {% else %}
-                <div class="{% if qf.id.errors %}field-error{% endif %}">
-                  {{ qf.id.label_tag }} {{ qf.id }}
-                  {% if qf.id.errors %}<div class="error" role="alert">{{ qf.id.errors }}</div>{% endif %}
-                </div>
-              {% endif %}
-              {% if qf.instance.pk %}
-                <p class="muted">Consigliato non cambiare l'ID dopo la creazione.</p>
-              {% endif %}
-            </div>
-
-            <div class="{% if qf.is_stop_question.errors %}field-error{% endif %}" style="align-self:end;">
-              <label class="form-check">
-                {{ qf.is_stop_question }} <span>{{ qf.is_stop_question.label }}</span>
-              </label>
-              {% if qf.is_stop_question.errors %}<div class="error" role="alert">{{ qf.is_stop_question.errors }}</div>{% endif %}
-            </div>
-          </div>
-
-          <div class="{% if qf.text.errors %}field-error{% endif %}">
-            {{ qf.text.label_tag }} {{ qf.text }}
-            {% if qf.text.errors %}<div class="error" role="alert">{{ qf.text.errors }}</div>{% endif %}
-          </div>
-
-          <div class="grid grid-2">
-            <div class="{% if qf.instruction.errors %}field-error{% endif %}">
-              {{ qf.instruction.label_tag }} {{ qf.instruction }}
-              {% if qf.instruction.errors %}<div class="error" role="alert">{{ qf.instruction.errors }}</div>{% endif %}
-            </div>
-            <div class="{% if qf.example_yes.errors %}field-error{% endif %}">
-              {{ qf.example_yes.label_tag }} {{ qf.example_yes }}
-              {% if qf.example_yes.errors %}<div class="error" role="alert">{{ qf.example_yes.errors }}</div>{% endif %}
-            </div>
-          </div>
-
-          <div class="{% if qf.template_type.errors %}field-error{% endif %}">
-            {{ qf.template_type.label_tag }} {{ qf.template_type }}
-            {% if qf.template_type.errors %}<div class="error" role="alert">{{ qf.template_type.errors }}</div>{% endif %}
-            <p id="q-{{ forloop.counter }}-help" class="muted">
-              Scegli il template degli esempi utente. (Nessuna modifica al modello <code>Example</code>.)
-            </p>
-          </div>
-
-          {# >>> IMPORTANTE: campo motivations reso esplicitamente #}
-          <div class="{% if qf.motivations.errors %}field-error{% endif %}">
-            <label><strong>Motivazioni disponibili per NO</strong></label>
-            {{ qf.motivations }}
-            {% if qf.motivations.errors %}
-              <div class="error" role="alert">{{ qf.motivations.errors }}</div>
-            {% endif %}
-            <p class="muted">Questo sottoinsieme verrà mostrato all'utente SOLO se risponde “NO”.</p>
-          </div>
-
-          {% if qf.DELETE %}
-            <div class="form-check" style="margin-top:.5rem">
-              <label class="form-check">
-                {{ qf.DELETE }} <span>Elimina questa domanda</span>
-              </label>
-            </div>
-          {% endif %}
-        </fieldset>
-      {% endfor %}
+    <div class="form-row">
+      {{ form.position.label_tag }} {{ form.position }}
+      {% if form.position.errors %}<div class="form-error">{{ form.position.errors }}</div>{% endif %}
     </div>
 
-  </section>
+    <div class="form-row">
+      <label class="sr-only" for="{{ form.warning_default.id_for_label }}">Warning default</label>
+      {{ form.warning_default }}
+      {% if form.warning_default.errors %}<div class="form-error">{{ form.warning_default.errors }}</div>{% endif %}
+    </div>
 
-  <div class="toolbar" style="margin-top:1rem">
-    <a class="btn" href="{% url 'parameter_list' %}">Cancel</a>
-    <button class="btn btn--primary" type="submit">Save</button>
-  </div>
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save</button>
+      <a class="btn" href="{% url 'parameter_list' %}">Back</a>
+    </div>
+  </form>
+</section>
 
-  <p id="form-help" class="sr-only">
-    Compila i campi obbligatori. Gli errori sono mostrati sotto i campi.
-  </p>
-</form>
+<section class="card" aria-labelledby="where-used-heading">
+  <h3 id="where-used-heading">Who references this parameter</h3>
+  {% if where_used and where_used|length > 0 %}
+    <p class="muted">I seguenti parametri citano questo ID nella loro implicational condition. Modifica le loro condizioni prima di poter disattivare.</p>
+    <ul class="list">
+      {% for target, cond in where_used %}
+        <li>
+          <a href="{% url 'parameter_edit' target.id %}"><strong>{{ target.id }}</strong> — {{ target.name }}</a>
+          <div class="muted"><code>{{ cond }}</code></div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">Nessuno cita questo parametro. È possibile procedere alla disattivazione, previo inserimento password.</p>
+  {% endif %}
+</section>
 
-{# =======================
-   Debug errori (facoltativo)
-   ======================= #}
-{% if form.errors or q_formset.errors %}
-  <pre style="margin-top:16px;padding:12px;border:1px dashed;">
-Param errors: {{ form.errors }}
-Formset errors: {{ q_formset.non_form_errors }}
-{% for qf in q_formset.forms %}{{ qf.errors }}{% endfor %}
-  </pre>
+{% if can_deactivate %}
+<section class="card" aria-labelledby="deactivate-heading">
+  <h3 id="deactivate-heading">Disattiva parametro</h3>
+  <p>Questa azione rende il parametro inattivo. Conferma con la tua password.</p>
+  <form method="post" action="{% url 'parameter_deactivate' parameter.id %}" novalidate>
+    {% csrf_token %}
+    <div class="form-row">
+      {{ deactivate_form.password.label_tag }}
+      {{ deactivate_form.password }}
+      {% if deactivate_form.password.errors %}<div class="form-error">{{ deactivate_form.password.errors }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      {{ deactivate_form.reason.label_tag }}
+      {{ deactivate_form.reason }}
+      {% if deactivate_form.reason.errors %}<div class="form-error">{{ deactivate_form.reason.errors }}</div>{% endif %}
+    </div>
+    {% if deactivate_form.non_field_errors %}
+      <div class="form-error">{{ deactivate_form.non_field_errors }}</div>
+    {% endif %}
+    <div class="actions">
+      <button type="submit" class="btn btn--danger">Conferma disattivazione</button>
+    </div>
+  </form>
+</section>
 {% endif %}
-
-
 {% endblock %}

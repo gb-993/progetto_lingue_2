@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
-
+from django.contrib.auth import authenticate
 from core.models import (
     ParameterDef,
     Question,
@@ -180,3 +180,39 @@ QuestionFormSet = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
+
+
+class DeactivateParameterForm(forms.Form):
+    """
+    Conferma disattivazione parametro:
+    - richiede password per re-auth
+    - motivo (audit, opzionale ma consigliato)
+    """
+    password = forms.CharField(
+        label="Password amministratore",
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password", "class": "form-control"}),
+        required=True,
+        help_text="Inserisci la tua password per confermare la disattivazione."
+    )
+    reason = forms.CharField(
+        label="Motivo",
+        widget=forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
+        required=False,
+        help_text="Motivo della disattivazione (verrà mostrato nei log)."
+    )
+
+    def __init__(self, *args, request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request = request
+
+    def clean(self):
+        cleaned = super().clean()
+        pwd = cleaned.get("password") or ""
+        user = getattr(self.request, "user", None)
+        if not user or not user.is_authenticated:
+            raise forms.ValidationError("Utente non autenticato.")
+        # Re-auth semplice: verifica la password dell'utente corrente
+        if not user.check_password(pwd):
+            raise forms.ValidationError("Password non corretta.")
+        return cleaned
