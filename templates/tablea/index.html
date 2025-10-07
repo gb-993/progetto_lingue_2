@@ -13,50 +13,53 @@
 
   <div class="card table-container">
     {% if rows %}
-      <table class="table" aria-describedby="tablea-desc">
-        <caption id="tablea-desc">
-          Valori per parametro (righe) e lingua (colonne).
-        </caption>
+      <div class="table-scroll" role="region"
+          aria-label="Table A – scroll horizontally to see all languages"
+          tabindex="0">
+        <table class="table table--freeze" aria-describedby="tablea-desc">
+          <caption id="tablea-desc">
+            Valori per parametro (righe) e lingua (colonne).
+          </caption>
 
-        <thead>
-          <tr>
-            <th scope="col">Label</th>
-            <th scope="col">Name</th>
-            <th scope="col">Implication</th>
-            {% for lang in languages %}
-              <th scope="col">{{ lang.id }}</th>
-            {% empty %}
-              {# Nessuna lingua: mostriamo un’indicazione chiara #}
-              <th scope="col">No languages</th>
-            {% endfor %}
-          </tr>
-        </thead>
-
-        <tbody>
-          {% for row in rows %}
+          <thead>
             <tr>
-              <th scope="row">{{ row.p.id }}</th>
-              <td>{{ row.p.name }}</td>
-              <td class="muted">{{ row.p.implicational_condition }}</td>
-
-              {% for val in row.cells %}
-                <td>{{ val }}</td>
+              <th scope="col" class="col-sticky-left">Label</th>
+              <th scope="col" class="col-sticky-left-2">Name</th>
+              <th scope="col">Implication</th>
+              {% for lang in languages %}
+                <th scope="col">{{ lang.id }}</th>
               {% empty %}
-                {# Nessuna cella (se non ci sono lingue) #}
-                <td>—</td>
+                <th scope="col">No languages</th>
               {% endfor %}
             </tr>
-          {% empty %}
-            <tr>
-              <td colspan="{{ languages|length|add:3 }}">
-                Nessun dato disponibile per Table A.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <th scope="row" class="col-sticky-left">{{ row.p.id }}</th>
+                <td class="col-sticky-left-2">{{ row.p.name }}</td>
+                <td class="muted">{{ row.p.implicational_condition }}</td>
+
+                {% for val in row.cells %}
+                  <td>{{ val }}</td>
+                {% empty %}
+                  <td>—</td>
+                {% endfor %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="{{ languages|length|add:3 }}">
+                  Nessun dato disponibile per Table A.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     {% else %}
       <p role="status">Nessun dato disponibile per Table A.</p>
     {% endif %}
-  </div>
+  </div>  
+
 {% endblock %}

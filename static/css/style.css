@@ -62,7 +62,11 @@ a:hover{text-decoration:underline}
 .breadcrumb a{ color:inherit; text-decoration:underline; }
 
 /* 4) Layout & utility */
-.container{ max-width:1100px; margin:0 auto; padding:var(--sp-6) var(--sp-4); }
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
 .main-title{ font-size:var(--fs-5); margin:0 0 var(--sp-4); }
 .muted{ color:var(--text-muted) }
 .nowrap{ white-space:nowrap }
@@ -163,6 +167,65 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 .table tbody td{ padding:.65rem .8rem; border-bottom:1px solid var(--border); vertical-align:top }
 .table tbody tr:nth-child(odd){ background:color-mix(in oklab, var(--surface) 80%, var(--surface-2)) }
 .table tbody tr:last-child td{ border-bottom:0 }
+
+/* ===== Table A: wrapper scrollabile e intestazioni fisse ===== */
+
+/* Wrapper centrato che fa scroll orizzontale interno */
+.table-container { padding: 0; }
+.table-scroll{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+}
+
+/* Congela l'header (thead) mentre scrolli in verticale */
+.table.table--freeze thead th{
+  position: sticky;
+  top: 0;
+  z-index: 5; /* sopra le celle */
+  background: var(--surface);
+  /* ripristina il bordo inferiore dell'header che altrimenti "scorre" */
+  border-bottom: 1px solid var(--border);
+}
+
+/* Congela la prima colonna (intestazioni riga) */
+.table.table--freeze th[scope="row"]{
+  position: sticky;
+  left: 0;
+  z-index: 4; /* sotto l'angolo header-left */
+  background: var(--surface);
+  /* piccola ombra per evidenziare l'ancoraggio */
+  box-shadow: 1px 0 0 var(--border);
+}
+
+/* Congela anche la seconda colonna (Name) – opzionale */
+.table.table--freeze .col-sticky-left-2{
+  position: sticky;
+  left: 8.5rem; /* larghezza stimata della 1ª col (Label) */
+  z-index: 3;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+/* Allinea la prima colonna sticky nei th dell'header */
+.table.table--freeze thead .col-sticky-left{
+  left: 0;
+  z-index: 6; /* angolo in alto a sinistra sopra tutto */
+}
+
+/* Se vuoi solo la PRIMA colonna sticky, commenta questo blocco e rimuovi le classi col-sticky-left-2 dal template */
+
+/* Prevenire "sforamenti" della tabella nel wrapper */
+.table-scroll .table{
+  width: max(100%, 900px); /* mantiene almeno una larghezza comoda */
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-radius: 0; /* i bordi arrotondati li fa il wrapper */
+}
+
+/* Migliora la leggibilità quando c'è molto scroll */
+.table-scroll{ background: linear-gradient(to right, transparent 30%, rgba(0,0,0,0.03) 100%) }
+
 @media (max-width:760px){
   .table thead{display:none}
   .table tr{display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border)}
