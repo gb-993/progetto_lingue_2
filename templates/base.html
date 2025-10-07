@@ -28,70 +28,71 @@
 
       {# Navigazione principale #}
       {% with current=request.resolver_match.url_name %}
-      {% with current=request.resolver_match.url_name %}
-    <nav class="nav" role="navigation" aria-label="Navigazione principale">
-      <ul class="nav-list">
-        <li>
-          <a class="btn" href="{% url 'dashboard' %}"
-            {% if current == 'dashboard' %}aria-current="page"{% endif %}>
-            Dashboard
-          </a>
-        </li>
-
-        {# ---- voci sempre visibili agli USER ---- #}
-        <li>
-          <a class="btn" href="{% url 'language_list' %}"
-            {% if current == 'language_list' %}aria-current="page"{% endif %}>
-            Languages
-          </a>
-        </li>
-        <li>
-          <a class="btn" href="{% url 'glossary_list' %}"
-            {% if current == 'glossary_list' %}aria-current="page"{% endif %}>
-            Glossary
-          </a>
-        </li>
-
-        {# ---- ADMIN/STaff soltanto ---- #}
-        {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+      <nav class="nav" role="navigation" aria-label="Navigazione principale">
+        <ul class="nav-list">
           <li>
-            <a class="btn" href="{% url 'parameter_list' %}"
-              {% if current == 'parameter_list' %}aria-current="page"{% endif %}>
-              Parameters
-            </a>
-          </li>
-          <li>
-            <a class="btn" href="{% url 'tablea_index' %}"
-              {% if current == 'tablea_index' %}aria-current="page"{% endif %}>
-              Table A
-            </a>
-          </li>
-          <li>
-            <a class="btn" href="{% url 'queries:home' %}"
-              {% if request.resolver_match and request.resolver_match.namespace == 'queries' %}aria-current="page"{% endif %}>
-              Queries
+            <a class="btn" href="{% url 'dashboard' %}"
+               {% if current == 'dashboard' %}aria-current="page"{% endif %}>
+              Dashboard
             </a>
           </li>
 
+          {# ---- voci sempre visibili agli USER ---- #}
           <li>
-            <a class="btn" href="{% url 'accounts_list' %}"
-              {% if current == 'accounts_list' %}aria-current="page"{% endif %}>
-              Accounts
+            <a class="btn" href="{% url 'language_list' %}"
+               {% if current == 'language_list' %}aria-current="page"{% endif %}>
+               Languages
             </a>
           </li>
-        {% endif %}
+          <li>
+            <a class="btn" href="{% url 'glossary_list' %}"
+               {% if current == 'glossary_list' %}aria-current="page"{% endif %}>
+               Glossary
+            </a>
+          </li>
 
+          {# ---- ADMIN/Staff soltanto ---- #}
+          {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+            <li>
+              <a class="btn" href="{% url 'parameter_list' %}"
+                 {% if current == 'parameter_list' %}aria-current="page"{% endif %}>
+                 Parameters
+              </a>
+            </li>
+            <li>
+              <a class="btn" href="{% url 'tablea_index' %}"
+                 {% if current == 'tablea_index' %}aria-current="page"{% endif %}>
+                 Table A
+              </a>
+            </li>
+            <li>
+              <a class="btn" href="{% url 'queries:home' %}"
+                 {% if request.resolver_match and request.resolver_match.namespace == 'queries' %}aria-current="page"{% endif %}>
+                 Queries
+              </a>
+            </li>
+            <li>
+              <a class="btn" href="{% url 'submissions_list' %}"
+                 {% if current == 'submissions_list' or current == 'submission_detail' %}aria-current="page"{% endif %}>
+                 Submissions
+              </a>
+            </li>
+            <li>
+              <a class="btn" href="{% url 'accounts_list' %}"
+                 {% if current == 'accounts_list' %}aria-current="page"{% endif %}>
+                 Accounts
+              </a>
+            </li>
+          {% endif %}
 
-        <li>
-          <form action="{% url 'logout' %}" method="post" aria-label="Esegui il logout">
-            {% csrf_token %}
-            <button type="submit" class="btn">Logout</button>
-          </form>
-        </li>
-      </ul>
-    </nav>
-    {% endwith %}
-
+          <li>
+            <form action="{% url 'logout' %}" method="post" aria-label="Esegui il logout">
+              {% csrf_token %}
+              <button type="submit" class="btn">Logout</button>
+            </form>
+          </li>
+        </ul>
+      </nav>
       {% endwith %}
     </header>
 
@@ -105,7 +106,7 @@
       {% block content %}{% endblock %}
     </main>
 
-    {# (Opzionale) Footer semantico #}
+    {# Footer #}
     {% block footer %}
     <footer role="contentinfo" class="site-footer">
       <p class="muted">© {% now "Y" %} – Admin area</p>

@@ -30,18 +30,24 @@
         {% endfor %}
       </ul>
 
-      <div class="toolbar">
-        {% if is_admin %}
-          <a class="btn" href="{% url 'language_debug' language.id %}">Parameters debug</a>
-        {% endif %}
-        <a class="btn" href="{% url 'language_export' language.id %}">Export .xlsx</a>
-      </div>
     </aside>
 
     <main>
       <div class="card">
         <h2>{{ language.name_full }} ({{ language.id }})</h2>
         <p class="muted">Answer the questions below. Any “Save” button saves ALL visible fields.</p>
+
+        {% if is_admin %}
+          <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap" role="group" aria-label="Azioni admin lingua">
+            <form method="post" action="{% url 'submission_create_for_language' language.id %}" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn" type="submit" title="Crea uno snapshot completo (read-only) del contesto">
+                Salva contesto
+              </button>
+            </form>
+          </div>
+        {% endif %}
 
         {% with s=lang_status.overall %}
           <div class="muted" role="status" aria-live="polite" style="margin-top:.25rem">

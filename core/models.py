@@ -307,6 +307,27 @@ class ParameterDef(models.Model):
                 return
             raise
 
+from django.conf import settings
+
+class ParameterChangeLog(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    parameter = models.ForeignKey(ParameterDef, on_delete=models.CASCADE, related_name="change_logs")
+    recap = models.TextField()  # obbligatorio
+    diff = models.JSONField(default=dict, blank=True)  # {campo: {"old":..., "new":...}}
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="parameter_change_logs")
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-changed_at"]
+        indexes = [
+            models.Index(fields=["changed_at"]),
+            models.Index(fields=["parameter"]),
+            models.Index(fields=["changed_by"]),
+        ]
+
+    def __str__(self):
+        who = self.changed_by.email if self.changed_by else "unknown"
+        return f"{self.parameter_id} by {who} @ {self.changed_at:%Y-%m-%d %H:%M}"
 
 class Question(models.Model):
     id = models.CharField(primary_key=True, max_length=40)  # es. 'FGMQ_a'
@@ -572,7 +593,7 @@ class SubmissionExample(models.Model):
 class SubmissionParam(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="params")
     parameter_id = models.CharField(max_length=20)
-    value_orig = models.CharField(max_length=1)   # '+','-','0'
+    value_orig = models.CharField(max_length=1,null=True, blank=True)   
     warning_orig = models.BooleanField(default=False)
     value_eval = models.CharField(max_length=1)   # '+','-','0'
     warning_eval = models.BooleanField(default=False)
@@ -581,7 +602,7 @@ class SubmissionParam(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["submission", "parameter_id"], name="pk_submission_param"),
-            models.CheckConstraint(check=models.Q(value_orig__in=["+", "-", "0"]), name="ck_sub_param_orig"),
+            models.CheckConstraint(check=models.Q(value_orig__in=["+", "-", "0"]) | models.Q(value_orig__isnull=True), name="ck_sub_param_orig"),
             models.CheckConstraint(check=models.Q(value_eval__in=["+", "-", "0"]), name="ck_sub_param_eval"),
         ]
         indexes = [models.Index(fields=["submission", "parameter_id"])]

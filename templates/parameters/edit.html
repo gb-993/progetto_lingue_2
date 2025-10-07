@@ -72,7 +72,14 @@
       {{ form.warning_default }}
       {% if form.warning_default.errors %}<div class="form-error">{{ form.warning_default.errors }}</div>{% endif %}
     </div>
-
+        {% if not is_create %}
+      <fieldset class="form-row">
+        <legend class="sr-only">Recap modifiche</legend>
+        {{ form.change_note.label_tag }} {{ form.change_note }}
+        {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
+        <p class="help">Obbligatorio se hai modificato uno o più campi di questo parametro.</p>
+      </fieldset>
+    {% endif %}
     <div class="actions">
       <button type="submit" class="btn btn--primary">Save</button>
       <a class="btn" href="{% url 'parameter_list' %}">Back</a>

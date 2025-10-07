@@ -1,11 +1,13 @@
-{% extends "base.html" %}
+{% extends "base.html" %} 
 {% block title %}Dashboard{% endblock %}
 {% block breadcrumb %}Dashboard{% endblock %}
 
 {% block content %}
+
+
   <div class="grid grid-3" role="navigation" aria-label="Dashboard shortcuts">
 
-    {# ---- SEMPRE visibili a tutti gli utenti ---- #}
+    {# ---- visibili a tutti ---- #}
     <a class="card btn" href="{% url 'language_list' %}" aria-label="Apri la lista delle lingue">
       <h3>Languages</h3>
       <p class="muted">Gestisci/visualizza lingue e dati</p>
@@ -21,8 +23,7 @@
       <p class="muted">Modifica i tuoi dati</p>
     </a>
 
-
-    {# ---- Solo admin/staff ---- #}
+    {# ---- solo admin/staff ---- #}
     {% if is_admin %}
       <a class="card btn" href="{% url 'parameter_list' %}" aria-label="Apri la gestione dei parametri">
         <h3>Parameters</h3>
@@ -43,6 +44,57 @@
         <h3>Queries</h3>
         <p class="muted">Interrogazioni al database</p>
       </a>
+
+      <a class="card btn" href="{% url 'submissions_list' %}" aria-label="Apri la lista delle submissions">
+        <h3>Submissions</h3>
+        <p class="muted">Gestisci/visualizza submissions</p>
+      </a>
     {% endif %}
   </div>
+
+
+  {% if is_admin %}
+  <section class="card mt-3" aria-labelledby="last-changes-heading">
+    <h3 id="last-changes-heading">Ultime modifiche</h3>
+
+    {% if recent_param_changes %}
+      <ul class="list">
+        {% for log in recent_param_changes %}
+          <li>
+            <div>
+              <strong>{{ log.parameter_id }}</strong>
+              <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span>
+            </div>
+            <div class="muted">
+              di {{ log.changed_by.email|default:"(utente sconosciuto)" }}
+            </div>
+
+            <details class="mt-1">
+              <summary>Recap</summary>
+              <p>{{ log.recap }}</p>
+            </details>
+
+            {% if log.diff %}
+              <details class="mt-1">
+                <summary>Dettaglio campi modificati</summary>
+                <ul class="list">
+                  {% for field, vals in log.diff.items %}
+                    <li>
+                      <code>{{ field }}</code>:
+                      <em>old</em> = "{{ vals.old }}",
+                      <em>new</em> = "{{ vals.new }}"
+                    </li>
+                  {% endfor %}
+                </ul>
+              </details>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Nessuna modifica recente ai parametri.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
 {% endblock %}

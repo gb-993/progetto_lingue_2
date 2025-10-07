@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Submission #{{ sub.id }}{% endblock %}
+{% block content %}
+  <h1>Submission #{{ sub.id }}</h1>
+  <p>
+    <strong>Lingua:</strong> {{ sub.language_id }} |
+    <strong>Utente:</strong> {{ sub.submitted_by.email }} |
+    <strong>Data:</strong> <time datetime="{{ sub.submitted_at|date:'c' }}">{{ sub.submitted_at|date:"Y-m-d H:i:s" }}</time>
+  </p>
+  {% if sub.note %}<p><strong>Nota:</strong> {{ sub.note }}</p>{% endif %}
+
+  <h2>Parametri</h2>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Parametro</th><th>orig</th><th>warn orig</th><th>eval</th><th>warn eval</th><th>evaluated_at</th></tr></thead>
+      <tbody>
+        {% for p in sub_params %}
+          <tr>
+            <td>{{ p.parameter_id }}</td>
+            <td>{{ p.value_orig|default:"" }}</td>
+            <td>{{ p.warning_orig|yesno:"✔,–" }}</td>
+            <td>{{ p.value_eval }}</td>
+            <td>{{ p.warning_eval|yesno:"✔,–" }}</td>
+            <td><time datetime="{{ p.evaluated_at|date:'c' }}">{{ p.evaluated_at|date:"Y-m-d H:i:s" }}</time></td>
+          </tr>
+        {% empty %}<tr><td colspan="6">Nessun parametro</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Risposte</h2>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Domanda</th><th>Risposta</th><th>Commenti</th></tr></thead>
+      <tbody>
+        {% for a in sub_answers %}
+          <tr>
+            <td>{{ a.question_code }}</td>
+            <td>{{ a.response_text }}</td>
+            <td>{{ a.comments }}</td>
+          </tr>
+        {% empty %}<tr><td colspan="3">Nessuna risposta</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Motivazioni</h3>
+  <ul>
+    {% for m in sub_mots %}
+      <li><code>{{ m.question_code }}</code> → {{ m.motivation_code }}</li>
+    {% empty %}<li>Nessuna</li>{% endfor %}
+  </ul>
+
+  <h3>Esempi</h3>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Domanda</th><th>Textarea</th><th>Gloss</th><th>Traduzione</th><th>Translit.</th><th>Ref</th></tr></thead>
+      <tbody>
+        {% for e in sub_examples %}
+          <tr>
+            <td>{{ e.question_code }}</td>
+            <td>{{ e.textarea }}</td>
+            <td>{{ e.gloss }}</td>
+            <td>{{ e.translation }}</td>
+            <td>{{ e.transliteration }}</td>
+            <td>{{ e.reference }}</td>
+          </tr>
+        {% empty %}<tr><td colspan="6">Nessun esempio</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

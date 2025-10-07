@@ -16,6 +16,7 @@ urlpatterns = [
     path("submissions/", include("submissions_ui.urls")),
     path("queries/", include("queries.urls")),
     path("health/", views_health.health, name="health"),
+
 ]
 
 if settings.DEBUG:

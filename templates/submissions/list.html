@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Submissions{% endblock %}
+{% block content %}
+  <h1>Submissions</h1>
+  <form method="get" class="row g-2 mb-3" role="search" aria-label="Filtri submissions">
+    <div class="col-auto">
+      <label for="language" class="col-form-label">Lingua</label>
+    </div>
+    <div class="col-auto">
+      <input id="language" name="language" class="form-control" value="{{ language_id|default:'' }}" placeholder="es. ita">
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-primary" type="submit">Filtra</button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Data (UTC)</th>
+          <th>Lingua</th>
+          <th>Utente</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for s in page.object_list %}
+        <tr>
+          <td><time datetime="{{ s.submitted_at|date:'c' }}">{{ s.submitted_at|date:"Y-m-d H:i:s" }}</time></td>
+          <td>{{ s.language_id }}</td>
+          <td>{{ s.submitted_by.email }}</td>
+          <td><a class="btn btn-sm btn-primary" href="{% url 'submission_detail' s.id %}">Apri</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4">Nessuna submission.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <nav aria-label="Paginazione">
+    <ul class="pagination">
+      {% if page.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}&language={{ language_id }}">«</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Pagina {{ page.number }} / {{ page.paginator.num_pages }}</span></li>
+      {% if page.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}&language={{ language_id }}">»</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endblock %}

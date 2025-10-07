@@ -283,3 +283,21 @@ def my_account(request):
         "pwd_form": pwd_form,
     }
     return render(request, "accounts/my_account.html", ctx)
+
+
+from core.models import ParameterChangeLog
+
+@login_required
+def dashboard(request):
+    is_admin = (
+        request.user.is_staff
+        or request.user.is_superuser
+        or getattr(request.user, "role", "") == "admin"
+    )
+    recent = []
+    if is_admin:
+        recent = (ParameterChangeLog.objects
+                  .select_related("parameter", "changed_by")
+                  .only("parameter__id", "changed_at", "changed_by__email", "recap", "diff")
+                  .order_by("-changed_at")[:10])
+    return render(request, "accounts/dashboard.html", {"is_admin": is_admin, "recent_param_changes": recent})

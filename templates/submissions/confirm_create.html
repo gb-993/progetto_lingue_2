@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Crea submission{% endblock %}
+{% block content %}
+  <h1>Crea submission per {{ language.id }} – {{ language.name_full }}</h1>
+  <form method="post" class="vstack gap-2">
+    {% csrf_token %}
+    <label class="form-label" for="note">Nota (opzionale)</label>
+    <textarea id="note" name="note" class="form-control" rows="3"></textarea>
+    <button class="btn btn-primary" type="submit">Conferma</button>
+    <a class="btn btn-secondary" href="{% url 'language_detail' language.id %}">Annulla</a>
+  </form>
+{% endblock %}

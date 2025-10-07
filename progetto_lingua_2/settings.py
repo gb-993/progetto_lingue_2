@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "queries",
 
 ]
+SUBMISSIONS_MAX_PER_LANGUAGE = 10  # limite di submissions per lingua
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

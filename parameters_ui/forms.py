@@ -37,6 +37,31 @@ class ParameterForm(forms.ModelForm):
             "is_active": forms.CheckboxInput(attrs={"class": "form-check"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Campo "Recap modifiche": appare in edit; required solo se ci sono cambi
+        self.fields["change_note"] = forms.CharField(
+            label="Recap modifiche",
+            required=False,  # lo forzeremo in clean() se necessario
+            widget=forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Descrivi sinteticamente COSA è cambiato e PERCHÉ"}),
+            help_text="Obbligatorio se modifichi qualsiasi campo del parametro.",
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+
+        # In edit: se il form ha cambiamenti reali -> change_note obbligatorio
+        instance = getattr(self, "instance", None)
+        has_pk = bool(instance and instance.pk)
+        if has_pk and self.has_changed():
+            note = (cleaned.get("change_note") or "").strip()
+            # Ignora il change_note stesso nel calcolo has_changed
+            changed_fields = [f for f in self.changed_data if f != "change_note"]
+            if changed_fields and not note:
+                raise forms.ValidationError("Inserisci il recap delle modifiche effettuate.")
+        return cleaned
+
     def clean_position(self):
         pos = self.cleaned_data.get("position")
         if pos is None or pos < 1:

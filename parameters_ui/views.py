@@ -105,33 +105,58 @@ def parameter_add(request):
     })
 
 
+# views.py — SOSTITUISCI parameter_edit con questa versione
+
+from django.contrib.auth import get_user_model
+from core.models import ParameterDef
+from core.models import ParameterChangeLog  # <-- importa il nuovo modello
+
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def parameter_edit(request, param_id: str):
     """
-    - Mostra/edita i dati del parametro
-    - Calcola la lista di 'where used' (chi mi cita)
-    - Se ci sono referenze e il parametro è attivo -> il toggle is_active è disabilitato (client) e c'è enforcement server-side
-    - Se NON ci sono referenze -> mostra form di disattivazione con password
+    Edit parametro + audit:
+    - se ci sono cambi effettivi, richiedi 'change_note' e crea una riga su ParameterChangeLog
+    - enforcement su disattivazione come prima
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
 
-    # Calcola referenze: chi cita questo parametro
+    # Calcola referenze: chi cita questo parametro (come prima)
     where_used = find_where_used(param.id)
     can_deactivate = bool(param.is_active and len(where_used) == 0)
 
     if request.method == "POST":
         form = ParameterForm(request.POST, instance=param)
         if form.is_valid():
-            # Enforcement server-side: se si tenta di impostare is_active=False quando NON consentito, blocca
             cleaned = form.cleaned_data
             wants_inactive = (cleaned.get("is_active") is False)
             if wants_inactive and not can_deactivate:
                 messages.error(request, "Non puoi disattivare questo parametro: esistono ancora referenze.")
-                # Non salviamo; ricarichiamo la pagina senza cambiare stato
             else:
+                # --- calcolo diff PRIMA del save ---
+                changed_fields = [f for f in form.changed_data if f != "change_note"]
+                diff = {}
+                if changed_fields:
+                    # prendi i valori "old" dall'istanza attuale in DB
+                    old_obj = ParameterDef.objects.get(pk=param.pk)
+                    for f in changed_fields:
+                        old_val = getattr(old_obj, f, None)
+                        new_val = cleaned.get(f, getattr(param, f, None))
+                        # serializza booleani numeri e None in str dove serve
+                        diff[f] = {"old": old_val, "new": new_val}
+
+                # --- salva il parametro ---
                 form.save()
+
+                # --- crea log se ci sono cambi reali ---
+                if diff:
+                    ParameterChangeLog.objects.create(
+                        parameter=param,
+                        recap=(cleaned.get("change_note") or "").strip(),
+                        diff=diff,
+                        changed_by=request.user,
+                    )
                 messages.success(request, "Parametro aggiornato.")
                 return redirect("parameter_edit", param_id=param.id)
     else:
@@ -147,6 +172,7 @@ def parameter_edit(request, param_id: str):
         "where_used": where_used,
         "deactivate_form": deactivate_form,
     })
+
 
 
 @login_required
