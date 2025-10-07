@@ -1,5 +1,21 @@
 {% load static %}
 <!doctype html>
+<script>
+  (function () {
+    try {
+      var stored = localStorage.getItem('theme'); // 'light' | 'dark' | null
+      var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      // Applica il tema PRIMA di caricare i CSS
+      document.documentElement.setAttribute('data-theme', theme);
+      // Suggerisce al browser il color-scheme per scrollbar/form controls
+      document.documentElement.style.colorScheme = theme;
+    } catch (e) {
+      // fallback prudente
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.colorScheme = 'light';
+    }
+  })();
+</script>
 <html lang="it">
 <head>
   <meta charset="utf-8">

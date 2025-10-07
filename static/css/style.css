@@ -22,6 +22,145 @@
   --w-col-label: 9.5rem;  /* larghezza fissa colonna "Label" */
   --w-col-name:  22rem;   /* larghezza fissa colonna "Name"  */
 }
+/* =========================================================
+   THEME: Dark overrides (attivo quando [data-theme="dark"])
+   ========================================================= */
+:root[data-theme="dark"] {
+  /* Neutri principali */
+  --text: #f3f5f7;            /* testo principale */
+  --text-muted: #c0c6cf;      /* testo attenuato */
+  --bg: #0e0f12;              /* background pagina */
+  --surface: #15171b;         /* card / superfici principali */
+  --surface-2: #1b1e23;       /* superfici secondarie */
+  --border: #2a2f37;          /* bordi e separatori */
+
+  /* Stato/semantica: manteniamo contrasto adeguato su dark */
+  --ok: #32d27a;
+  --bad: #ff5d6e;
+  --warn: #f0c35a;
+
+  /* Pill/Badge background in dark (con testo leggibile) */
+  --pill-ok-bg: rgba(50, 210, 122, 0.15);
+  --pill-bad-bg: rgba(255, 93, 110, 0.15);
+  --pill-warn-bg: rgba(240, 195, 90, 0.18);
+
+  /* Focus rimane ben visibile sul dark */
+  --focus: #5b8cff;
+
+  /* Brand può restare uguale, ma se vuoi meno “sparato” su dark, puoi attenuarlo: */
+  /* --brand: #e05f43; --brand-700:#c7563c; */
+}
+
+/* Facoltativo ma consigliato: colore di sfondo/testo base se il tuo CSS li usa direttamente */
+:root[data-theme="dark"], 
+:root[data-theme="dark"] body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* Badge/pill esistenti che usano i token: niente da toccare.
+   Se hai usato colori hard-coded in alcune classi, convertili ai token. */
+
+/* Accessibilità: assicurati che i link mantengano contrasto adeguato */
+:root[data-theme="dark"] a {
+  color: var(--brand);
+}
+:root[data-theme="dark"] a:hover {
+  color: var(--brand-700);
+}
+
+/* ============================
+   Dark theme – contrast fixes
+   ============================ */
+
+/* 1) Assicurati che TUTTE le .btn ereditino il colore corretto */
+:root[data-theme="dark"] .btn {
+  color: var(--text);
+}
+
+/* 2) Bottoni/pill nella navbar: testo leggibile anche su surface-2 */
+:root[data-theme="dark"] .nav-list .btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* 3) Stato "attivo" nella navbar (bg brand): testo sempre bianco */
+.nav-list [aria-current="page"] {
+  color: #fff;  /* già presente ma lo ribadiamo per sicurezza di specificità */
+}
+
+/* 4) Link generici in dark: scegliamo il brand, ma con hover più scuro */
+:root[data-theme="dark"] a {
+  color: var(--brand);
+}
+:root[data-theme="dark"] a:hover {
+  color: var(--brand-700);
+  text-decoration: underline;
+}
+
+/* 5) Sottotitoli/testi attenuati: garantisci contrasto sufficiente */
+:root[data-theme="dark"] .muted,
+:root[data-theme="dark"] .site-title .site-subtitle,
+:root[data-theme="dark"] .breadcrumb {
+  color: var(--text-muted);
+}
+
+/* 6) Badge/Pill generiche (se usi una classe .badge altrove) */
+:root[data-theme="dark"] .badge {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* 7) Tabelle: header e sticky columns con bg coerente e testo leggibile */
+:root[data-theme="dark"] .table thead th,
+:root[data-theme="dark"] .table.table--freeze thead th,
+:root[data-theme="dark"] .table.table--freeze th[scope="row"],
+:root[data-theme="dark"] .table.table--freeze .col-sticky-left,
+:root[data-theme="dark"] .table.table--freeze .col-sticky-left-2 {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+/* 8) Alert/Message con testo di stato su dark */
+:root[data-theme="dark"] .alert {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] .alert-error {
+  color: var(--bad);
+  background: var(--pill-bad-bg);
+  border-color: color-mix(in oklab, var(--bad) 25%, var(--border));
+}
+
+/* 9) Bottoni primari/negativi: assicurati testo bianco */
+.btn--primary,
+.btn--bad {
+  color: #fff;
+}
+
+/* 10) Tiles della dashboard (bg brand): testo bianco ovunque */
+.nav-tiles .tile,
+.nav-tiles .tile strong,
+.nav-tiles .tile .tile-sub {
+  color: #fff;
+}
+
+/* 11) Input e label: contrasto pieno in dark */
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] label {
+  color: var(--text);
+}
 
 /* 2) Reset minimale */
 *{box-sizing:border-box}

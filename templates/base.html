@@ -3,6 +3,25 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <!-- THEME: early apply (no flash) -->
+<script>
+  (function () {
+    try {
+      var stored = localStorage.getItem('theme'); // 'light' | 'dark' | null
+      var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      // Applica il tema PRIMA di caricare i CSS
+      document.documentElement.setAttribute('data-theme', theme);
+      // Suggerisce al browser il color-scheme per scrollbar/form controls
+      document.documentElement.style.colorScheme = theme;
+    } catch (e) {
+      // fallback prudente
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.colorScheme = 'light';
+    }
+  })();
+</script>
+<meta name="color-scheme" content="light dark">
+
   <title>{% block title %}Parametric Comparison Method (PCM){% endblock %}</title>
   {% load static %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,24 +38,52 @@
       <h1 class="site-title">
         Parametric Comparison Method (PCM)
         <span class="site-subtitle">Data collection and storage</span>
+    <button id="theme-toggle"
+        type="button"
+        class="btn theme-toggle"
+        aria-label="Toggle theme"
+        aria-live="polite"
+        aria-pressed="false">
+    </button>
+
       </h1>
 
       <nav class="nav" aria-label="Main">
         <ul class="nav-list">
-          <li><a class="btn" href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a></li>
+          {# Sempre visibili a tutti #}
+          <li>
+            <a class="btn"
+              href="{% url 'dashboard' %}"
+              {% if request.resolver_match and request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>
+              Dashboard
+            </a>
+          </li>
           <li><a class="btn" href="{% url 'language_list' %}">Languages</a></li>
           <li><a class="btn" href="{% url 'glossary_list' %}">Glossary</a></li>
-          <li><a class="btn" href="{% url 'parameter_list' %}">Parameters</a></li>
-          <li><a class="btn" href="{% url 'tablea_index' %}">Table A</a></li>
-          <li><a class="btn" href="{% url 'queries:home' %}">Queries</a></li>
-          <li><a class="btn" href="{% url 'submissions_list' %}">Submissions</a></li>
-          <li><a class="btn" href="{% url 'accounts_list' %}">Accounts</a></li>
+
+          {# Solo USER (non admin/staff/superuser) → mostra My Account #}
+          {% if not request.user.is_staff and not request.user.is_superuser and request.user.role != 'admin' %}
+            <li><a class="btn" href="{% url 'my_account' %}">My Account</a></li>
+          {% endif %}
+
+          {# Solo ADMIN/STAff/SUPERUSER → mostra voci admin #}
+          {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+            <li><a class="btn" href="{% url 'parameter_list' %}">Parameters</a></li>
+            <li><a class="btn" href="{% url 'tablea_index' %}">Table A</a></li>
+            <li><a class="btn" href="{% url 'queries:home' %}">Queries</a></li>
+            <li><a class="btn" href="{% url 'submissions_list' %}">Submissions</a></li>
+            <li><a class="btn" href="{% url 'accounts_list' %}">Accounts</a></li>
+          {% endif %}
+
+          {# Logout sempre #}
           <li>
             <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
               <button class="btn" type="submit">Logout</button>
             </form>
           </li>
         </ul>
+
+
       </nav>
 
       <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -70,5 +117,52 @@
   {% endblock %}
 
   {% block extra_js %}{% endblock %}
+  <script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    function currentTheme() {
+      return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    }
+
+    function setTheme(next) {
+      root.setAttribute('data-theme', next);
+      root.style.colorScheme = next;
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      updateButton(next);
+    }
+
+    function updateButton(theme) {
+      // Etichetta: mostra l'azione possibile (cioè il prossimo stato)
+      var next = (theme === 'dark') ? 'Light' : 'Dark';
+      btn.textContent = next;
+      btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+      btn.setAttribute('aria-label', 'Activate ' + next + ' theme');
+      btn.title = next + ' theme';
+    }
+
+    // Init etichetta in base allo stato applicato dallo script early
+    updateButton(currentTheme());
+
+    // Toggle all click
+    btn.addEventListener('click', function () {
+      var next = currentTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+    });
+
+    // Se l’utente non ha override e cambia il tema di sistema, adegua automaticamente
+    try {
+      if (!localStorage.getItem('theme') && window.matchMedia) {
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        mq.addEventListener('change', function (e) {
+          setTheme(e.matches ? 'dark' : 'light');
+        });
+      }
+    } catch (e) {}
+  })();
+</script>
+
 </body>
 </html>
