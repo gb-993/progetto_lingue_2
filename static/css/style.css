@@ -19,6 +19,8 @@
   --radius: 12px; --radius-sm: 8px;
   --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.06);
   --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.25rem; --sp-6:1.5rem; --sp-8:2rem;
+  --w-col-label: 9.5rem;  /* larghezza fissa colonna "Label" */
+  --w-col-name:  22rem;   /* larghezza fissa colonna "Name"  */
 }
 
 /* 2) Reset minimale */
@@ -83,11 +85,9 @@ a:hover{text-decoration:underline}
 .grid{display:grid; gap:var(--sp-4)}
 .grid-2{grid-template-columns:1fr 1fr}
 .grid-3{grid-template-columns:repeat(3, 1fr)}
-@media (max-width:900px){ .grid-2,.grid-3{grid-template-columns:1fr} }
 
 /* Split + Sidebar */
 .split{display:grid; grid-template-columns:280px 1fr; gap:var(--sp-6)}
-@media (max-width:1100px){ .split{grid-template-columns:1fr} }
 aside.card.sidebar{ position:sticky; top:var(--sp-6); max-height:calc(100dvh - 2*var(--sp-6)); overflow:auto }
 aside.card.sidebar h3{ margin-top:0 }
 aside.card.sidebar ul{ list-style:none; margin:0; padding:0 }
@@ -135,10 +135,7 @@ aside.card.sidebar a:hover{ text-decoration:underline }
 .nav-tiles .tile:hover{ text-decoration:none; transform:translateY(-1px); background:var(--brand-700); border-color:color-mix(in oklab, var(--brand-700) 75%, black) }
 .nav-tiles .tile strong{ font-weight:700; letter-spacing:.2px }
 .nav-tiles .tile .tile-sub{ opacity:.9; font-weight:500; font-size:.95rem }
-@media (max-width:520px){
-  .nav-tiles .tile{ padding:.85rem 1rem; border-radius:14px; justify-content:center }
-  .nav-tiles .tile .tile-sub{ display:none }
-}
+
 .mt-2{ margin-top:var(--sp-6) }
 
 /* 8) Form */
@@ -160,9 +157,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 
 /* 9) Tabelle */
 .table{
-  width:100%; border-collapse:separate; border-spacing:0; overflow:hidden;
+  width:100%; border-collapse:separate; border-spacing:0; 
   border:1px solid var(--border); border-radius:var(--radius); background:var(--surface);
 }
+
 .table thead th{ text-align:left; font-weight:700; padding:.7rem .8rem; border-bottom:1px solid var(--border); background:var(--surface-2) }
 .table tbody td{ padding:.65rem .8rem; border-bottom:1px solid var(--border); vertical-align:top }
 .table tbody tr:nth-child(odd){ background:color-mix(in oklab, var(--surface) 80%, var(--surface-2)) }
@@ -173,10 +171,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 /* Wrapper centrato che fa scroll orizzontale interno */
 .table-container { padding: 0; }
 .table-scroll{
-  overflow-x: auto;
+  overflow: auto;                /* scroll sia orizzontale che verticale */
+  max-height: 70vh;              /* l'header sticky lavora dentro questo container */
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius);
 }
+
 
 /* Congela l'header (thead) mentre scrolli in verticale */
 .table.table--freeze thead th{
@@ -199,13 +199,40 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 }
 
 /* Congela anche la seconda colonna (Name) – opzionale */
+/* Prima colonna sticky (Label) — dimensioni e sticky coerenti ovunque */
+.table.table--freeze .col-sticky-left{
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--border);
+  min-width: var(--w-col-label);
+  width: var(--w-col-label);
+}
+
+/* Seconda colonna sticky (Name) — left calcolato dalla 1ª */
 .table.table--freeze .col-sticky-left-2{
   position: sticky;
-  left: 8.5rem; /* larghezza stimata della 1ª col (Label) */
+  left: var(--w-col-label);
   z-index: 3;
   background: var(--surface);
   box-shadow: 1px 0 0 var(--border);
+  min-width: var(--w-col-name);
+  width: var(--w-col-name);
 }
+
+
+.table.table--freeze thead .col-sticky-left,
+.table.table--freeze thead .col-sticky-left-2{
+  z-index: 7; /* angolo in alto a sinistra con priorità massima */
+}
+.table.table--freeze col.w-label { 
+  width: var(--w-col-label); 
+}
+.table.table--freeze col.w-name  { 
+  width: var(--w-col-name);  
+}
+
 
 /* Allinea la prima colonna sticky nei th dell'header */
 .table.table--freeze thead .col-sticky-left{
@@ -226,12 +253,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 /* Migliora la leggibilità quando c'è molto scroll */
 .table-scroll{ background: linear-gradient(to right, transparent 30%, rgba(0,0,0,0.03) 100%) }
 
-@media (max-width:760px){
-  .table thead{display:none}
-  .table tr{display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border)}
-  .table td{display:block; border:0; padding:.5rem .75rem}
-  .table td[data-label]::before{ content:attr(data-label); display:block; font-weight:600; color:var(--text-muted); margin-bottom:.15rem }
-}
+
 
 /* 10) Alert */
 .alert{ padding:.6rem .8rem; border-radius:10px; background:var(--surface-2); border:1px solid var(--border) }
@@ -272,10 +294,3 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 .grid .form-row textarea{ min-height:4.25rem }
 [disabled],[aria-disabled="true"]{ filter:saturate(.2) brightness(.96) }
 .table a.btn{ text-decoration:none }
-
-/* 14) Stampa */
-@media print{
-  .toolbar,.actions,.pagination,.row-actions{ display:none !important }
-  .card{ box-shadow:none; border-color:#999 }
-  body{ background:#fff }
-}
