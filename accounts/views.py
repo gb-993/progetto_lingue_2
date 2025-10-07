@@ -2,8 +2,12 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-
 from core.models import User
+from django.contrib.auth import update_session_auth_hash
+from django.shortcuts import render, redirect
+from django.utils.translation import gettext as _
+
+from .forms import MyAccountForm, MyPasswordChangeForm
 try:
     from core.models import Language
     HAS_LANGUAGE = True
@@ -11,7 +15,7 @@ except Exception:
     Language = None
     HAS_LANGUAGE = False
 
-from .forms import AccountForm
+from .forms import AccountForm, MyAccountForm
 
 
 def _is_admin(user: User) -> bool:
@@ -131,3 +135,52 @@ def accounts_edit(request, user_id):
         "selected_lang_ids": selected_lang_ids,
     }
     return render(request, "accounts/edit.html", ctx)
+
+
+
+@login_required
+def my_account(request):
+    """
+    Pagina unica: profilo + cambio password per l'utente corrente.
+    Due form indipendenti nello stesso template:
+      - POST action=profile  -> salva MyAccountForm
+      - POST action=password -> salva MyPasswordChangeForm
+    Mantiene la sessione valida dopo il cambio password.
+    """
+    user = request.user
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "profile":
+            form = MyAccountForm(request.POST, instance=user)
+            pwd_form = MyPasswordChangeForm(user=user)  # form vuota per la sezione password
+            if form.is_valid():
+                form.save()
+                messages.success(request, _("Dati profilo aggiornati."))
+                return redirect("my_account")
+            else:
+                messages.error(request, _("Correggi gli errori nel profilo."))
+        elif action == "password":
+            form = MyAccountForm(instance=user)  # profilo non toccato in questo POST
+            pwd_form = MyPasswordChangeForm(user=user, data=request.POST)
+            if pwd_form.is_valid():
+                user = pwd_form.save()
+                update_session_auth_hash(request, user)  # evita logout
+                messages.success(request, _("Password aggiornata correttamente."))
+                return redirect("my_account")
+            else:
+                messages.error(request, _("Correggi gli errori nella password."))
+        else:
+            # fallback: tratta come GET
+            form = MyAccountForm(instance=user)
+            pwd_form = MyPasswordChangeForm(user=user)
+    else:
+        form = MyAccountForm(instance=request.user)
+        pwd_form = MyPasswordChangeForm(user=request.user)
+
+    ctx = {
+        "page_title": "My Account",
+        "form": form,
+        "pwd_form": pwd_form,
+    }
+    return render(request, "accounts/my_account.html", ctx)

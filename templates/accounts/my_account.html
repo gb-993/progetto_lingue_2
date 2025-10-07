@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My Account{% endblock %}
+{% block breadcrumb %}Accounts / My Account{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h3 class="mb-2">Profilo</h3>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="profile" />
+
+      {% if form.non_field_errors %}
+        <div class="alert alert--error" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="field-error" role="alert">{{ form.email.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.name.id_for_label }}">Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="field-error" role="alert">{{ form.name.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.surname.id_for_label }}">Surname</label>
+          {{ form.surname }}
+          {% if form.surname.errors %}
+            <div class="field-error" role="alert">{{ form.surname.errors|striptags }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <a class="btn" href="{% url 'dashboard' %}">Cancel</a>
+        <button class="btn btn--primary">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card mt-4">
+    <h3 class="mb-2">Cambia password</h3>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="password" />
+
+      {% if pwd_form.non_field_errors %}
+        <div class="alert alert--error" role="alert">{{ pwd_form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label for="{{ pwd_form.old_password.id_for_label }}">Password attuale</label>
+          {{ pwd_form.old_password }}
+          {% if pwd_form.old_password.errors %}
+            <div class="field-error" role="alert">{{ pwd_form.old_password.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ pwd_form.new_password1.id_for_label }}">Nuova password</label>
+          {{ pwd_form.new_password1 }}
+          {% if pwd_form.new_password1.errors %}
+            <div class="field-error" role="alert">{{ pwd_form.new_password1.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ pwd_form.new_password2.id_for_label }}">Conferma nuova password</label>
+          {{ pwd_form.new_password2 }}
+          {% if pwd_form.new_password2.errors %}
+            <div class="field-error" role="alert">{{ pwd_form.new_password2.errors|striptags }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <a class="btn" href="{% url 'dashboard' %}">Cancel</a>
+        <button class="btn btn--primary">Update password</button>
+      </div>
+
+      {% if pwd_form.help_text %}
+        <p class="muted mt-2" id="password-help">{{ pwd_form.help_text|safe }}</p>
+      {% endif %}
+    </form>
+  </div>
+{% endblock %}

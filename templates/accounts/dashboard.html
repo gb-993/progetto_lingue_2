@@ -16,6 +16,12 @@
       <p class="muted">Termini e definizioni</p>
     </a>
 
+    <a class="card btn" href="{% url 'my_account' %}" aria-label="Modifica il tuo account">
+      <h3>My Account</h3>
+      <p class="muted">Modifica i tuoi dati</p>
+    </a>
+
+
     {# ---- Solo admin/staff ---- #}
     {% if is_admin %}
       <a class="card btn" href="{% url 'parameter_list' %}" aria-label="Apri la gestione dei parametri">

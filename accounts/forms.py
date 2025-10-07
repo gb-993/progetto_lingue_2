@@ -1,7 +1,9 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from core.models import User  # usa il tuo custom User (aggiorna l'import se il path è diverso)
-# Se vuoi gestire le lingue ora:
+from django.contrib.auth.forms import PasswordChangeForm
+from core.models import User
+# impoorta Language se esiste
 try:
     from core.models import Language
     HAS_LANGUAGE = True
@@ -75,3 +77,48 @@ class EmailAuthForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         for name in ("username", "password"):
             self.fields[name].widget.attrs.update({"class": "form-control", "autocomplete": "on"})
+
+
+class MyAccountForm(forms.ModelForm):
+    """
+    Modifica profilo utente (solo campi sicuri). Email normalizzata lowercase.
+    """
+    class Meta:
+        model = User
+        fields = ["email", "name", "surname"]
+        widgets = {
+            "email": forms.EmailInput(attrs={"class": "form-control", "autocomplete": "email"}),
+            "name": forms.TextInput(attrs={"class": "form-control", "autocomplete": "given-name"}),
+            "surname": forms.TextInput(attrs={"class": "form-control", "autocomplete": "family-name"}),
+        }
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").lower().strip()
+        if not email:
+            raise ValidationError("Email obbligatoria.")
+        # Unicità case-insensitive ma escludendo se stesso
+        qs = User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("Questa email è già in uso.")
+        return email
+
+
+class MyPasswordChangeForm(PasswordChangeForm):
+    """
+    PasswordChangeForm con widget coerenti e senza colori/JS custom.
+    """
+    old_password = forms.CharField(
+        label="Password attuale",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "current-password"}),
+    )
+    new_password1 = forms.CharField(
+        label="Nuova password",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
+    )
+    new_password2 = forms.CharField(
+        label="Conferma nuova password",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
+    )
