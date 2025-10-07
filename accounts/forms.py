@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from core.models import User  # usa il tuo custom User (aggiorna l'import se il path è diverso)
+
 from django.contrib.auth.forms import PasswordChangeForm
 from core.models import User
 # impoorta Language se esiste

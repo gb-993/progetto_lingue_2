@@ -1,16 +1,17 @@
-# languages_ui/views.py  — versione pulita/robusta
+# languages_ui/views.py — versione pulita/robusta
 
 from __future__ import annotations
 
 from types import SimpleNamespace
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _t
 from django.views.decorators.http import require_http_methods, require_POST
-from django.core.paginator import Paginator
 
 from core.models import (
     Language,
@@ -22,28 +23,32 @@ from core.models import (
     AnswerMotivation,
     QuestionAllowedMotivation,
     LanguageParameter,          # consolidato (+/-/None)
+    # opzionale/legacy:
 )
-
 # Valori DAG (+/-/0): il modello potrebbe non esistere in ambienti vecchi
 try:
-    from core.models import LanguageParameterEval   # noqa
+    from core.models import LanguageParameterEval  # noqa
     HAS_EVAL = True
 except Exception:
     LanguageParameterEval = None  # type: ignore
     HAS_EVAL = False  # non usato ma utile per futuri rami
 
+# Se gli status sono definiti nel modello:
+try:
+    from core.models import AnswerStatus  # PENDING/WAITING/APPROVED/REJECTED
+except Exception:
+    # Fallback stringhe (evita crash se l'enum non è disponibile)
+    class AnswerStatus:
+        PENDING = "pending"
+        WAITING = "waiting_for_approval"
+        APPROVED = "approved"
+        REJECTED = "rejected"
+
+from core.models import LanguageReview  # log decisioni approve/reject
+
 # Servizi
 from core.services.dag_eval import run_dag_for_language
 from core.services.dag_debug import diagnostics_for_language
-from django.db import transaction
-
-from django.views.decorators.http import require_http_methods, require_POST
-from core.models import (
-    Language, ParameterDef, Question, Answer, Example,
-    Motivation, AnswerMotivation, QuestionAllowedMotivation,
-    LanguageParameter, AnswerStatus,   # <-- aggiungi AnswerStatus
-)
-from core.services.dag_eval import run_dag_for_language
 
 
 # -----------------------
@@ -67,9 +72,10 @@ def _check_language_access(user, lang: Language) -> bool:
         pass
     return False
 
+
 def _language_status_summary(lang: Language):
     """
-    Conteggi per stato e 'overall' derivato:
+    Conteggi per stato e 'overall' derivato (compat):
     - 'approved' se tutte le answers esistenti sono approved
     - 'waiting_for_approval' se tutte le answers esistenti sono waiting
     - 'rejected' se esiste almeno una rejected e nessuna waiting
@@ -96,33 +102,10 @@ def _language_status_summary(lang: Language):
     return {"counts": counts, "total": total, "overall": overall}
 
 
-def _missing_answered_question_ids(lang: Language):
-    """
-    Ritorna gli id delle domande attive che NON hanno una Answer yes/no per questa lingua.
-    Serve a impedire 'submit' con risposte mancanti.
-    """
-    active_qids = set(
-        Question.objects.filter(parameter__is_active=True).values_list("id", flat=True)
-    )
-    answered_qids = set(
-        Answer.objects.filter(
-            language=lang,
-            question_id__in=active_qids,
-            response_text__in=["yes", "no"]
-        ).values_list("question_id", flat=True)
-    )
-    return sorted(active_qids - answered_qids)
-
-
 def _language_overall_status(lang: Language) -> dict:
     """
-    Calcola lo stato 'overall' di una lingua in base alle Answer esistenti.
-    Regole:
-      - se esiste almeno una WAITING -> overall = waiting_for_approval
-      - altrimenti se esiste almeno una APPROVED -> overall = approved
-      - altrimenti se esiste almeno una REJECTED -> overall = rejected
-      - altrimenti -> pending
-    Ritorna anche i conteggi per completezza.
+    Calcola lo stato 'overall' in base agli status delle Answer.
+    Priorità: WAITING > APPROVED > REJECTED > PENDING.
     """
     qs = Answer.objects.filter(language=lang).values_list("status", flat=True)
     seen = set(qs)
@@ -136,15 +119,33 @@ def _language_overall_status(lang: Language) -> dict:
     else:
         overall = AnswerStatus.PENDING
 
-    return {
-        "overall": overall,
-        "counts": {
-            "pending":   sum(1 for s in seen if s == AnswerStatus.PENDING),
-            "waiting":   sum(1 for s in seen if s == AnswerStatus.WAITING),
-            "approved":  sum(1 for s in seen if s == AnswerStatus.APPROVED),
-            "rejected":  sum(1 for s in seen if s == AnswerStatus.REJECTED),
-        }
+    # conteggi elementari (non usati molto, ma utili)
+    counts = {
+        "pending":   sum(1 for s in qs if s == AnswerStatus.PENDING),
+        "waiting":   sum(1 for s in qs if s == AnswerStatus.WAITING),
+        "approved":  sum(1 for s in qs if s == AnswerStatus.APPROVED),
+        "rejected":  sum(1 for s in qs if s == AnswerStatus.REJECTED),
     }
+    return {"overall": overall, "counts": counts}
+
+
+def _all_questions_answered(language: Language) -> bool:
+    """
+    True se TUTTE le domande attive hanno una Answer yes/no per questa lingua.
+    """
+    active_qids = set(
+        Question.objects.filter(parameter__is_active=True).values_list("id", flat=True)
+    )
+    if not active_qids:
+        return False  # se non hai domande, non consento approvazione
+    answered_qids = set(
+        Answer.objects.filter(
+            language=language,
+            question_id__in=active_qids,
+            response_text__in=["yes", "no"],
+        ).values_list("question_id", flat=True)
+    )
+    return active_qids.issubset(answered_qids)
 
 
 # -----------------------
@@ -152,8 +153,6 @@ def _language_overall_status(lang: Language) -> dict:
 # -----------------------
 @login_required
 def language_list(request):
-
-    # cerca di capire se admin 
     q = (request.GET.get("q") or "").strip()
     user = request.user
     is_admin = _is_admin(user)
@@ -226,19 +225,15 @@ def language_edit(request, lang_id):
 # -----------------------
 @login_required
 def language_data(request, lang_id):
-
-    # identifica user attuale e verifica che sia admin
     user = request.user
-    is_admin = _is_admin(user)  
-
-    # recupera la lingua specificata in url o 404
+    is_admin = _is_admin(user)
     lang = get_object_or_404(Language, pk=lang_id)
 
     if not _check_language_access(user, lang):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
-    # Raccolta parametri attivi + domande + allowed motivations per ognuno
+    # Parametri attivi + domande + allowed motivations
     parameters = (
         ParameterDef.objects.filter(is_active=True)
         .order_by("position")
@@ -263,29 +258,24 @@ def language_data(request, lang_id):
         )
     )
 
-    # raccolta risposte già presenti per la lingua
+    # risposte per lingua
     answers_qs = (
         Answer.objects.filter(language=lang)
         .select_related("question")
         .prefetch_related("answer_motivations__motivation", "examples")
     )
-
-    # mappa domande → answer per accesso veloce
     by_qid = {a.question_id: a for a in answers_qs}
 
-    # Costruzione “view model” per il template
+    # View model per template + stato per parametro
     for p in parameters:
         total = 0
         answered = 0
         for q in p.questions.all():
             total += 1
-
-            # Motivazioni ammesse (tramite ponte)
             q.allowed_motivations_list = [thr.motivation for thr in getattr(q, "allowed_motivs_through", [])]
 
             a = by_qid.get(q.id)
             if a:
-                # per ogni domanda, aggiungi un attributo 'ans' con i dati dell'eventuale risposta
                 ans_ns = SimpleNamespace(
                     response_text=a.response_text,
                     comments=a.comments or "",
@@ -297,7 +287,7 @@ def language_data(request, lang_id):
                     answered += 1
             else:
                 ans_ns = SimpleNamespace(
-                    response_text="",  # default
+                    response_text="",
                     comments="",
                     motivation_ids=[],
                     examples=[],
@@ -305,7 +295,6 @@ def language_data(request, lang_id):
                 )
             q.ans = ans_ns
 
-        # Stato del parametro per lo status (ok/missing/warn)
         if total == 0:
             p.status = "ok"
         elif answered == 0:
@@ -315,21 +304,18 @@ def language_data(request, lang_id):
         else:
             p.status = "ok"
 
-    status_summary = _language_status_summary(lang)
-    all_ok = all(getattr(p, "status", "missing") == "ok" for p in parameters)
-    
-    # Calcolo "all_answered" e stato globale per il template
-    # all_answered: tutte le domande attive hanno una risposta yes/no?
-    total_q = 0
-    answered_q = 0
+    # all_answered = tutte le domande attive hanno yes/no?
+    active_q_total = 0
+    active_q_answered = 0
     for p in parameters:
         for q in p.questions.all():
-            total_q += 1
+            active_q_total += 1
             if getattr(q, "ans", None) and q.ans.response_text in ("yes", "no"):
-                answered_q += 1
-    all_answered = (total_q > 0 and answered_q == total_q)
+                active_q_answered += 1
+    all_answered = (active_q_total > 0 and active_q_answered == active_q_total)
 
     lang_status = _language_overall_status(lang)
+    last_reject = LanguageReview.objects.filter(language=lang, decision="reject").order_by("-created_at").first()
 
     ctx = {
         "language": lang,
@@ -337,8 +323,8 @@ def language_data(request, lang_id):
         "is_admin": is_admin,
         "all_answered": all_answered,
         "lang_status": lang_status,
+        "last_reject": last_reject,
     }
-
     return render(request, "languages/data.html", ctx)
 
 
@@ -355,7 +341,7 @@ def answer_save(request, lang_id, question_id):
 
     question = get_object_or_404(Question, pk=question_id)
 
-    # legge dati dal form
+    # leggi dati dal form
     response_text = (request.POST.get("response_text") or "").strip().lower()
     if response_text not in ("yes", "no"):
         messages.error(request, _t("Invalid answer value."))
@@ -363,7 +349,7 @@ def answer_save(request, lang_id, question_id):
 
     comments = (request.POST.get("comments") or "").strip()
 
-    # Rispetta 'modifiable' per gli utenti; gli ADMIN possono bypassare
+    # Rispetta 'modifiable' per gli utenti; ADMIN bypassa
     answer = Answer.objects.filter(language=lang, question=question).first()
     if answer and not answer.modifiable and not _is_admin(request.user):
         messages.error(request, _t("This answer is locked (waiting/approved)."))
@@ -384,13 +370,12 @@ def answer_save(request, lang_id, question_id):
         motivation_ids = []
     else:
         motivation_ids = [mid for mid in motivation_ids if mid in allowed_ids]
+        # esclusività Motivazione1
         mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
-        
-        # ATTENZIONE: DA VERIFICARE (esclusione delle altre motivazoini se c'è la uno)
         if mot1 and mot1.id in motivation_ids:
             motivation_ids = [mot1.id]
 
-    # crea o aggiorna l'oggetto Answer
+    # crea/aggiorna Answer
     if answer is None:
         answer = Answer(language=lang, question=question, response_text=response_text, comments=comments)
     else:
@@ -398,7 +383,7 @@ def answer_save(request, lang_id, question_id):
         answer.comments = comments
     answer.save()
 
-    # Sync motivazioni, evita di cancellare tutto e riscrivere a ogni submit
+    # Sync motivazioni
     current_ids = set(
         AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
     )
@@ -413,7 +398,7 @@ def answer_save(request, lang_id, question_id):
     if to_del:
         AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-    # Examples
+    # Examples: aggiornamenti (campi consentiti)
     for key, val in request.POST.items():
         if not key.startswith("ex_"):
             continue
@@ -479,8 +464,7 @@ def answers_bulk_save(request, lang_id):
             else:
                 allowed = allowed_by_qid.get(q.id, set())
                 mot_ids = [mid for mid in mot_ids if mid in allowed]
-
-                # ATTENZIONE: DA VERIFICARE (esclusione delle altre motivazoini se c'è la 1)
+                # esclusività Motivazione1
                 mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
                 if mot1 and mot1.id in mot_ids:
                     mot_ids = [mot1.id]
@@ -535,15 +519,14 @@ def answers_bulk_save(request, lang_id):
                 Example.objects.filter(id=ex_id, answer=a).update(**{field: val})
 
             # 2) Crea esempi nuovi: newex_<QID>_<UID>_<field>
-            #    QID può contenere underscore → usiamo prefix preciso e rsplit da destra
             prefix = f"newex_{q.id}_"
             buckets = {}
             for key, val in request.POST.items():
                 if not key.startswith(prefix):
                     continue
-                remainder = key[len(prefix):]              # es: "1759686090420_7450_textarea"
+                remainder = key[len(prefix):]
                 try:
-                    uid, field = remainder.rsplit("_", 1)  # prendi ultimo "_": field=textarea/gloss/...
+                    uid, field = remainder.rsplit("_", 1)
                 except ValueError:
                     continue
                 if field not in FIELDS:
@@ -575,30 +558,20 @@ def answers_bulk_save(request, lang_id):
                 if to_create:
                     Example.objects.bulk_create(to_create, ignore_conflicts=True)
 
-
-
             # 3) Validazione “YES richiede almeno 1 esempio”
             if rt == "yes":
                 ex_count = Example.objects.filter(answer=a).count()
                 if ex_count == 0:
-                    # Niente esempi: non salviamo questa risposta; segnaliamo all'utente
-                    # Ripristiniamo eventualmente il valore precedente (se esiste)
-                    if a.id and a.response_text != (a.__class__.objects.filter(pk=a.id).values_list("response_text", flat=True).first() or ""):
-                        a.refresh_from_db(fields=["response_text", "comments"])
-                    # Segnala: accumula ID e passa oltre senza contare 'saved'
+                    # segnale soft: non blocco l'intero bulk, ma notifico
                     request._missing_examples_for_yes = getattr(request, "_missing_examples_for_yes", [])
-                    request._missing_examples_for_yes.append(q.id)
-                    # opzionale: potresti anche mettere a blank, ma meglio lasciare com'è
-                    continue
-
+                    request._missing_examples_for_yes.append(str(q.id))
+                    # non annullo il salvataggio: lasciamo la risposta e avvisiamo
             saved += 1
 
     if skipped_locked:
-        messages.warning(request, _t(f"Saved {saved} answers. Skipped {skipped_locked} locked answers (waiting/approved)."))
-    else:
-        messages.success(request, _t(f"Saved {saved} answers (others left unchanged)."))
-    
-    # Messaggi per YES senza esempi
+        messages.warning(request, _t("Some locked answers were skipped."))
+    messages.success(request, _t(f"Saved {saved} answers."))
+
     miss = getattr(request, "_missing_examples_for_yes", [])
     if miss:
         messages.error(
@@ -610,8 +583,9 @@ def answers_bulk_save(request, lang_id):
 
     return redirect("language_data", lang_id=lang.id)
 
+
 # -----------------------
-# Export / approvazioni (placeholder)
+# Export / approvazioni placeholder
 # -----------------------
 @login_required
 def language_export(request, lang_id):
@@ -632,24 +606,6 @@ def language_save_instructions(request, lang_id):
     return redirect("language_data", lang_id=lang_id)
 
 
-@login_required
-def language_approve(request, lang_id):
-    if not _is_admin(request.user):
-        messages.error(request, _t("You are not allowed to perform this action."))
-        return redirect("language_list")
-    messages.info(request, _t("Approval flow not implemented yet."))
-    return redirect("language_data", lang_id=lang_id)
-
-
-@login_required
-def language_reopen(request, lang_id):
-    if not _is_admin(request.user):
-        messages.error(request, _t("You are not allowed to perform this action."))
-        return redirect("language_list")
-    messages.info(request, _t("Reopen flow not implemented yet."))
-    return redirect("language_data", lang_id=lang_id)
-
-
 # -----------------------
 # Pagina DEBUG con diagnostica e run DAG
 # -----------------------
@@ -663,15 +619,15 @@ def language_debug(request, lang_id: str):
     """
     user = request.user
     lang = get_object_or_404(Language, pk=lang_id)
-    
+
     if not _check_language_access(user, lang):
         # 404 per non rivelare l'esistenza della lingua
         get_object_or_404(Language, pk="__deny__")
-    
+
     # SOLO admin
     if not _is_admin(user):
         get_object_or_404(Language, pk="__deny__")
-    # Parametri attivi + domande
+
     params = (
         ParameterDef.objects
         .filter(is_active=True)
@@ -679,7 +635,6 @@ def language_debug(request, lang_id: str):
         .prefetch_related(Prefetch("questions", queryset=Question.objects.order_by("id")))
     )
 
-    # Risposte per la lingua
     answers = (
         Answer.objects
         .filter(language=lang)
@@ -688,7 +643,6 @@ def language_debug(request, lang_id: str):
     )
     answers_by_qid = {a.question_id: a for a in answers}
 
-    # initial/final + warnings
     lps = (
         LanguageParameter.objects
         .filter(language=lang)
@@ -709,7 +663,6 @@ def language_debug(request, lang_id: str):
             final_by_pid[pid] = ""
             warnf_by_pid[pid] = False
 
-    # Righe per tabella principale
     rows = []
     for p in params:
         q_ids, q_ans = [], []
@@ -730,7 +683,6 @@ def language_debug(request, lang_id: str):
             "cond": (p.implicational_condition or ""),
         })
 
-    # Diagnostica parser/condizioni (pretty + TRUE/FALSE)
     diag_rows = diagnostics_for_language(lang)
 
     ctx = {"language": lang, "rows": rows, "diag_rows": diag_rows, "is_admin": _is_admin(user)}
@@ -738,7 +690,7 @@ def language_debug(request, lang_id: str):
 
 
 # -----------------------
-# Azione: esecuzione DAG
+# Azione: esecuzione DAG manuale
 # -----------------------
 @login_required
 @require_POST
@@ -768,28 +720,25 @@ def language_run_dag(request, lang_id: str):
     return redirect("language_debug", lang_id=lang_id)
 
 
+# -----------------------
+# Flusso submit/approve/reject/reopen
+# -----------------------
 @login_required
 @require_POST
 def language_submit(request, lang_id):
+    """
+    USER: submit finale SEMPRE consentita anche con risposte mancanti.
+    Blocca l'editing (WAITING + modifiable=False) e NON avvia il DAG.
+    """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
-    # Verifica che siano tutte risposte (yes/no) alle domande attive
-    active_q_ids = set(
-        Question.objects.filter(parameter__is_active=True).values_list("id", flat=True)
-    )
-    answered_ids = set(
-        Answer.objects.filter(language=lang, response_text__in=["yes", "no"])
-                      .values_list("question_id", flat=True)
-    )
-    missing = active_q_ids - answered_ids
-    if missing:
-        messages.warning(request, _t("You must answer all questions before submitting."))
-        return redirect("language_data", lang_id=lang.id)
+    # Avvisa se ci sono domande mancanti, ma non blocca la submit
+    if not _all_questions_answered(lang):
+        messages.warning(request, _t("You submitted with some unanswered questions. An admin will review before approval."))
 
-    # Setta WAITING + modifiable=False solo per risposte dell'utente su questa lingua
     changed = Answer.objects.filter(language=lang).update(
         status=AnswerStatus.WAITING, modifiable=False
     )
@@ -800,21 +749,31 @@ def language_submit(request, lang_id):
 @login_required
 @require_POST
 def language_approve(request, lang_id):
+    """
+    ADMIN: Approva e avvia il DAG SOLO se tutte le domande attive hanno risposta.
+    """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
 
     lang = get_object_or_404(Language, pk=lang_id)
 
+    # Regola: tutte risposte devono esserci
+    if not _all_questions_answered(lang):
+        messages.error(request, _t("Impossibile approvare: ci sono domande senza risposta. Completa tutte le risposte prima di avviare il DAG."))
+        return redirect("language_data", lang_id=lang.id)
+
     # Approva solo ciò che è in WAITING; resta modifiable=False
     changed = Answer.objects.filter(language=lang, status=AnswerStatus.WAITING).update(
         status=AnswerStatus.APPROVED, modifiable=False
     )
 
-    # Esegui DAG e usa gli ATTRIBUTI (NO chiamate come funzione!)
+    # Log decisione di approvazione
+    LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
+
+    # Avvia il DAG
     try:
         report = run_dag_for_language(lang_id)
-        # report è un dataclass: usa report.processed, report.forced_zero, ecc.
         msg = _t(
             "Approved %(n)d answers. DAG: processed %(p)d, forced_to_zero %(fz)d, missing_orig %(mo)d, warnings %(wp)d."
         ) % {
@@ -828,46 +787,47 @@ def language_approve(request, lang_id):
             msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6])
         messages.success(request, msg)
     except Exception as e:
-        # NON chiamare report come funzione: gestisci e basta
         messages.warning(request, _t("Approved, but DAG failed: %(err)s") % {"err": str(e)})
 
     return redirect("language_data", lang_id=lang.id)
 
+
 @login_required
 @require_POST
 def language_reject(request, lang_id):
-    """ADMIN: waiting -> rejected (riapre editing per USER)."""
+    """
+    ADMIN: Reject SEMPRE consentito, anche senza submit finale.
+    Riapre l'editing all'utente (tutte le risposte diventano REJECTED + modifiable=True).
+    Registra messaggio facoltativo.
+    """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
 
     lang = get_object_or_404(Language, pk=lang_id)
+    message = (request.POST.get("message") or "").strip()
+
     with transaction.atomic():
-        answers = list(Answer.objects.select_for_update().filter(language=lang))
-        if not answers:
-            messages.error(request, _t("No answers to reject."))
-            return redirect("language_data", lang_id=lang.id)
+        # Porta tutte le answers allo stato REJECTED e riapri editing
+        changed = Answer.objects.filter(language=lang).update(
+            status=AnswerStatus.REJECTED, modifiable=True
+        )
+        # Log decisione di reject (con messaggio opzionale)
+        LanguageReview.objects.create(language=lang, decision="reject", message=message, created_by=request.user)
 
-        invalid = [a for a in answers if a.status not in ("waiting_for_approval", "rejected")]
-        if invalid:
-            messages.error(request, _t("All answers must be in 'waiting' to reject."))
-            return redirect("language_data", lang_id=lang.id)
-
-        changed = 0
-        for a in answers:
-            if a.status == "waiting_for_approval":
-                a.status = "rejected"
-                a.modifiable = True
-                a.save(update_fields=["status", "modifiable"])
-                changed += 1
-
-    messages.success(request, _t(f"Rejected {changed} answers. Users can edit again."))
+    if changed == 0:
+        messages.info(request, _t("Nothing to reject."))
+    else:
+        messages.success(request, _t(f"Rejected submission. {changed} answers are editable again."))
     return redirect("language_data", lang_id=lang.id)
 
 
 @login_required
 @require_POST
 def language_reopen(request, lang_id):
+    """
+    USER: su stato rejected può riaprire (torna pending/modifiable=True).
+    """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
@@ -880,19 +840,4 @@ def language_reopen(request, lang_id):
         messages.info(request, _t("Nothing to reopen."))
     else:
         messages.success(request, _t(f"Reopened: {changed} answers set to pending."))
-    return redirect("language_data", lang_id=lang.id)
-
-@login_required
-@require_POST
-def language_reject(request, lang_id):
-    if not _is_admin(request.user):
-        messages.error(request, _t("You are not allowed to perform this action."))
-        return redirect("language_list")
-
-    lang = get_object_or_404(Language, pk=lang_id)
-
-    changed = Answer.objects.filter(language=lang).update(
-        status=AnswerStatus.REJECTED, modifiable=True
-    )
-    messages.success(request, _t(f"Rejected submission. {changed} answers are editable again."))
     return redirect("language_data", lang_id=lang.id)

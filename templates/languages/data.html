@@ -55,21 +55,36 @@
             {% else %}
               <span class="badge">Pending</span>
             {% endif %}
-            {% if not all_answered and s == "pending" %}
-              — <span class="muted">Complete all answers before submitting.</span>
+            {% if not all_answered %}
+              — <span class="muted">There are unanswered questions.</span>
             {% endif %}
           </div>
 
+          {% if last_reject %}
+            <div class="card" role="note" aria-label="Rejection message" style="margin-top:.5rem">
+              <strong>Last reject message</strong>
+              {% if last_reject.message %}
+                <p class="muted" style="white-space:pre-wrap">{{ last_reject.message }}</p>
+              {% else %}
+                <p class="muted">No message provided.</p>
+              {% endif %}
+              <p class="muted">By {{ last_reject.created_by }} — {{ last_reject.created_at }}</p>
+            </div>
+          {% endif %}
+
           <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap">
-            {% if not is_admin and all_answered %}
-              {% if s == 'pending' or s == 'rejected' %}
-                <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
-                  {% csrf_token %}
-                  <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
-                </form>
+            {# --- User: submit finale SEMPRE visibile e cliccabile se non è approved --- #}
+            {% if not is_admin and s != "approved" %}
+              <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
+                {% csrf_token %}
+                <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
+              </form>
+              {% if not all_answered %}
+                <span class="muted" role="alert">You can submit even if some answers are missing. Admin approval will be required.</span>
               {% endif %}
             {% endif %}
 
+            {# --- User: riapri se rejected --- #}
             {% if not is_admin and s == "rejected" %}
               <form method="post" action="{% url 'language_reopen' language.id %}" style="display:inline">
                 {% csrf_token %}
@@ -77,14 +92,21 @@
               </form>
             {% endif %}
 
-            {% if is_admin and s == "waiting_for_approval" %}
+            {# --- Admin: Approva SEMPRE visibile ma DISABILITATO se non completo --- #}
+            {% if is_admin %}
               <form method="post" action="{% url 'language_approve' language.id %}" style="display:inline">
                 {% csrf_token %}
-                <button class="btn btn--primary" type="submit" onclick="return confirm('Confermi approvazione e avvio DAG?')">Approva e avvia DAG</button>
+                <button class="btn btn--primary" type="submit" {% if not all_answered %}disabled aria-disabled="true" title="Completa tutte le risposte per avviare il DAG"{% endif %}>
+                  Approva e avvia DAG
+                </button>
               </form>
-              <form method="post" action="{% url 'language_reject' language.id %}" style="display:inline">
+
+              {# --- Admin: Reject SEMPRE visibile e cliccabile con messaggio facoltativo --- #}
+              <form method="post" action="{% url 'language_reject' language.id %}" style="display:inline; display:flex; align-items:flex-start; gap:.5rem; flex-wrap:wrap; max-width:100%">
                 {% csrf_token %}
-                <button class="btn" type="submit" onclick="return confirm('Rifiutare la compilazione e riaprire all’utente?')">Reject</button>
+                <label for="reject_message" class="sr-only">Messaggio (facoltativo)</label>
+                <textarea id="reject_message" name="message" rows="2" placeholder="Motiva il rifiuto (facoltativo)" style="min-width:16rem; flex:1 1 16rem"></textarea>
+                <button class="btn" type="submit">Reject (riapri all’utente)</button>
               </form>
             {% endif %}
           </div>
@@ -150,7 +172,6 @@
               <div class="toolbar" style="margin:.5rem 0">
                 <strong>Examples</strong>
                 <span class="sr-only examples-hint" aria-live="polite"></span>
-                {# pulsante che conosce il template_type della domanda #}
                 <button class="btn add-example-btn"
                         data-qid="{{ q.id }}"
                         data-template="{{ q.template_type|default:'' }}"
@@ -209,9 +230,7 @@
                 {% empty %}
                   <div class="muted">No examples yet</div>
                 {% endfor %}
-                {# Qui JS aggiungerà i nuovi esempi (newex_...) #}
               </div>
-
             </div>
 
             {% if is_admin or lang_status.overall == 'pending' or lang_status.overall == 'rejected' %}
@@ -233,12 +252,13 @@
 
       <div class="toolbar" style="margin-top:1rem; gap:.5rem; flex-wrap:wrap">
         {% with s=lang_status.overall %}
-          {% if not is_admin and all_answered %}
-            {% if s == 'pending' or s == 'rejected' %}
-              <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
-                {% csrf_token %}
-                <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
-              </form>
+          {% if not is_admin and s != "approved" %}
+            <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
+              {% csrf_token %}
+              <button class="btn btn--primary" type="submit">Termina compilazione e invia</button>
+            </form>
+            {% if not all_answered %}
+              <span class="muted" role="alert">You can submit even if some answers are missing.</span>
             {% endif %}
           {% endif %}
 
@@ -249,14 +269,18 @@
             </form>
           {% endif %}
 
-          {% if is_admin and s == "waiting_for_approval" %}
+          {% if is_admin %}
             <form method="post" action="{% url 'language_approve' language.id %}" style="display:inline">
               {% csrf_token %}
-              <button class="btn btn--primary" type="submit" onclick="return confirm('Confermi approvazione e avvio DAG?')">Approva e avvia DAG</button>
+              <button class="btn btn--primary" type="submit" {% if not all_answered %}disabled aria-disabled="true" title="Completa tutte le risposte per avviare il DAG"{% endif %}>
+                Approva e avvia DAG
+              </button>
             </form>
-            <form method="post" action="{% url 'language_reject' language.id %}" style="display:inline">
+            <form method="post" action="{% url 'language_reject' language.id %}" style="display:inline; display:flex; align-items:flex-start; gap:.5rem; flex-wrap:wrap; max-width:100%">
               {% csrf_token %}
-              <button class="btn" type="submit" onclick="return confirm('Rifiutare la compilazione e riaprire all’utente?')">Reject</button>
+              <label for="reject_message_bottom" class="sr-only">Messaggio (facoltativo)</label>
+              <textarea id="reject_message_bottom" name="message" rows="2" placeholder="Motiva il rifiuto (facoltativo)" style="min-width:16rem; flex:1 1 16rem"></textarea>
+              <button class="btn" type="submit">Reject (riapri all’utente)</button>
             </form>
           {% endif %}
         {% endwith %}

@@ -22,3 +22,13 @@ class LanguageForm(forms.ModelForm):
         if pos is None or pos < 1:
             raise forms.ValidationError("Position deve essere un intero positivo (>= 1).")
         return pos
+
+
+
+
+class RejectForm(forms.Form):
+    message = forms.CharField(
+        label="Messaggio (facoltativo)",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+    )

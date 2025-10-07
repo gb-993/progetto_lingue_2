@@ -338,6 +338,26 @@ class Question(models.Model):
     def __str__(self):
         return f"{self.id} - {self.parameter_id}"
 
+# --- ADD: Log decisioni approvazione/reject per lingua ---
+from django.conf import settings
+from django.db import models
+
+class LanguageReview(models.Model):
+    DECISION_CHOICES = [
+        ("approve", "Approve"),
+        ("reject", "Reject"),
+    ]
+    language = models.ForeignKey("Language", on_delete=models.CASCADE, related_name="reviews")
+    decision = models.CharField(max_length=16, choices=DECISION_CHOICES)
+    message = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.language_id} {self.decision} @ {self.created_at:%Y-%m-%d %H:%M}"
 
 # ===============================================
 # LANGUAGE_PARAMETER (originali per ogni lingua)
