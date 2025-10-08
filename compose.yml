@@ -7,13 +7,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - dbdata:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro   
-
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
 
   web:
     build:
@@ -22,21 +22,37 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file: .env
+    env_file: .env          # <-- metti qui POSTGRES_*, SECRET_KEY, ecc.
     environment:
+      ENV: prod             # <-- usato da settings.py per switchare a prod
       PYTHONUNBUFFERED: 1
-      SEED_ON_START: "false"        # <— abilita il seed automatico
+      SEED_ON_START: "false"
+      # Email / host (puoi spostarli in .env se preferisci)
+      DEFAULT_FROM_EMAIL: "no-reply@tuodominio.it"
+      EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+      EMAIL_HOST: "smtp.postmarkapp.com"
+      EMAIL_PORT: "587"
+      EMAIL_HOST_USER: "<apikey-o-username>"
+      EMAIL_HOST_PASSWORD: "<segreto>"
+      EMAIL_USE_TLS: "true"
+      ALLOWED_HOSTS: "tuodominio.it,www.tuodominio.it"
+      # Se sei dietro Nginx con HTTPS:
+      # assicurati che settings.py legga questa variabile per settare SECURE_PROXY_SSL_HEADER
+      # e forza https in prod con SECURE_SSL_REDIRECT
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
-      - ./data:/app/data:ro        
+      - ./data:/app/data:ro
+    expose:
+      - "8000"
     healthcheck:
+      # Assicurati che l'immagine abbia curl (o sostituisci con wget)
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health/ || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 20
-
-
+    restart: unless-stopped
+    # command: gunicorn project.wsgi:application -b 0.0.0.0:8000  # <-- in prod
 
   nginx:
     image: nginx:1.27-alpine
@@ -45,6 +61,7 @@ services:
         condition: service_healthy
     ports:
       - "80:80"
+      # - "443:443"  # se gestisci TLS qui
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - staticfiles:/static
@@ -54,6 +71,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
 
 volumes:
   dbdata:
