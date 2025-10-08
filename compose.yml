@@ -22,23 +22,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file: .env          # <-- metti qui POSTGRES_*, SECRET_KEY, ecc.
+    env_file: .env
     environment:
-      ENV: prod             # <-- usato da settings.py per switchare a prod
+      # ENV: dev  # <-- puoi lasciarlo commentato: i settings vanno in dev di default
       PYTHONUNBUFFERED: 1
       SEED_ON_START: "false"
-      # Email / host (puoi spostarli in .env se preferisci)
-      DEFAULT_FROM_EMAIL: "no-reply@tuodominio.it"
-      EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
-      EMAIL_HOST: "smtp.postmarkapp.com"
-      EMAIL_PORT: "587"
-      EMAIL_HOST_USER: "<apikey-o-username>"
-      EMAIL_HOST_PASSWORD: "<segreto>"
-      EMAIL_USE_TLS: "true"
-      ALLOWED_HOSTS: "tuodominio.it,www.tuodominio.it"
-      # Se sei dietro Nginx con HTTPS:
-      # assicurati che settings.py legga questa variabile per settare SECURE_PROXY_SSL_HEADER
-      # e forza https in prod con SECURE_SSL_REDIRECT
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
@@ -46,13 +34,13 @@ services:
     expose:
       - "8000"
     healthcheck:
-      # Assicurati che l'immagine abbia curl (o sostituisci con wget)
+      # usa wget se l'immagine non ha curl
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health/ || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 20
     restart: unless-stopped
-    # command: gunicorn project.wsgi:application -b 0.0.0.0:8000  # <-- in prod
+    # command: python manage.py runserver 0.0.0.0:8000  # dev
 
   nginx:
     image: nginx:1.27-alpine
@@ -61,7 +49,6 @@ services:
         condition: service_healthy
     ports:
       - "80:80"
-      # - "443:443"  # se gestisci TLS qui
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - staticfiles:/static
