@@ -2,16 +2,13 @@
 {% block title %}Languages{% endblock %}
 {% block breadcrumb %}Languages{% endblock %}
 {% block content %}
-  <div class="toolbar">
-    <form method="get" aria-label="Search languages">
-      <label class="sr-only" for="q">Search</label>
-      <input id="q" name="q" value="{{ q }}" placeholder="Search languages…">
-      <button class="btn">Search</button>
-    </form>
-    {% if is_admin %}
-      <a class="btn btn--primary" href="{% url 'language_add' %}">Add language</a>
-    {% endif %}
-  </div>
+
+{% if is_admin %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search languages…" add_url="language_add" add_label="Add language" %}
+{% else %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search languages…" %}
+{% endif %}
+
 
   <div class="card">
     <table class="table">

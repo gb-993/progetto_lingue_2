@@ -1,0 +1,14 @@
+{# templates/_toolbar_search.html #}
+<section class="toolbar" role="search" aria-label="Search">
+  <form method="get" class="toolbar__form">
+    <label class="sr-only" for="q">Search</label>
+    <input id="q" name="q" type="search" value="{{ q|default:'' }}" placeholder="{{ placeholder|default:'Search…' }}" autocomplete="off">
+    <button type="submit" class="btn btn--search" aria-label="Search">Search</button>
+  </form>
+
+  {% if add_url and add_label %}
+    <div class="toolbar__add">
+      <a class="btn btn--primary btn--wide" href="{% url add_url %}" aria-label="{{ add_label }}">{{ add_label }}</a>
+    </div>
+  {% endif %}
+</section>

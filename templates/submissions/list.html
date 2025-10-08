@@ -2,17 +2,14 @@
 {% block title %}Submissions{% endblock %}
 {% block content %}
   <h1>Submissions</h1>
-  <form method="get" class="row g-2 mb-3" role="search" aria-label="Filtri submissions">
-    <div class="col-auto">
-      <label for="language" class="col-form-label">Lingua</label>
-    </div>
-    <div class="col-auto">
-      <input id="language" name="language" class="form-control" value="{{ language_id|default:'' }}" placeholder="es. ita">
-    </div>
-    <div class="col-auto">
-      <button class="btn btn-outline-primary" type="submit">Filtra</button>
-    </div>
+<section class="toolbar" role="search" aria-label="Filter submissions">
+  <form method="get" class="toolbar__form">
+    <label for="language" class="sr-only">Language</label>
+    <input id="language" name="language" type="search" value="{{ language_id|default:'' }}" placeholder="Filter by language id…">
+    <button class="btn btn--search" type="submit">Search</button>
   </form>
+</section>
+
 
   <div class="table-responsive">
     <table class="table table-sm align-middle">

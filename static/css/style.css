@@ -296,9 +296,18 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 
 /* 9) Tabelle */
 .table{
-  width:100%; border-collapse:separate; border-spacing:0; 
-  border:1px solid var(--border); border-radius:var(--radius); background:var(--surface);
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:var(--surface);
 }
+
+/* Solo per le tabelle normali (non sticky): bordo unico continuo */
+.table:not(.table--freeze){
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
 
 .table thead th{ text-align:left; font-weight:700; padding:.7rem .8rem; border-bottom:1px solid var(--border); background:var(--surface-2) }
 .table tbody td{ padding:.65rem .8rem; border-bottom:1px solid var(--border); vertical-align:top }
@@ -426,10 +435,49 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 .pagination a:hover{ text-decoration:none; transform:translateY(-1px) }
 
 /* 13) Azioni riga & piccoli aggiustamenti */
-.row-actions{ display:flex; gap:.4rem; flex-wrap:wrap }
+.row-actions{
+  display:flex;
+  gap:.4rem;
+  flex-wrap:wrap;
+  align-items:center;          /* centra verticalmente il bottone */
+  justify-content:flex-end;    /* allinea a destra la colonna azioni */
+}
 .row-actions .btn{ padding:.4rem .6rem }
 .card > .toolbar{ margin-top:.35rem }
 .card .toolbar + .muted{ margin-top:.25rem }
 .grid .form-row textarea{ min-height:4.25rem }
 [disabled],[aria-disabled="true"]{ filter:saturate(.2) brightness(.96) }
 .table a.btn{ text-decoration:none }
+
+/* Toolbar – più aria tra input e Search, e Add a tutta larghezza sotto */
+.toolbar{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap: 1rem;                /* più spazio tra form e add */
+  margin-bottom: 1.75rem;   /* un filo più distanziata dal contenuto sotto */
+  flex-wrap: wrap;
+}
+.toolbar__form{
+  display:flex; align-items:center;
+  gap: 0.65rem;             /* più spazio tra input e bottone Search */
+  flex: 1 1 560px;          /* input più largo su desktop */
+  max-width: 680px;
+}
+.toolbar__add{
+  flex: 1 0 100%;           /* forza il blocco Add su una riga sotto */
+  margin-top: 0.25rem;
+}
+.btn--wide{                 /* pulsante Add a tutta larghezza */
+  width: 100%;
+  justify-content: center;
+}
+
+/* opzionale: input un filo più alto per coerenza visiva */
+.toolbar input[type="search"]{
+  padding: 0.65rem 0.9rem;
+}
+
+/* Mobile: già colonna; manteniamo tutto full-width in modo naturale */
+@media (max-width: 600px){
+  .toolbar{ flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .toolbar__form{ width: 100%; max-width: none; }
+}

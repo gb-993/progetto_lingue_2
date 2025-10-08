@@ -3,16 +3,13 @@
 {% block breadcrumb %}Glossary{% endblock %}
 
 {% block content %}
-  <div class="toolbar">
-    <form method="get" role="search" aria-label="Search glossary">
-      <label class="sr-only" for="q">Search</label>
-      <input id="q" name="q" value="{{ q }}" placeholder="Search word or description…">
-    </form>
+{% if is_admin %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search word or description…" add_url="glossary_add" add_label="Add new word" %}
+{% else %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search word or description…" %}
+{% endif %}
 
-    {% if is_admin %}
-      <a class="btn btn--primary" href="{% url 'glossary_add' %}">Add new word</a>
-    {% endif %}
-  </div>
+
 
   {% if page_obj.object_list %}
     <div class="card">
