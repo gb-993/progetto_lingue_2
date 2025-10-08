@@ -36,7 +36,11 @@
       <div class="card">
         <h2>{{ language.name_full }} ({{ language.id }})</h2>
         <p class="muted">Answer the questions below. Any “Save” button saves ALL visible fields.</p>
-
+        <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap" role="group" aria-label="Azioni esportazione">
+          <a class="btn" href="{% url 'language_export_xlsx' language.id %}">
+            {% if is_admin %}Export (.xlsx) — Answers + Examples{% else %}Export (.xlsx) — Examples only{% endif %}
+          </a>
+        </div>
         {% if is_admin %}
           <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap" role="group" aria-label="Azioni admin lingua">
             <form method="post" action="{% url 'submission_create_for_language' language.id %}" style="display:inline">
@@ -46,6 +50,7 @@
                 Salva contesto
               </button>
             </form>
+
           </div>
         {% endif %}
 

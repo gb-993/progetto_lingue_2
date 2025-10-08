@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
@@ -12,6 +11,12 @@ from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _t
 from django.views.decorators.http import require_http_methods, require_POST
+from django.http import HttpResponse, Http404
+from django.utils.timezone import now
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from core.models import (
     Language,
@@ -22,22 +27,21 @@ from core.models import (
     Motivation,
     AnswerMotivation,
     QuestionAllowedMotivation,
-    LanguageParameter,          # consolidato (+/-/None)
-    # opzionale/legacy:
+    LanguageParameter,          
 )
 # Valori DAG (+/-/0): il modello potrebbe non esistere in ambienti vecchi
 try:
-    from core.models import LanguageParameterEval  # noqa
+    from core.models import LanguageParameterEval  
     HAS_EVAL = True
 except Exception:
-    LanguageParameterEval = None  # type: ignore
-    HAS_EVAL = False  # non usato ma utile per futuri rami
+    LanguageParameterEval = None 
+    HAS_EVAL = False  
 
 # Se gli status sono definiti nel modello:
 try:
     from core.models import AnswerStatus  # PENDING/WAITING/APPROVED/REJECTED
 except Exception:
-    # Fallback stringhe (evita crash se l'enum non è disponibile)
+    # (evita crash se l'enum non è disponibile)
     class AnswerStatus:
         PENDING = "pending"
         WAITING = "waiting_for_approval"
@@ -584,17 +588,6 @@ def answers_bulk_save(request, lang_id):
     return redirect("language_data", lang_id=lang.id)
 
 
-# -----------------------
-# Export / approvazioni placeholder
-# -----------------------
-@login_required
-def language_export(request, lang_id):
-    lang = get_object_or_404(Language, pk=lang_id)
-    if not _check_language_access(request.user, lang):
-        messages.error(request, _t("You don't have access to this language."))
-        return redirect("language_list")
-    messages.info(request, _t("Export is not implemented yet."))
-    return redirect("language_data", lang_id=lang.id)
 
 
 @login_required
@@ -841,3 +834,184 @@ def language_reopen(request, lang_id):
     else:
         messages.success(request, _t(f"Reopened: {changed} answers set to pending."))
     return redirect("language_data", lang_id=lang.id)
+
+
+@login_required
+def language_export_xlsx(request, lang_id: str):
+    # --- Fetch lingua + autorizzazione coerente con tutta l'app ---
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        # 404 "soft" per non rivelare l'esistenza della risorsa
+        raise Http404("Language not found")
+
+    is_admin = _is_admin(request.user)
+
+    # --- Dati base (ordinamento coerente con UI) ---
+    params = (
+        ParameterDef.objects
+        .filter(is_active=True)
+        .order_by("position", "id")
+    )
+
+    # Domande per parametro 
+    qs_by_param = {}
+    for q in (
+        Question.objects
+        .select_related("parameter")
+        .order_by("parameter__position", "id")   # opzionale: ordina come in UI
+        # .order_by("parameter_id", "id")        # alternativa per non usare position
+    ):
+        qs_by_param.setdefault(q.parameter_id, []).append(q)
+
+
+    # Risposte per lingua (indicizzate per question_id)
+    answers = (
+        Answer.objects
+        .select_related("question")
+        .filter(language_id=lang.id)
+    )
+    ans_by_qid = {a.question_id: a for a in answers}
+
+    # Motivazioni in mappa id->label
+    mot_map = {m.id: getattr(m, "label", getattr(m, "text", "")) for m in Motivation.objects.all()}
+
+    # --- Esempi per lingua: indicizzati per question_id e ordinati ---
+    ex_by_qid = {}
+    examples = (
+        Example.objects
+        .select_related("answer")                # serve per accedere a answer.question_id
+        .filter(answer__language_id=lang.id)     # <-- FIX: niente language_id diretto su Example
+    )
+    for ex in examples:
+        qid = ex.answer.question_id
+        ex_by_qid.setdefault(qid, []).append(ex)
+
+    for arr in ex_by_qid.values():
+        # ordina per numero, gestendo stringhe/non numerici
+        def _as_int(v):
+            try:
+                return int(v)
+            except Exception:
+                return 10**9
+        arr.sort(key=lambda e: _as_int(getattr(e, "number", "")))
+
+
+    # === Workbook ===
+    wb = Workbook()
+
+    # Header fogli
+    ans_header = [
+        "Language ID", "Parameter Label", "Question ID", "Question",
+        "Question status", "Answer", "Parameter value", "Motivation", "Comments"
+    ]
+    ex_header = [
+        "Language ID", "Question ID", "Example #",
+        "Data", "Transliteration", "Gloss", "English translation", "Reference"
+    ]
+
+    bold_white = Font(bold=True, color="FFFFFF")
+
+    def _style_table(ws, name: str):
+        max_col, max_row = ws.max_column, ws.max_row
+        if max_row < 2:
+            return
+        ref = f"A1:{get_column_letter(max_col)}{max_row}"
+        tbl = Table(displayName=name, ref=ref)
+        tbl.tableStyleInfo = TableStyleInfo(
+            name="TableStyleMedium2",
+            showFirstColumn=False, showLastColumn=False,
+            showRowStripes=True, showColumnStripes=False
+        )
+        ws.add_table(tbl)
+        ws.freeze_panes = "A2"
+        widths = (
+            [14, 18, 12, 36, 18, 10, 16, 28, 26]  # Answers
+            if name == "Answers"
+            else [14, 12, 12, 36, 20, 20, 26, 24]  # Examples
+        )
+        for idx, w in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(idx)].width = w
+
+    # === Foglio Examples: sempre presente (admin e user) ===
+    ws_examples = wb.active
+    ws_examples.title = "Examples"
+    ws_examples.append(ex_header)
+    for i in range(1, len(ex_header) + 1):
+        ws_examples.cell(row=1, column=i).font = bold_white
+
+    for p in params:
+        for q in qs_by_param.get(p.id, []):
+            for ex in ex_by_qid.get(q.id, []):
+                ws_examples.append([
+                    lang.id,
+                    q.id,
+                    getattr(ex, "number", ""),             # <-- numero esempio
+                    getattr(ex, "textarea", ""),           # Data
+                    getattr(ex, "transliteration", ""),
+                    getattr(ex, "gloss", ""),
+                    getattr(ex, "translation", ""),
+                    getattr(ex, "reference", ""),
+                ])
+    _style_table(ws_examples, "Examples")
+
+    # === Foglio Answers: solo per admin ===
+    if is_admin:
+        ws_answers = wb.create_sheet("Answers", 0)  # Answers come primo foglio
+        ws_answers.append(ans_header)
+        for i in range(1, len(ans_header) + 1):
+            ws_answers.cell(row=1, column=i).font = bold_white
+
+        def _pretty_qc_from_status(status: str | None) -> str:
+            s = (status or "").lower()
+            if s == "approved":
+                return "Done"
+            if s in {"waiting_for_approval", "waiting"}:
+                return "Needs review"
+            return "Not compiled"
+
+        for p in params:
+            p_label = getattr(p, "name", getattr(p, "label", p.id))
+            for q in qs_by_param.get(p.id, []):
+                a = ans_by_qid.get(q.id)
+                if a:
+                    # motivazioni via through AnswerMotivation
+                    ids = list(
+                        AnswerMotivation.objects
+                        .filter(answer=a)
+                        .values_list("motivation_id", flat=True)
+                    )
+                    mot_text = "; ".join(mot_map.get(i, str(i)) for i in ids)
+
+                    ws_answers.append([
+                        lang.id,
+                        p_label,
+                        q.id,
+                        getattr(q, "text", ""),
+                        _pretty_qc_from_status(getattr(a, "status", None)),  # <-- QC da Answer.status
+                        getattr(a, "response_text", ""),
+                        getattr(a, "param_value", ""),
+                        mot_text,
+                        getattr(a, "comments", ""),
+                    ])
+                else:
+                    ws_answers.append([
+                        lang.id,
+                        p_label,
+                        q.id,
+                        getattr(q, "text", ""),
+                        "Not compiled",
+                        "",
+                        "",
+                        "",
+                        "",
+                    ])
+        _style_table(ws_answers, "Answers")
+
+    # === Response ===
+    ts = now().strftime("%Y%m%d")
+    suffix = "full" if is_admin else "examples"
+    filename = f"PCM_{lang.id}_{suffix}_{ts}.xlsx"
+    resp = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    wb.save(resp)
+    return resp

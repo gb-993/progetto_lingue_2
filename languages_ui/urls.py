@@ -1,4 +1,3 @@
-# languages_ui/urls.py
 from django.urls import path
 from . import views
 
@@ -8,7 +7,7 @@ urlpatterns = [
     path("languages/<str:lang_id>/edit/", views.language_edit, name="language_edit"),
 
     path("languages/<str:lang_id>/", views.language_data, name="language_data"),
-    path("languages/<str:lang_id>/export/", views.language_export, name="language_export"),
+    path("languages/<str:lang_id>/export/", views.language_export_xlsx, name="language_export_xlsx"),
     path("languages/<str:lang_id>/debug/", views.language_debug, name="language_debug"),
     path("languages/<str:lang_id>/run_dag/", views.language_run_dag, name="language_run_dag"),
 
