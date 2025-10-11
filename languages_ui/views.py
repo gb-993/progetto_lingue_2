@@ -151,6 +151,146 @@ def _all_questions_answered(language: Language) -> bool:
     )
     return active_qids.issubset(answered_qids)
 
+# --- Helper riusabile: logica di salvataggio singola domanda (senza redirect/messages) ---
+from django.http import QueryDict
+
+def _answer_save_core(*, user, lang, question, post_dict):
+    # 1) Normalizza input
+    response_text = (post_dict.get("response_text") or "").strip().lower()
+    if response_text not in ("yes", "no"):
+        return False, "invalid"  # ignora/errore soft
+
+    comments = (post_dict.get("comments") or "").strip()
+
+    # 2) Carica/lock Answer
+    answer = (
+        Answer.objects.select_for_update()
+        .filter(language=lang, question=question)
+        .first()
+    )
+
+    # Rispetta 'modifiable' per gli utenti; ADMIN bypassa
+    if answer and not answer.modifiable and not _is_admin(user):
+        return False, "locked"
+
+    # 3) Motivazioni: leggi e filtra
+    try:
+        motivation_ids = [int(x) for x in post_dict.getlist("motivation_ids")]
+    except ValueError:
+        motivation_ids = []
+
+    allowed_ids = set(
+        QuestionAllowedMotivation.objects.filter(question=question)
+        .values_list("motivation_id", flat=True)
+    )
+
+    # Esclusività "Motivazione1" via codice stabile
+    mot1 = Motivation.objects.filter(code="MOT1").only("id").first()
+
+    if response_text == "yes":
+        target_ids = set()  # YES => niente motivazioni
+    else:
+        filtered = [mid for mid in motivation_ids if mid in allowed_ids]
+        if mot1 and (mot1.id in filtered):
+            target_ids = {mot1.id}
+        else:
+            target_ids = set(filtered)
+
+    # 4) Crea/aggiorna Answer
+    if answer is None:
+        answer = Answer(language=lang, question=question)
+    answer.response_text = response_text
+    answer.comments = comments
+    answer.save()
+
+    # 5) Sync motivazioni
+    current_ids = set(
+        AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
+    )
+    to_add = target_ids - current_ids
+    to_del = current_ids - target_ids
+
+    if to_add:
+        AnswerMotivation.objects.bulk_create(
+            [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
+            ignore_conflicts=True,
+        )
+    if to_del:
+        AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
+
+    # 6) Esempi (solo se i campi esistono nel post_dict di quella domanda)
+    FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
+
+    # 6.0) Delete esistenti: del_ex_<id> = "1"
+    del_ids = []
+    for key, val in post_dict.items():
+        if key.startswith("del_ex_") and val == "1":
+            try:
+                del_ids.append(int(key.split("_", 2)[2]))
+            except ValueError:
+                pass
+    if del_ids:
+        Example.objects.filter(answer=answer, id__in=del_ids).delete()
+
+    # 6.1) Update esempi esistenti: ex_<ID>_<field>
+    for key, val in post_dict.items():
+        if not key.startswith("ex_"):
+            continue
+        try:
+            _ex, ex_id, field = key.split("_", 2)
+            ex_id = int(ex_id)
+        except ValueError:
+            continue
+        if field not in FIELDS:
+            continue
+        Example.objects.filter(id=ex_id, answer=answer).update(**{field: val})
+
+    # 6.2) Crea esempi nuovi: newex_<QID>_<UID>_<field>
+    prefix = f"newex_{question.id}_"
+    buckets = {}
+    for key, val in post_dict.items():
+        if not key.startswith(prefix):
+            continue
+        remainder = key[len(prefix):]
+        try:
+            uid, field = remainder.rsplit("_", 1)
+        except ValueError:
+            continue
+        if field not in FIELDS:
+            continue
+        buckets.setdefault(uid, {})[field] = (val or "").strip()
+
+    if buckets:
+        to_create = []
+        for uid, data in buckets.items():
+            has_payload = any([
+                data.get("textarea"),
+                data.get("transliteration"),
+                data.get("gloss"),
+                data.get("translation"),
+                data.get("reference"),
+            ])
+            num = (data.get("number") or "").strip()
+            if not has_payload and not num:
+                continue
+            to_create.append(Example(
+                answer=answer,
+                number=num or "1",
+                textarea=data.get("textarea", ""),
+                transliteration=data.get("transliteration", ""),
+                gloss=data.get("gloss", ""),
+                translation=data.get("translation", ""),
+                reference=data.get("reference", ""),
+            ))
+        if to_create:
+            Example.objects.bulk_create(to_create, ignore_conflicts=True)
+
+    # Regola opzionale: YES richiede almeno 1 esempio -> solo warning (non blocchiamo)
+    if answer.response_text == "yes":
+        if Example.objects.filter(answer=answer).count() == 0:
+            return True, "yes_without_examples"
+
+    return True, "ok"
 
 # -----------------------
 # List / CRUD lingua
@@ -331,12 +471,17 @@ def language_data(request, lang_id):
     }
     return render(request, "languages/data.html", ctx)
 
+from django.db import transaction
+from django.utils.translation import gettext as _t
+from django.urls import reverse
 
 # -----------------------
 # Salvataggio risposte
 # -----------------------
+
 @login_required
 @require_http_methods(["POST"])
+@transaction.atomic
 def answer_save(request, lang_id, question_id):
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -345,7 +490,7 @@ def answer_save(request, lang_id, question_id):
 
     question = get_object_or_404(Question, pk=question_id)
 
-    # leggi dati dal form
+    # 1) Normalizza input
     response_text = (request.POST.get("response_text") or "").strip().lower()
     if response_text not in ("yes", "no"):
         messages.error(request, _t("Invalid answer value."))
@@ -353,13 +498,19 @@ def answer_save(request, lang_id, question_id):
 
     comments = (request.POST.get("comments") or "").strip()
 
+    # 2) Carica/lock Answer (evita race-condition)
+    answer = (
+        Answer.objects.select_for_update()
+        .filter(language=lang, question=question)
+        .first()
+    )
+
     # Rispetta 'modifiable' per gli utenti; ADMIN bypassa
-    answer = Answer.objects.filter(language=lang, question=question).first()
     if answer and not answer.modifiable and not _is_admin(request.user):
         messages.error(request, _t("This answer is locked (waiting/approved)."))
         return redirect("language_data", lang_id=lang.id)
 
-    # Motivazioni
+    # 3) Motivazioni: leggi e filtra
     try:
         motivation_ids = [int(x) for x in request.POST.getlist("motivation_ids")]
     except ValueError:
@@ -370,39 +521,56 @@ def answer_save(request, lang_id, question_id):
         .values_list("motivation_id", flat=True)
     )
 
+    # Esclusività "Motivazione1" via CODE stabile (modelli hanno 'code' unico)
+    mot1 = Motivation.objects.filter(code="MOT1").only("id").first()
+
     if response_text == "yes":
-        motivation_ids = []
+        target_ids = set()  # YES => niente motivazioni
     else:
-        motivation_ids = [mid for mid in motivation_ids if mid in allowed_ids]
-        # esclusività Motivazione1
-        mot1 = Motivation.objects.filter(label="Motivazione1").only("id").first()
-        if mot1 and mot1.id in motivation_ids:
-            motivation_ids = [mot1.id]
+        filtered = [mid for mid in motivation_ids if mid in allowed_ids]
+        if mot1 and mot1.id in filtered:
+            target_ids = {mot1.id}
+        else:
+            target_ids = set(filtered)
 
-    # crea/aggiorna Answer
+    # 4) Crea/aggiorna Answer
     if answer is None:
-        answer = Answer(language=lang, question=question, response_text=response_text, comments=comments)
-    else:
-        answer.response_text = response_text
-        answer.comments = comments
-    answer.save()
+        answer = Answer(language=lang, question=question)
+    answer.response_text = response_text
+    answer.comments = comments
+    answer.save()  # vincolo unico già in DB
 
-    # Sync motivazioni
+    # 5) Sync motivazioni (differenziale, dentro la stessa transazione)
     current_ids = set(
         AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
     )
-    target_ids = set(motivation_ids)
     to_add = target_ids - current_ids
     to_del = current_ids - target_ids
+
     if to_add:
         AnswerMotivation.objects.bulk_create(
             [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
-            ignore_conflicts=True,
+            ignore_conflicts=True,  # sicuro: in DB hai uq answer+motivation
         )
     if to_del:
         AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-    # Examples: aggiornamenti (campi consentiti)
+    # 6) Examples: delete, update, create (singola domanda)
+
+    FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
+
+    # 6.0) Delete esistenti: del_ex_<id> = "1"
+    del_ids = []
+    for key, val in request.POST.items():
+        if key.startswith("del_ex_") and val == "1":
+            try:
+                del_ids.append(int(key.split("_", 2)[2]))
+            except ValueError:
+                pass
+    if del_ids:
+        Example.objects.filter(answer=answer, id__in=del_ids).delete()
+
+    # 6.1) Update esempi esistenti: ex_<ID>_<field>
     for key, val in request.POST.items():
         if not key.startswith("ex_"):
             continue
@@ -411,12 +579,57 @@ def answer_save(request, lang_id, question_id):
             ex_id = int(ex_id)
         except ValueError:
             continue
-        if field not in {"textarea", "transliteration", "gloss", "translation", "reference"}:
+        if field not in FIELDS:
             continue
-        Example.objects.filter(id=ex_id, answer=answer).update(**{field: val})
+        cleaned = (val or "").strip()
+        Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
+
+    # 6.2) Crea esempi nuovi: newex_<QID>_<UID>_<field>
+    prefix = f"newex_{question.id}_"
+    buckets = {}
+    for key, val in request.POST.items():
+        if not key.startswith(prefix):
+            continue
+        remainder = key[len(prefix):]
+        try:
+            uid, field = remainder.rsplit("_", 1)
+        except ValueError:
+            continue
+        if field not in FIELDS:
+            continue
+        buckets.setdefault(uid, {})[field] = (val or "").strip()
+
+    if buckets:
+        to_create = []
+        for uid, data in buckets.items():
+            has_payload = any([
+                data.get("textarea"),
+                data.get("transliteration"),
+                data.get("gloss"),
+                data.get("translation"),
+                data.get("reference"),
+            ])
+            num = (data.get("number") or "").strip()
+            # se non c'è niente, salta
+            if not has_payload and not num:
+                continue
+            to_create.append(Example(
+                answer=answer,
+                number=num or "1",
+                textarea=data.get("textarea", ""),
+                transliteration=data.get("transliteration", ""),
+                gloss=data.get("gloss", ""),
+                translation=data.get("translation", ""),
+                reference=data.get("reference", ""),
+            ))
+        if to_create:
+            Example.objects.bulk_create(to_create, ignore_conflicts=True)
+
 
     messages.success(request, _t("Answer saved."))
-    return redirect("language_data", lang_id=lang.id)
+    # Migliore UX: ancora sulla domanda
+    return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.id}")
+
 
 
 @login_required

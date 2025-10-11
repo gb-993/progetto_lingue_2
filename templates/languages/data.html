@@ -29,18 +29,19 @@
           </li>
         {% endfor %}
       </ul>
-
     </aside>
 
     <main>
       <div class="card">
         <h2>{{ language.name_full }} ({{ language.id }})</h2>
-        <p class="muted">Answer the questions below. Any “Save” button saves ALL visible fields.</p>
+        <p class="muted">Ogni pulsante “Save” salva <strong>solo</strong> la domanda corrente.</p>
+
         <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap" role="group" aria-label="Azioni esportazione">
           <a class="btn" href="{% url 'language_export_xlsx' language.id %}">
             {% if is_admin %}Export (.xlsx) — Answers + Examples{% else %}Export (.xlsx) — Examples only{% endif %}
           </a>
         </div>
+
         {% if is_admin %}
           <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap" role="group" aria-label="Azioni admin lingua">
             <form method="post" action="{% url 'submission_create_for_language' language.id %}" style="display:inline">
@@ -50,7 +51,6 @@
                 Salva contesto
               </button>
             </form>
-
           </div>
         {% endif %}
 
@@ -84,7 +84,6 @@
           {% endif %}
 
           <div class="toolbar" style="margin-top:.5rem; gap:.5rem; flex-wrap:wrap">
-            {# --- User: submit finale SEMPRE visibile e cliccabile se non è approved --- #}
             {% if not is_admin and s != "approved" %}
               <form method="post" action="{% url 'language_submit' language.id %}" style="display:inline">
                 {% csrf_token %}
@@ -95,7 +94,6 @@
               {% endif %}
             {% endif %}
 
-            {# --- User: riapri se rejected --- #}
             {% if not is_admin and s == "rejected" %}
               <form method="post" action="{% url 'language_reopen' language.id %}" style="display:inline">
                 {% csrf_token %}
@@ -103,7 +101,6 @@
               </form>
             {% endif %}
 
-            {# --- Admin: Approva SEMPRE visibile ma DISABILITATO se non completo --- #}
             {% if is_admin %}
               <form method="post" action="{% url 'language_approve' language.id %}" style="display:inline">
                 {% csrf_token %}
@@ -112,7 +109,6 @@
                 </button>
               </form>
 
-              {# --- Admin: Reject SEMPRE visibile e cliccabile con messaggio facoltativo --- #}
               <form method="post" action="{% url 'language_reject' language.id %}" style="display:inline; display:flex; align-items:flex-start; gap:.5rem; flex-wrap:wrap; max-width:100%">
                 {% csrf_token %}
                 <label for="reject_message" class="sr-only">Messaggio (facoltativo)</label>
@@ -124,10 +120,8 @@
         {% endwith %}
       </div>
 
-      <form method="post" action="{% url 'answers_bulk_save' language.id %}">
-        {% csrf_token %}
-
-        {% for p in parameters %}
+      {# ====== PARAMETRI E DOMANDE ====== #}
+      {% for p in parameters %}
         <div id="p-{{ p.id }}" class="card">
           <h3>{{ p.id }} — {{ p.name }}</h3>
           {% if p.short_description %}
@@ -135,131 +129,153 @@
           {% endif %}
 
           {% for q in p.questions.all %}
-          <div class="card">
-            <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
-            {% if q.instruction %}<p class="muted">{{ q.instruction }}</p>{% endif %}
+            <div class="card">
+              <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
+              {% if q.instruction %}<p class="muted">{{ q.instruction }}</p>{% endif %}
+              
+              {# ---- FORM SINGOLO PER QUESTA DOMANDA ---- #}
+              <form method="post" action="{% url 'language_save_all' language.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="focus_q" value="{{ q.id }}">
 
-            <div class="grid grid-3">
-              <div>
-                <label for="resp_{{ q.id }}">Answer</label>
-                <select id="resp_{{ q.id }}" name="response_text_{{ q.id }}" class="resp-select" data-question-id="{{ q.id }}"
-                        {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}disabled{% endif %}>
-                  <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
-                  <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
-                  <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
-                </select>
-              </div>
 
-              <div>
-                <label for="com_{{ q.id }}">Comments</label>
-                <input id="com_{{ q.id }}" name="comments_{{ q.id }}" value="{{ q.ans.comments }}"
-                       {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-              </div>
-
-              <div class="mot-block" data-qid="{{ q.id }}" {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
-                <label for="mot_{{ q.id }}">Motivations (if NO)</label>
-                <select
-                  id="mot_{{ q.id }}"
-                  name="motivation_ids_{{ q.id }}"
-                  multiple
-                  size="4"
-                  aria-describedby="hint_mot_{{ q.id }}"
-                  {% if q.ans.response_text != "no" or not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}disabled{% endif %}
-                  data-question-id="{{ q.id }}"
-                >
-                  {% for m in q.allowed_motivations_list %}
-                    <option value="{{ m.id }}" {% if m.id in q.ans.motivation_ids %}selected{% endif %}>{{ m.label }}</option>
-                  {% endfor %}
-                </select>
-                <div id="hint_mot_{{ q.id }}" class="muted">Hold Ctrl/Cmd to select multiple.</div>
-              </div>
-            </div>
-
-            {# --- BLOCCO ESEMPI: visibile solo se YES --- #}
-            <div class="examples-block"
-                 data-qid="{{ q.id }}"
-                 data-template="{{ q.template_type|default:'' }}"
-                 {% if q.ans.response_text != "yes" %}style="display:none"{% endif %}>
-              <div class="toolbar" style="margin:.5rem 0">
-                <strong>Examples</strong>
-                <span class="sr-only examples-hint" aria-live="polite"></span>
-                <button class="btn add-example-btn"
-                        data-qid="{{ q.id }}"
-                        data-template="{{ q.template_type|default:'' }}"
-                        type="button"
-                        {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}disabled{% endif %}>
-                  Add example
-                </button>
-              </div>
-
-              <div class="examples-list" data-qid="{{ q.id }}">
-                {% for ex in q.ans.examples %}
-                  <div class="card example-row" style="margin-bottom:.5rem">
-                    <div class="grid">
-                      <div>
-                        <label for="ex_{{ ex.id }}_number">Number</label>
-                        <input id="ex_{{ ex.id }}_number" name="ex_{{ ex.id }}_number" value="{{ ex.number }}" readonly>
-                      </div>
-                      <div>
-                        <label for="ex_{{ ex.id }}_textarea">Data</label>
-                        <input id="ex_{{ ex.id }}_textarea" name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"
-                              {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                      </div>
-                      <div>
-                        <label for="ex_{{ ex.id }}_transliteration">Transliteration</label>
-                        <input id="ex_{{ ex.id }}_transliteration" name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"
-                              {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                      </div>
-                      <div>
-                        <label for="ex_{{ ex.id }}_gloss">Gloss</label>
-                        <input id="ex_{{ ex.id }}_gloss" name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"
-                              {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                      </div>
-                      <div>
-                        <label for="ex_{{ ex.id }}_translation">English translation</label>
-                        <input id="ex_{{ ex.id }}_translation" name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"
-                              {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                      </div>
-                      <div>
-                        <label for="ex_{{ ex.id }}_reference">Reference</label>
-                        <input id="ex_{{ ex.id }}_reference" name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"
-                              {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}readonly{% endif %}>
-                      </div>
-                    </div>
-                    <div class="toolbar" style="margin-top:.25rem">
-                      <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
-                      <button class="btn btn-ex-toggle-delete"
-                              type="button"
-                              data-qid="{{ q.id }}"
-                              data-exid="{{ ex.id }}"
-                              {% if not is_admin and lang_status.overall == 'waiting_for_approval' or not is_admin and lang_status.overall == 'approved' %}disabled{% endif %}>
-                        Delete
-                      </button>
-                      <span class="sr-only ex-del-hint" aria-live="polite"></span>
-                    </div>
+                <div class="grid grid-3">
+                  <div>
+                    <label for="resp_{{ q.id }}">Answer</label>
+                    <select id="resp_{{ q.id }}" name="response_text" class="resp-select" data-question-id="{{ q.id }}"
+                      {% if not is_admin %}
+                        {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}disabled{% endif %}
+                      {% endif %}>
+                      <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
+                      <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
+                      <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
+                    </select>
                   </div>
-                {% empty %}
-                  <div class="muted">No examples yet</div>
-                {% endfor %}
-              </div>
-            </div>
 
-            {% if is_admin or lang_status.overall == 'pending' or lang_status.overall == 'rejected' %}
-              <div class="toolbar">
-                <button class="btn btn--primary" type="submit">Save</button>
-              </div>
-            {% endif %}
-          </div>
+                  <div>
+                    <label for="com_{{ q.id }}">Comments</label>
+                    <input id="com_{{ q.id }}" name="comments" value="{{ q.ans.comments }}"
+                      {% if not is_admin %}
+                        {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}readonly{% endif %}
+                      {% endif %}>
+                  </div>
+
+                  <div class="mot-block" data-qid="{{ q.id }}" {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
+                    <label for="mot_{{ q.id }}">Motivations (if NO)</label>
+                    <select
+                      id="mot_{{ q.id }}"
+                      name="motivation_ids"
+                      multiple
+                      size="4"
+                      aria-describedby="hint_mot_{{ q.id }}"
+                      data-question-id="{{ q.id }}"
+                      {% if q.ans.response_text != "no" %}disabled{% else %}
+                        {% if not is_admin %}
+                          {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}disabled{% endif %}
+                        {% endif %}
+                      {% endif %}>
+                      {% for m in q.allowed_motivations_list %}
+                        <option value="{{ m.id }}" {% if m.id in q.ans.motivation_ids %}selected{% endif %}>{{ m.label }}</option>
+                      {% endfor %}
+                    </select>
+                    <div id="hint_mot_{{ q.id }}" class="muted">Hold Ctrl/Cmd to select multiple.</div>
+                  </div>
+                </div>
+
+                {# --- BLOCCO ESEMPI: visibile solo se YES --- #}
+                <div class="examples-block"
+                     data-qid="{{ q.id }}"
+                     data-template="{{ q.template_type|default:'' }}"
+                     {% if q.ans.response_text != "yes" %}style="display:none"{% endif %}>
+                  <div class="toolbar" style="margin:.5rem 0">
+                    <strong>Examples</strong>
+                    <span class="sr-only examples-hint" aria-live="polite"></span>
+                    <button class="btn add-example-btn"
+                            data-qid="{{ q.id }}"
+                            data-template="{{ q.template_type|default:'' }}"
+                            type="button"
+                            {% if not is_admin %}
+                              {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}disabled{% endif %}
+                            {% endif %}>
+                      Add example
+                    </button>
+                  </div>
+
+                  <div class="examples-list" data-qid="{{ q.id }}">
+                    {% for ex in q.ans.examples %}
+                      <div class="card example-row" style="margin-bottom:.5rem">
+                        <div class="grid">
+                          <div>
+                            <label for="ex_{{ ex.id }}_number">Number</label>
+                            <input id="ex_{{ ex.id }}_number" name="ex_{{ ex.id }}_number" value="{{ ex.number }}" readonly>
+                          </div>
+                          <div>
+                            <label for="ex_{{ ex.id }}_textarea">Data</label>
+                            <input id="ex_{{ ex.id }}_textarea" name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"
+                              {% if not is_admin %}
+                                {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}readonly{% endif %}
+                              {% endif %}>
+                          </div>
+                          <div>
+                            <label for="ex_{{ ex.id }}_transliteration">Transliteration</label>
+                            <input id="ex_{{ ex.id }}_transliteration" name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"
+                              {% if not is_admin %}
+                                {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}readonly{% endif %}
+                              {% endif %}>
+                          </div>
+                          <div>
+                            <label for="ex_{{ ex.id }}_gloss">Gloss</label>
+                            <input id="ex_{{ ex.id }}_gloss" name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"
+                              {% if not is_admin %}
+                                {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}readonly{% endif %}
+                              {% endif %}>
+                          </div>
+                          <div>
+                            <label for="ex_{{ ex.id }}_translation">English translation</label>
+                            <input id="ex_{{ ex.id }}_translation" name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"
+                              {% if not is_admin %}
+                                {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}readonly{% endif %}
+                              {% endif %}>
+                          </div>
+                          <div>
+                            <label for="ex_{{ ex.id }}_reference">Reference</label>
+                            <input id="ex_{{ ex.id }}_reference" name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"
+                              {% if not is_admin %}
+                                {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}readonly{% endif %}
+                              {% endif %}>
+                          </div>
+                        </div>
+                        <div class="toolbar" style="margin-top:.25rem">
+                          <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
+                          <button class="btn btn-ex-toggle-delete"
+                                  type="button"
+                                  data-qid="{{ q.id }}"
+                                  data-exid="{{ ex.id }}"
+                                  {% if not is_admin %}
+                                    {% if lang_status.overall == 'waiting_for_approval' or lang_status.overall == 'approved' %}disabled{% endif %}
+                                  {% endif %}>
+                            Delete
+                          </button>
+                          <span class="sr-only ex-del-hint" aria-live="polite"></span>
+                        </div>
+                      </div>
+                    {% empty %}
+                      <div class="muted">No examples yet</div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                {% if is_admin or lang_status.overall == 'pending' or lang_status.overall == 'rejected' %}
+                  <div class="toolbar">
+                    <button class="btn btn--primary" type="submit">Save</button>
+                  </div>
+                {% endif %}
+              </form>
+              {# ---- /FORM singolo ---- #}
+            </div>
           {% endfor %}
         </div>
-        {% endfor %}
-
-        {% if is_admin or lang_status.overall == 'pending' or lang_status.overall == 'rejected' %}
-          <div class="toolbar" style="margin-top:1rem">
-            <button class="btn btn--primary" type="submit">Save all</button>
-          </div>
-        {% endif %}
-      </form>
+      {% endfor %}
 
       <div class="toolbar" style="margin-top:1rem; gap:.5rem; flex-wrap:wrap">
         {% with s=lang_status.overall %}
