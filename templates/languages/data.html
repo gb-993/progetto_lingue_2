@@ -132,11 +132,11 @@
             <div class="card">
               <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
               {% if q.instruction %}<p class="muted">{{ q.instruction }}</p>{% endif %}
-              
+
               {# ---- FORM SINGOLO PER QUESTA DOMANDA ---- #}
-              <form method="post" action="{% url 'language_save_all' language.id %}">
+              <form method="post" action="{% url 'answer_save' language.id q.id %}">
                 {% csrf_token %}
-                <input type="hidden" name="focus_q" value="{{ q.id }}">
+
 
 
                 <div class="grid grid-3">
