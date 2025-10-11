@@ -858,7 +858,7 @@ def language_approve(request, lang_id):
     except Exception as e:
         messages.warning(request, _t("Approved, but DAG failed: %(err)s") % {"err": str(e)})
 
-    return redirect("language_data", lang_id=lang.id)
+    return redirect("language_debug", lang_id=lang.id)
 
 
 @login_required
@@ -879,7 +879,7 @@ def language_reject(request, lang_id):
     with transaction.atomic():
         # Porta tutte le answers allo stato REJECTED e riapri editing
         changed = Answer.objects.filter(language=lang).update(
-            status=AnswerStatus.REJECTED, modifiable=True
+            status=AnswerStatus.REJECTED, modifiable=False
         )
         # Log decisione di reject (con messaggio opzionale)
         LanguageReview.objects.create(language=lang, decision="reject", message=message, created_by=request.user)

@@ -437,8 +437,8 @@ class Answer(models.Model):
             models.CheckConstraint(check=models.Q(response_text__in=["yes", "no"]), name="ck_answer_resp_yesno"),
             models.CheckConstraint(
                 check=(
-                    models.Q(status__in=[AnswerStatus.PENDING, AnswerStatus.REJECTED], modifiable=True) |
-                    models.Q(status__in=[AnswerStatus.WAITING, AnswerStatus.APPROVED], modifiable=False)
+                    models.Q(status__in=[AnswerStatus.PENDING], modifiable=True) |
+                    models.Q(status__in=[AnswerStatus.WAITING, AnswerStatus.APPROVED,AnswerStatus.REJECTED], modifiable=False)
                 ),
                 name="ck_answer_status_modifiable",
             ),
