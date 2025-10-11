@@ -12,7 +12,8 @@ urlpatterns = [
     path("languages/<str:lang_id>/run_dag/", views.language_run_dag, name="language_run_dag"),
 
     path("languages/<str:lang_id>/answers/<str:question_id>/save/", views.answer_save, name="answer_save"),
-    
+    path("languages/<str:lang_id>/parameters/<str:param_id>/save/",views.parameter_save,name="parameter_save"),
+
 
     # nuove azioni di stato
     path("languages/<str:lang_id>/submit/", views.language_submit, name="language_submit"),

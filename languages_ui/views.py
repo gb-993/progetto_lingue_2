@@ -237,7 +237,7 @@ def language_data(request, lang_id):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
-    # Parametri attivi + domande + allowed motivations
+    # Parametri attivi con domande e motivazioni
     parameters = (
         ParameterDef.objects.filter(is_active=True)
         .order_by("position")
@@ -245,8 +245,7 @@ def language_data(request, lang_id):
             Prefetch(
                 "questions",
                 queryset=(
-                    Question.objects.order_by("id")
-                    .prefetch_related(
+                    Question.objects.order_by("id").prefetch_related(
                         Prefetch(
                             "allowed_motivation_links",
                             queryset=(
@@ -270,13 +269,15 @@ def language_data(request, lang_id):
     )
     by_qid = {a.question_id: a for a in answers_qs}
 
-    # View model per template + stato per parametro
+    # view model per template + stato e colori per parametro
     for p in parameters:
         total = 0
         answered = 0
         for q in p.questions.all():
             total += 1
-            q.allowed_motivations_list = [thr.motivation for thr in getattr(q, "allowed_motivs_through", [])]
+            q.allowed_motivations_list = [
+                thr.motivation for thr in getattr(q, "allowed_motivs_through", [])
+            ]
 
             a = by_qid.get(q.id)
             if a:
@@ -308,7 +309,18 @@ def language_data(request, lang_id):
         else:
             p.status = "ok"
 
-    # all_answered = tutte le domande attive hanno yes/no?
+        # colori per la navigazione: verde=ok, giallo=warn, rosso=missing
+        if p.status == "ok":
+            p.bg_color = "#d4edda"
+            p.fg_color = "#155724"
+        elif p.status == "warn":
+            p.bg_color = "#fff3cd"
+            p.fg_color = "#856404"
+        else:
+            p.bg_color = "#f8d7da"
+            p.fg_color = "#721c24"
+
+    # verifica se tutte le domande attive hanno risposta yes/no
     active_q_total = 0
     active_q_answered = 0
     for p in parameters:
@@ -319,7 +331,11 @@ def language_data(request, lang_id):
     all_answered = (active_q_total > 0 and active_q_answered == active_q_total)
 
     lang_status = _language_overall_status(lang)
-    last_reject = LanguageReview.objects.filter(language=lang, decision="reject").order_by("-created_at").first()
+    last_reject = (
+        LanguageReview.objects.filter(language=lang, decision="reject")
+        .order_by("-created_at")
+        .first()
+    )
 
     ctx = {
         "language": lang,
@@ -338,6 +354,166 @@ from django.urls import reverse
 # -----------------------
 # Salvataggio risposte
 # -----------------------
+
+@login_required
+@require_http_methods(["POST"])
+@transaction.atomic
+def parameter_save(request, lang_id, param_id):
+    """
+    Salvataggio in bulk di tutte le risposte del parametro selezionato.
+    I campi nel POST seguono questi pattern:
+
+      - resp_<qid>              : 'yes'|'no' per la risposta
+      - com_<qid>               : commenti liberi
+      - mot_<qid>               : lista di motivation_ids selezionati
+      - del_ex_<exid>           : '1' se si vuole cancellare l'esempio esistente
+      - ex_<exid>_<field>       : aggiornamento dei campi dell'esempio esistente
+      - newex_<qid>_<uid>_<field> : creazione di nuovi esempi (uid è un identificatore temporaneo)
+
+    Le answer non modificabili vengono saltate se l'utente non è admin.
+    """
+    from django.urls import reverse
+
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        messages.error(request, _t("You don't have access to this language."))
+        return redirect("language_list")
+
+    param = get_object_or_404(ParameterDef, pk=param_id, is_active=True)
+    questions = list(param.questions.all())
+
+    saved_count = 0
+    for q in questions:
+        resp_key = f"resp_{q.id}"
+        response_text = (request.POST.get(resp_key) or "").strip().lower()
+        if response_text not in ("yes", "no"):
+            # nessun valore valido → non modifico questa risposta
+            continue
+        com_key = f"com_{q.id}"
+        comments = (request.POST.get(com_key) or "").strip()
+
+        # carica/crea Answer
+        answer = (
+            Answer.objects.select_for_update()
+            .filter(language=lang, question=q)
+            .first()
+        )
+        if answer and not answer.modifiable and not _is_admin(request.user):
+            # answer bloccata: ignoro
+            continue
+        if answer is None:
+            answer = Answer(language=lang, question=q)
+
+        # salva risposta e commenti
+        answer.response_text = response_text
+        answer.comments = comments
+        answer.save()
+        saved_count += 1
+
+        # motivazioni
+        mot_key = f"mot_{q.id}"
+        try:
+            motivation_ids = [int(x) for x in request.POST.getlist(mot_key)]
+        except ValueError:
+            motivation_ids = []
+        allowed_ids = set(
+            QuestionAllowedMotivation.objects.filter(question=q)
+            .values_list("motivation_id", flat=True)
+        )
+        mot1 = Motivation.objects.filter(code="MOT1").only("id").first()
+        if response_text == "yes":
+            target_ids = set()
+        else:
+            filtered = [mid for mid in motivation_ids if mid in allowed_ids]
+            if mot1 and mot1.id in filtered:
+                target_ids = {mot1.id}
+            else:
+                target_ids = set(filtered)
+        current_ids = set(
+            AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
+        )
+        to_add = target_ids - current_ids
+        to_del = current_ids - target_ids
+        if to_add:
+            AnswerMotivation.objects.bulk_create(
+                [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
+                ignore_conflicts=True,
+            )
+        if to_del:
+            AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
+
+        # gestione esempi
+        FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
+        # delete
+        del_ids = []
+        for key, val in request.POST.items():
+            if key.startswith("del_ex_") and val == "1":
+                try:
+                    del_ids.append(int(key.split("_", 2)[2]))
+                except ValueError:
+                    continue
+        if del_ids:
+            Example.objects.filter(answer=answer, id__in=del_ids).delete()
+        # update esistenti
+        for key, val in request.POST.items():
+            if not key.startswith("ex_"):
+                continue
+            try:
+                _ex, ex_id_str, field = key.split("_", 2)
+                ex_id = int(ex_id_str)
+            except ValueError:
+                continue
+            if field not in FIELDS:
+                continue
+            cleaned = (val or "").strip()
+            Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
+        # nuovi esempi
+        prefix = f"newex_{q.id}_"
+        buckets = {}
+        for key, val in request.POST.items():
+            if not key.startswith(prefix):
+                continue
+            remainder = key[len(prefix):]
+            try:
+                uid, field = remainder.rsplit("_", 1)
+            except ValueError:
+                continue
+            if field not in FIELDS:
+                continue
+            buckets.setdefault(uid, {})[field] = (val or "").strip()
+        if buckets:
+            to_create = []
+            for uid, data in buckets.items():
+                has_payload = any(
+                    [
+                        data.get("textarea"),
+                        data.get("transliteration"),
+                        data.get("gloss"),
+                        data.get("translation"),
+                        data.get("reference"),
+                    ]
+                )
+                num = (data.get("number") or "").strip()
+                if not has_payload and not num:
+                    continue
+                to_create.append(
+                    Example(
+                        answer=answer,
+                        number=num or "1",
+                        textarea=data.get("textarea", ""),
+                        transliteration=data.get("transliteration", ""),
+                        gloss=data.get("gloss", ""),
+                        translation=data.get("translation", ""),
+                        reference=data.get("reference", ""),
+                    )
+                )
+            if to_create:
+                Example.objects.bulk_create(to_create, ignore_conflicts=True)
+
+    messages.success(request, _t(f"Saved {saved_count} answers for parameter {param.id}."))
+    return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{param.id}")
+
+
 
 @login_required
 @require_http_methods(["POST"])
