@@ -16,7 +16,7 @@
     </caption>
     <thead>
       <tr>
-        <th scope="col">Position</th>
+        <!--<th scope="col">Position</th> -->
         <th scope="col">Label</th>
         <th scope="col">Name</th>
         <th scope="col">#Q</th>
@@ -30,7 +30,7 @@
       {% for p in parameters %}
       <tr>
         {# NB: su mobile ogni cella mostra l’etichetta tramite data-label #}
-        <td data-label="Position">{{ p.position }}</td>
+        <!--<td data-label="Position">{{ p.position }}</td> -->
         <td data-label="Label">{{ p.id }}</td>
         <td data-label="Name">{{ p.name }}</td>
         <td data-label="#Q">{{ p.questions_count }}</td>
