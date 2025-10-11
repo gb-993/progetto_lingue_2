@@ -124,16 +124,33 @@
 document.addEventListener('DOMContentLoaded', () => {
   const navBtns = document.querySelectorAll('.param-btn');
   const sections = document.querySelectorAll('.param-section');
+
   function activate(id){
     sections.forEach(s=>s.classList.remove('active'));
     const tgt = document.getElementById(id);
     if(tgt){tgt.classList.add('active'); window.scrollTo({top:tgt.offsetTop-80,behavior:'smooth'});}
   }
-  navBtns.forEach(b=>{
-    b.addEventListener('click',()=>activate(b.dataset.target));
-  });
-  if(navBtns[0]) activate(navBtns[0].dataset.target);
 
+  // Click sui quadratini
+  navBtns.forEach(b=>{
+    b.addEventListener('click',()=>{
+      const target = b.dataset.target;
+      // aggiorno l'hash così il back/forward del browser resta coerente
+      location.hash = '#' + target;
+      activate(target);
+    });
+  });
+
+  // All’avvio: se c’è un hash (#p-XYZ) attiva quello, altrimenti il primo
+  const hash = window.location.hash;
+  const idFromHash = hash && hash.startsWith('#') ? hash.substring(1) : '';
+  if (idFromHash && document.getElementById(idFromHash)) {
+    activate(idFromHash);
+  } else if (navBtns[0]) {
+    activate(navBtns[0].dataset.target);
+  }
+
+  // Toggle motivazioni/esempi in base al valore YES/NO
   document.querySelectorAll('.resp-select').forEach(sel=>{
     sel.addEventListener('change',()=>{
       const qid=sel.dataset.qid;
