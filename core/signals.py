@@ -2,6 +2,7 @@
 
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.db import transaction
 
 from core.models import Answer
 from core.services.param_consolidate import recompute_and_persist_language_parameter  # type: ignore[reportMissingImports]
@@ -14,8 +15,6 @@ def _recompute_from_answer(answer: Answer):
     """
     language_id = answer.language_id
     parameter_id = answer.question.parameter_id
-    # Esegui dopo il commit per evitare letture incoerenti
-    from django.db import transaction
     transaction.on_commit(lambda: recompute_and_persist_language_parameter(language_id, parameter_id))
 
 

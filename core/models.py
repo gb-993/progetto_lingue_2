@@ -1,10 +1,12 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
-from django.db import models
-from django.db.models import Q
+from django.db import models, transaction, connection
 from django.db.models.functions import Lower
 from django.utils import timezone
-from django.db.models.functions import Lower
+from django.db.models import Q, F, Max, UniqueConstraint, Deferrable
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.conf import settings
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -12,7 +14,7 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("Email obbligatoria")
-        email = self.normalize_email(email).lower()  # forziamo lowercase
+        email = self.normalize_email(email).lower()  # forza lowercase
         user = self.model(email=email, **extra_fields)
         user.set_password(password)                  # hash
         user.save(using=self._db)
@@ -77,7 +79,6 @@ class Glossary(models.Model):
 # =============
 # LANGUAGE
 # =============
-# core/models.py
 from django.db import models, transaction, connection
 from django.db.models import F, Max, UniqueConstraint, Deferrable
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -208,16 +209,12 @@ class Language(models.Model):
 # =======================
 # PARAMETER DEFINITIONS
 # =======================
-from django.db import models, transaction, connection
-from django.db.models import F, Max, UniqueConstraint, Deferrable
-from django.core.exceptions import ObjectDoesNotExist  # (ok)
-from django.core.exceptions import ValidationError  # in cima al file
+
 
 class ParameterDef(models.Model):
     id = models.CharField(primary_key=True, max_length=10)
     name = models.CharField(max_length=200)
     short_description = models.TextField(blank=True, default="")
-    # Se NON vuoi mai NULL: meglio null=False, blank=True, default=""
     implicational_condition = models.CharField(max_length=255, null=True, blank=True, default="")
     is_active = models.BooleanField(default=True)
     position = models.PositiveIntegerField()
@@ -243,7 +240,7 @@ class ParameterDef(models.Model):
             self._advisory_lock()
 
             if is_new:
-                if not self.position:  # ok se parti da 1
+                if not self.position:  
                     max_pos = type(self).objects.aggregate(m=Max("position"))["m"] or 0
                     self.position = max_pos + 1
                     return super().save(*args, **kwargs)
@@ -307,7 +304,6 @@ class ParameterDef(models.Model):
                 return
             raise
 
-from django.conf import settings
 
 class ParameterChangeLog(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -328,6 +324,8 @@ class ParameterChangeLog(models.Model):
     def __str__(self):
         who = self.changed_by.email if self.changed_by else "unknown"
         return f"{self.parameter_id} by {who} @ {self.changed_at:%Y-%m-%d %H:%M}"
+
+
 
 class Question(models.Model):
     id = models.CharField(primary_key=True, max_length=40)  # es. 'FGMQ_a'
@@ -359,9 +357,7 @@ class Question(models.Model):
     def __str__(self):
         return f"{self.id} - {self.parameter_id}"
 
-# --- ADD: Log decisioni approvazione/reject per lingua ---
-from django.conf import settings
-from django.db import models
+
 
 class LanguageReview(models.Model):
     DECISION_CHOICES = [
@@ -383,8 +379,6 @@ class LanguageReview(models.Model):
 # ===============================================
 # LANGUAGE_PARAMETER (originali per ogni lingua)
 # ===============================================
-# core/models.py  — SOSTITUISCI SOLO QUESTO MODEL
-
 class LanguageParameter(models.Model):
     # surrogate PK
     id = models.BigAutoField(primary_key=True)

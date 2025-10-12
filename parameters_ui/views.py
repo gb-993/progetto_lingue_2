@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import re
 from typing import List, Tuple
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
-
-from core.models import ParameterDef, Question  # aggiungi altri import se servono nei tuoi formset
+from core.models import ParameterDef, Question , ParameterChangeLog 
 from .forms import ParameterForm, QuestionFormSet, DeactivateParameterForm
 from django.db.models import Q, Count, Sum, Case, When, IntegerField
-
+from django.contrib.auth import get_user_model
 
 # -------------------------------
 # Utilità / Policy
@@ -105,11 +103,7 @@ def parameter_add(request):
     })
 
 
-# views.py — SOSTITUISCI parameter_edit con questa versione
 
-from django.contrib.auth import get_user_model
-from core.models import ParameterDef
-from core.models import ParameterChangeLog  # <-- importa il nuovo modello
 
 @login_required
 @user_passes_test(_is_admin)

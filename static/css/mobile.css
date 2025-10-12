@@ -1,8 +1,4 @@
-/* =========================================================
-   MOBILE ONLY (<= 768px)
-   - Regole mobile estratte e allineate ai token del tema chiaro
-   - Nessun override cromatico “dark” hardcoded
-   ========================================================= */
+
 
 @media (max-width: 768px) {
 
@@ -100,9 +96,6 @@
   }
   .row-actions .btn { width: 100%; }
 
-  /* --- Tabelle “freeze header/colonne” (desktop) degradano bene su mobile ---
-     Nota: su mobile convertiamo in schede, quindi gli sticky non servono.
-     Lasciamo lo scroll verticale naturale. */
   .table-scroll {
     max-height: none;     /* libera lo spazio verticale su device piccoli */
     overflow: visible;    /* niente scrollbar dentro contenitori piccoli */

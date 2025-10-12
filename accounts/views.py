@@ -19,7 +19,7 @@ from .forms import AccountForm, MyAccountForm
 
 
 def _is_admin(user: User) -> bool:
-    # consenti solo a admin/staff di gestire gli account
+    # consente solo a admin/staff di gestire gli account
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
 
@@ -70,7 +70,6 @@ def accounts_add(request):
         # controllo subito password obbligatoria
         if not request.POST.get("password"):
             form.add_error("password", "La password è obbligatoria per creare un account.")
-        # accounts/views.py  (sostituisci dentro accounts_add, dopo form.is_valid())
         if form.is_valid():
             user = form.save(commit=True)
             if HAS_LANGUAGE and hasattr(user, "m2m_languages"):
@@ -111,7 +110,7 @@ def accounts_add(request):
                     }
                     return render(request, "accounts/add.html", ctx)
 
-                # 2) Nessun conflitto → salva M2M
+                # 2) Nessun conflitto -> salva M2M
                 user.m2m_languages.set(langs)
 
                 # 3) Sincronizza FK assegnazioni
@@ -165,12 +164,12 @@ def accounts_edit(request, user_id):
                         conflicts.append((l, l.assigned_user_id))
 
                 if conflicts:
-                    # non confermiamo in automatico: mostriamo errore bloccante
+                    # non conferma in automatico: mostra errore bloccante
                     msg_lines = ["Alcune lingue risultano già assegnate ad altri utenti:"]
                     for l, other_uid in conflicts:
                         try:
                             other_user = User.objects.get(pk=other_uid)
-                            other_label = other_user.email  # o .username se preferisci
+                            other_label = other_user.email  
                         except User.DoesNotExist:
                             other_label = f"utente {other_uid}"
 
@@ -193,7 +192,7 @@ def accounts_edit(request, user_id):
                     }
                     return render(request, "accounts/edit.html", ctx)
 
-                # 2) Nessun conflitto → salva M2M...
+                # 2) Nessun conflitto -> salva M2M...
                 user.m2m_languages.set(langs)
                 # ...e 3) sincronizza la FK di Language (sorgente mostrata in language->modify)
                 Language.objects.filter(id__in=lang_ids).update(assigned_user=user)
@@ -202,7 +201,7 @@ def accounts_edit(request, user_id):
             messages.success(request, "Account aggiornato.")
             return redirect("accounts_list")
 
-        # form non valido → ricostruisci contesto e torna al template
+        # form non valido -> ricostruisci contesto e torna al template
         languages = Language.objects.all().order_by("id") if HAS_LANGUAGE else []
         selected_lang_ids = list(Language.objects.filter(assigned_user=user).values_list("id", flat=True)) \
             if HAS_LANGUAGE else []

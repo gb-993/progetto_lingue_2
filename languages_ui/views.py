@@ -1,4 +1,3 @@
-# languages_ui/views.py — versione pulita/robusta
 
 from __future__ import annotations
 
@@ -17,6 +16,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
+from django.utils.translation import gettext as _t
+from django.urls import reverse
 
 from core.models import (
     Language,
@@ -29,7 +30,6 @@ from core.models import (
     QuestionAllowedMotivation,
     LanguageParameter,          
 )
-# Valori DAG (+/-/0): il modello potrebbe non esistere in ambienti vecchi
 try:
     from core.models import LanguageParameterEval  
     HAS_EVAL = True
@@ -48,9 +48,8 @@ except Exception:
         APPROVED = "approved"
         REJECTED = "rejected"
 
-from core.models import LanguageReview  # log decisioni approve/reject
+from core.models import LanguageReview 
 
-# Servizi
 from core.services.dag_eval import run_dag_for_language
 from core.services.dag_debug import diagnostics_for_language
 
@@ -347,14 +346,11 @@ def language_data(request, lang_id):
     }
     return render(request, "languages/data.html", ctx)
 
-from django.db import transaction
-from django.utils.translation import gettext as _t
-from django.urls import reverse
+
 
 # -----------------------
 # Salvataggio risposte
 # -----------------------
-from django.urls import reverse
 
 @login_required
 @require_http_methods(["POST"])
@@ -657,7 +653,6 @@ def answer_save(request, lang_id, question_id):
 
 
     messages.success(request, _t("Answer saved."))
-    # Migliore UX: ancora sulla domanda
     return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.id}")
 
 
@@ -934,8 +929,7 @@ def language_export_xlsx(request, lang_id: str):
     for q in (
         Question.objects
         .select_related("parameter")
-        .order_by("parameter__position", "id")   # opzionale: ordina come in UI
-        # .order_by("parameter_id", "id")        # alternativa per non usare position
+        .order_by("parameter__position", "id")   
     ):
         qs_by_param.setdefault(q.parameter_id, []).append(q)
 
@@ -956,7 +950,7 @@ def language_export_xlsx(request, lang_id: str):
     examples = (
         Example.objects
         .select_related("answer")                # serve per accedere a answer.question_id
-        .filter(answer__language_id=lang.id)     # <-- FIX: niente language_id diretto su Example
+        .filter(answer__language_id=lang.id)     
     )
     for ex in examples:
         qid = ex.answer.question_id
@@ -1021,7 +1015,7 @@ def language_export_xlsx(request, lang_id: str):
                 ws_examples.append([
                     lang.id,
                     q.id,
-                    getattr(ex, "number", ""),             # <-- numero esempio
+                    getattr(ex, "number", ""),             # Numero esempio
                     getattr(ex, "textarea", ""),           # Data
                     getattr(ex, "transliteration", ""),
                     getattr(ex, "gloss", ""),

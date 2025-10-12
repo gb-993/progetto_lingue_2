@@ -4,8 +4,8 @@ from collections import defaultdict, deque
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
-
 from django.db import transaction
+
 from django.db.models import Q
 
 from core.models import (
@@ -58,7 +58,7 @@ def _build_graph_active_scope(active_ids: Set[str]) -> Dict[str, List[str]]:
         refs = _extract_refs(cond)
         if not refs:
             continue
-        # Se la cond cita parametri fuori scope, ignoriamo completamente la regola (come in Flask)
+        # Se la cond cita parametri fuori scope, ignora completamente la regola 
         if not refs.issubset(active_ids):
             continue
 
@@ -121,13 +121,11 @@ def _refs_for_target(target: str) -> Set[str]:
             .get(pk=target).implicational_condition or "")
     return _extract_refs(cond)
 
-# core/services/dag_eval.py (solo funzione)
-from django.db import transaction
 
 @transaction.atomic
 def run_dag_for_language(language_id: str) -> DagReport:
     """
-    Nuove regole (Opzione B: NULL ammesso):
+    Regole:
     - '0' SOLO se:
         (a) condizione implicazionale è FALSA, oppure
         (b) almeno una ref ha value_eval == '0' (short-circuit per derivazione da zero).
@@ -209,7 +207,7 @@ def run_dag_for_language(language_id: str) -> DagReport:
             processed.append(target)
             continue
 
-        # --- Valutazione con le nuove regole ---
+        # valutazione
         refs = _extract_refs(cond)
 
         # 1) Short-circuit: se QUALSIASI ref è già '0' -> condizione FALSA
@@ -268,7 +266,6 @@ def run_dag_for_language(language_id: str) -> DagReport:
 
         processed.append(target)
 
-        # Mantieni comportamento coerente per passi successivi:
         # - se '0'  -> memorizza '0' (serve per short-circuit dei successivi)
         # - se '+/-'-> memorizza quel segno
         # - se None -> rimuovi dal dict (sconosciuto)

@@ -1,10 +1,10 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from core.models import User  # usa il tuo custom User (aggiorna l'import se il path è diverso)
-
+from core.models import User  
+from django.contrib.auth.forms import AuthenticationForm
+from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from core.models import User
-# impoorta Language se esiste
 try:
     from core.models import Language
     HAS_LANGUAGE = True
@@ -40,7 +40,7 @@ class AccountForm(forms.ModelForm):
         email = (self.cleaned_data.get("email") or "").strip().lower()
         if not email:
             raise ValidationError("Email obbligatoria.")
-        # Evitiamo collisioni case-insensitive
+        # Evita collisioni case-insensitive
         qs = User.objects.all()
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
@@ -65,13 +65,11 @@ class AccountForm(forms.ModelForm):
             # Lingue M2M se presenti
             if HAS_LANGUAGE and hasattr(user, "languages"):
                 # il template invia name="lang_ids" (multiplo)
-                # le recuperiamo nella view (non qui) per non accedere a self.data in save().
+                # le recuperiamo nella view per non accedere a self.data in save().
                 pass
         return user
 
-# (opzionale) in accounts/forms.py
-from django.contrib.auth.forms import AuthenticationForm
-from django import forms
+
 
 class EmailAuthForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
@@ -105,9 +103,7 @@ class MyAccountForm(forms.ModelForm):
 
 
 class MyPasswordChangeForm(PasswordChangeForm):
-    """
-    PasswordChangeForm con widget coerenti e senza colori/JS custom.
-    """
+
     old_password = forms.CharField(
         label="Password attuale",
         strip=False,

@@ -126,7 +126,7 @@ def validate_expression(expression: str) -> None:
 
 def pretty_print_expression(expression: str) -> str:
     """
-    Rende forma 'umana':
+    Rende forma human-readable:
       +FGM | +FGA    ->  (FGM=+ OR FGA=+)
       ... & -FGK     ->  ... AND FGK=-
       not +FGM       ->  NOT (FGM=+)
@@ -153,7 +153,7 @@ def pretty_print_expression(expression: str) -> str:
 
         # Catene di AND/OR: [A, op, B, op, C, ...]
         if isinstance(n, list) and len(n) >= 3 and len(n) % 2 == 1:
-            # Costruiamo una stringa con parentesi complessive per chiarezza
+            # Costruisce una stringa con parentesi complessive per chiarezza
             parts = []
             # primo termine
             parts.append(render(n[0]))

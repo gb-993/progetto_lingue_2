@@ -1,7 +1,7 @@
 from django.contrib import admin
 from languages_ui.forms import LanguageForm
 
-from parameters_ui.forms import ParameterForm  # <— cambia QUI il modulo di import
+from parameters_ui.forms import ParameterForm  
 
 from .models import (
     User, Glossary, Language, ParameterDef, Question,
@@ -10,7 +10,6 @@ from .models import (
     SubmissionAnswerMotivation, SubmissionExample, SubmissionParam
 )
 
-# Registra TUTTO tranne ParameterDef (che gestiamo con ModelAdmin custom)
 admin.site.register(User)
 admin.site.register(Glossary)
 admin.site.register(Question)

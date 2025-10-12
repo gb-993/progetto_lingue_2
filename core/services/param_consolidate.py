@@ -37,7 +37,7 @@ def consolidate_parameter_for_language(
 ) -> Tuple[Optional[str], bool]:
     """
     Calcola il valore ORIGINALE del parametro (+ / - / None) e il warning (solo conflitto).
-    Regole (riassunto):
+    Regole:
       - c'è almeno una domanda normale per parametro (vincolo di dominio)
       - se esiste almeno un YES su domanda normale -> valore '+'
         * se contemporaneamente c'è almeno un YES su stop-question -> CONFLITTO: resta '+', warning=True
@@ -80,8 +80,8 @@ def consolidate_parameter_for_language(
     if has_stop_yes:
         return "-", False
 
-    # Caso 3: valutiamo se TUTTE le normali hanno NO (e sono effettivamente risposte)
-    # Recuperiamo l'insieme delle normali
+    # Caso 3: valuta se TUTTE le normali hanno NO (e sono effettivamente risposte)
+    # Recupera l'insieme delle normali
     norm_q_ids = set(qs_norm.values_list("id", flat=True))
     answered_normals = {a.question_id for a in norm_answers}
     # Se non abbiamo copertura completa, è indeterminato (mancano risposte)

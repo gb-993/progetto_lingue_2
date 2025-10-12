@@ -33,7 +33,7 @@ def diagnostics_for_language(lang: Language) -> List[dict]:
     cond_values = build_cond_values_for_language(lang, active_ids)
 
     # mappa rapida orig/eval
-    lp_by_pid = {pid: (None, None) for pid in active_ids}  # pid -> (orig, eval)
+    lp_by_pid = {pid: (None, None) for pid in active_ids}  
     for pid, v in (LanguageParameter.objects
                    .filter(language=lang, parameter_id__in=active_ids)
                    .values_list("parameter_id", "value_orig")):
@@ -57,7 +57,7 @@ def diagnostics_for_language(lang: Language) -> List[dict]:
         note = ""
         if not raw:
             pretty = "—"
-            ok = True  # convenzionalmente “vera” (il DAG copia l’orig)
+            ok = True  # (il DAG copia l’orig)
         else:
             try:
                 pretty = pretty_print_expression(raw)
@@ -77,7 +77,7 @@ def diagnostics_for_language(lang: Language) -> List[dict]:
             "param_id": p.id,
             "cond_raw": raw or "—",
             "cond_pretty": pretty,
-            "cond_true": ok,               # True/False/None
+            "cond_true": ok,               
             "value_orig": (v_orig if v_orig is not None else ""),
             "value_eval": (v_eval if v_eval is not None else ""),
             "note": note,
