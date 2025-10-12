@@ -50,8 +50,8 @@ def _as_list(node: Any):
     except TypeError:
         return node
 
-
 def eval_node(node, values: dict[str, str]) -> bool:
+    # Token foglia: ('+', 'FGM') ecc.
     if isinstance(node, tuple):
         sign, param = node
         return values.get(param) == sign
@@ -62,7 +62,24 @@ def eval_node(node, values: dict[str, str]) -> bool:
     if isinstance(node, list) and len(node) == 2 and str(node[0]).lower() == 'not':
         return not eval_node(node[1], values)
 
-    # <left> (AND/OR) <right>
+    # Catene di AND/OR: [A, op, B, op, C, ...]
+    if isinstance(node, list) and len(node) >= 3 and len(node) % 2 == 1:
+        # fold-left: ((((A op B) op C) op D) ...)
+        result = eval_node(node[0], values)
+        i = 1
+        while i < len(node):
+            op = str(node[i]).lower()
+            right = eval_node(node[i + 1], values)
+            if op in ('&', 'and'):
+                result = result and right
+            elif op in ('|', 'or'):
+                result = result or right
+            else:
+                raise ValueError(f"Operatore non gestito: {op}")
+            i += 2
+        return result
+
+    # Caso binario classico <left> op <right>
     if isinstance(node, list) and len(node) == 3:
         left, op, right = node
         op_str = str(op).lower()
@@ -127,14 +144,36 @@ def pretty_print_expression(expression: str) -> str:
         if isinstance(n, tuple):
             s, p = n
             return f"{p}={s}"
+
         n = _as_list(n)
+
+        # NOT <expr>
         if isinstance(n, list) and len(n) == 2 and str(n[0]).lower() == 'not':
             return f"NOT ({render(n[1])})"
+
+        # Catene di AND/OR: [A, op, B, op, C, ...]
+        if isinstance(n, list) and len(n) >= 3 and len(n) % 2 == 1:
+            # Costruiamo una stringa con parentesi complessive per chiarezza
+            parts = []
+            # primo termine
+            parts.append(render(n[0]))
+            # coppie (op, termine)
+            i = 1
+            while i < len(n):
+                op_str = str(n[i]).lower()
+                op_txt = 'AND' if op_str in ('&', 'and') else ('OR' if op_str in ('|', 'or') else '?')
+                parts.append(op_txt)
+                parts.append(render(n[i + 1]))
+                i += 2
+            return "(" + " ".join(parts) + ")"
+
+        # Caso binario classico
         if isinstance(n, list) and len(n) == 3:
             left, op, right = n
             op_str = str(op).lower()
             op_txt = 'AND' if op_str in ('&', 'and') else ('OR' if op_str in ('|', 'or') else '?')
             return f"({render(left)} {op_txt} {render(right)})"
+
         raise ValueError(f"Nodo non gestito in render: {n}")
 
     return render(root)

@@ -514,16 +514,35 @@ class AnswerMotivation(models.Model):
 # ============================
 class LanguageParameterEval(models.Model):
     id = models.BigAutoField(primary_key=True)
+
     language_parameter = models.OneToOneField(
-        LanguageParameter, on_delete=models.CASCADE, related_name="eval"
+        LanguageParameter,
+        on_delete=models.CASCADE,
+        related_name="eval",
     )
-    value_eval = models.CharField(max_length=1)  # '+','-','0'
+
+    # Ora può essere NULL per rappresentare "indeterminato" (da mostrare vuoto in UI)
+    value_eval = models.CharField(
+        max_length=1,
+        null=True,
+        blank=True,
+        choices=(('+', '+'), ('-', '-'), ('0', '0')),
+        help_text="Valore valutato dal DAG: '+', '-', '0' oppure NULL (indeterminato/da mostrare vuoto).",
+    )
+
     warning_eval = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
-            models.CheckConstraint(check=models.Q(value_eval__in=["+", "-", "0"]), name="ck_value_eval_pm0"),
+            # Nuovo vincolo: consente '+', '-', '0' OPPURE NULL
+            models.CheckConstraint(
+                name="ck_value_eval_pm0_or_null",
+                check=Q(value_eval__in=['+', '-', '0']) | Q(value_eval__isnull=True),
+            ),
         ]
+
+    def __str__(self):
+        return f"Eval({self.language_parameter_id}): {self.value_eval or 'NULL'}{' !' if self.warning_eval else ''}"
 
 
 # ============================
