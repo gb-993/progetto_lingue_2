@@ -10,7 +10,8 @@
     <h2>{{ language.name_full }} ({{ language.id }})</h2>
     <p class="muted">Compila o modifica le risposte. Ogni pulsante “Save” salva solo il parametro aperto.</p>
   </div>
-    {# === Stato e azioni workflow === #}
+
+  {# === Stato e azioni workflow === #}
   <div class="card" style="margin-top:.5rem">
     <div class="grid grid-2">
       <div>
@@ -37,16 +38,11 @@
             {% endif %}
           {% endwith %}
         {% endif %}
-
       </div>
 
       <div class="toolbar" style="justify-content:flex-end; gap:.5rem; flex-wrap:wrap">
-        {# ====== Azioni per ADMIN ====== #}
         {% if is_admin %}
-
         <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
-
-          {# --- BLOCCO 1: CREA SUBMISSION --- #}
           <form id="submission-create-form"
                 method="post"
                 action="{% url 'submission_create_for_language' language.id %}"
@@ -54,68 +50,46 @@
                 data-confirm-message="Warning: missing answers. Save anyway?">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
-
             <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-              <button type="submit"
-                      class="btn"
-                      data-once="true"
-                      title="Crea una nuova submission con lo stato attuale della lingua">
-                Save language
-              </button>
-
+              <button type="submit" class="btn" data-once="true" title="Crea una nuova submission con lo stato attuale della lingua">Save language</button>
               <details>
                 <summary>Submission's note</summary>
                 <div style="margin-top:.25rem; max-width:100%">
                   <label for="note_{{ language.id }}" class="sr-only">Submission's note</label>
-                  <textarea id="note_{{ language.id }}" name="note" rows="2"
-                            style="min-width:18rem; max-width:100%"></textarea>
+                  <textarea id="note_{{ language.id }}" name="note" rows="2" style="min-width:18rem; max-width:100%"></textarea>
                 </div>
               </details>
             </div>
           </form>
 
-          {# --- BLOCCO 2: REJECT --- #}
           <form method="post" action="{% url 'language_reject' language.id %}">
             {% csrf_token %}
             <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-              <button type="submit" class="btn" title="Rifiuta la submission della lingua">
-                Reject
-              </button>
-
+              <button type="submit" class="btn" title="Rifiuta la submission della lingua">Reject</button>
               <details>
                 <summary>Rejection's note</summary>
                 <div style="margin-top:.25rem; max-width:100%">
                   <label for="reject_message_{{ language.id }}" class="sr-only">Rejection's note</label>
-                  <textarea id="reject_message_{{ language.id }}" name="message" rows="2"
-                            style="min-width:18rem; max-width:100%"></textarea>
+                  <textarea id="reject_message_{{ language.id }}" name="message" rows="2" style="min-width:18rem; max-width:100%"></textarea>
                 </div>
               </details>
             </div>
           </form>
 
-          {# --- BLOCCO 3: APPROVE & RUN DAG --- #}
           <form method="post" action="{% url 'language_approve' language.id %}">
             {% csrf_token %}
             <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
               {% if not all_answered %}
                 <span class="hint-disabled" title="Cannot approve while there are missing answers" tabindex="0">
-                  <button type="submit" class="btn btn--primary" disabled aria-disabled="true">
-                    Approve &amp; Run DAG
-                  </button>
+                  <button type="submit" class="btn btn--primary" disabled aria-disabled="true">Approve &amp; Run DAG</button>
                 </span>
               {% else %}
-                <button type="submit" class="btn btn--primary">
-                  Approve &amp; Apply implications
-                </button>
+                <button type="submit" class="btn btn--primary">Approve &amp; Apply implications</button>
               {% endif %}
             </div>
           </form>
-
         </div>
         {% endif %}
-
-
-
       </div>
     </div>
   </div>
@@ -123,15 +97,20 @@
   <!-- Barra di navigazione parametri -->
   <div class="param-nav" id="paramNav">
     {% for p in parameters %}
-      <div class="param-btn"
-           data-target="p-{{ p.id }}"
-           style="background:{{ p.bg_color }}; color:{{ p.fg_color }}">
+      <div
+        class="param-btn"
+        data-target="p-{{ p.id }}"
+        data-status="{{ p.status }}"
+        style="background:{{ p.bg_color }}; color:{{ p.fg_color }};"
+        role="button"
+        tabindex="0"
+        title="Parameter {{ p.id }} — {% if p.status == 'missing' %}Not answered (cut corner){% elif p.status == 'warn' %}Partially answered (dashed border){% else %}Complete{% endif %}"
+        aria-label="Parameter {{ p.id }}, {% if p.status == 'missing' %}not answered{% elif p.status == 'warn' %}partially answered{% else %}complete{% endif %}">
         {{ p.id }}
       </div>
     {% endfor %}
   </div>
 
-  <!-- Sezioni parametri -->
   {% for p in parameters %}
   <section id="p-{{ p.id }}" class="param-section card">
     <h3>{{ p.id }} — {{ p.name }}</h3>
@@ -178,12 +157,11 @@
               <strong>Examples</strong>
               <button class="btn add-example-btn" type="button" data-qid="{{ q.id }}"
                 {% with s=lang_status.overall %}
-                  {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected'  %}
+                  {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
                     disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
                   {% endif %}
                 {% endwith %}
               >Add example</button>
-
             </div>
 
             <div class="examples-list" data-qid="{{ q.id }}">
@@ -201,7 +179,7 @@
                   <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
                   <button class="btn btn-ex-toggle-delete" type="button" data-exid="{{ ex.id }}"
                     {% with s=lang_status.overall %}
-                      {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected'  %}
+                      {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
                         disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
                       {% endif %}
                     {% endwith %}
@@ -229,21 +207,20 @@
   </section>
   {% endfor %}
 </main>
-
 {% endblock %}
 
 {% block extra_head %}
   <script src="{% static 'js/param_organize.js' %}"></script>
   <script src="{% static 'js/examples.js' %}"></script>
   <script src="{% static 'js/submission_create.js' %}"></script>
-  <script src="{% static 'js/examples.js' %}"></script>
   <style>
     .param-nav {display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem;}
     .param-btn {
       width:2.4rem; height:2.4rem; border-radius:4px;
       display:flex; align-items:center; justify-content:center;
-      cursor:pointer; font-weight:bold; border:1px solid var(--border);
-      transition:transform .1s;
+      cursor:pointer; font-weight:bold; border:2px solid rgba(0,0,0,.65);
+      transition:transform .1s; position:relative;
+      background-clip: padding-box;
     }
     .param-btn:hover {transform:scale(1.1);}
     .param-section {display:none;}
@@ -256,32 +233,63 @@
       background: var(--surface-2, #f1f3f5);
       color: var(--muted-fg, #666);
       border-color: var(--border, #d0d7de);
-      pointer-events: none;      /* niente click */
+      pointer-events: none;
     }
     .is-readonly .card input::placeholder,
     .is-readonly .card textarea::placeholder { color: #999; }
-
     .is-readonly .btn,
     .is-readonly .add-example-btn,
     .is-readonly .btn-ex-toggle-delete {
-      opacity: .55;
-      cursor: not-allowed;
-      pointer-events: none;      /* niente click */
+      opacity: .55; cursor: not-allowed; pointer-events: none;
     }
-
-    /* Etichetta “Locked” discreta */
-    .locked-hint {
-      font-size: .9rem; color: #666;
-      margin-left: .5rem;
-    }
-
+    .locked-hint { font-size: .9rem; color: #666; margin-left: .5rem; }
     .hint-disabled[title] { cursor: help; display: inline-block; }
+    .is-readonly form[action$="reopen/"] .btn { opacity: 1; pointer-events: auto; cursor: pointer; }
+/* --------- Accessibilità stati parametri --------- */
 
-    .is-readonly form[action$="reopen/"] .btn {
-  opacity: 1;
-  pointer-events: auto;
-  cursor: pointer;
+/* Colore bordo = fg più scuro del bg */
+.param-nav .param-btn {
+  /* bordo derivato dal testo (fg) ma scurito: */
+  --edge: color-mix(in srgb, currentColor 55%, black);
 }
-  </style>
-{% endblock %}
 
+/* PARZIALE (gialli) -> view usa 'warn' : bordo tratteggiato */
+.param-nav .param-btn[data-status="warn"] {
+  border: 2px dashed var(--edge);       /* tratteggio ad alto contrasto, stesso tono scurito */
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* MANCANTI (rossi): angolo tagliato + bordo marcato */
+.param-nav .param-btn[data-status="missing"] {
+  border: 2px solid var(--edge);
+  -webkit-clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+          clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+@supports not (clip-path: polygon(0 0, 90% 0, 100% 10%, 100% 100%, 0 100%)) {
+  .param-nav .param-btn[data-status="missing"]::after {
+    content:""; position:absolute; top:0; right:0; width:12px; height:12px;
+    background: var(--bg, #fff);
+    /* stesso bordo scurito anche nel fallback */
+    box-shadow: 0 -2px 0 0 var(--edge), -2px 0 0 0 var(--edge);
+    pointer-events:none;
+  }
+}
+
+/* OK (verdi): bordo solido più scuro, come i rossi */
+.param-nav .param-btn:not([data-status]),
+.param-nav .param-btn[data-status="ok"] {
+  border: 2px solid var(--edge);        /* NB: 'solid' mancava */
+  border-radius: 4px;
+}
+
+/* Preferenze utente alta visibilità */
+@media (prefers-contrast: more) {
+  .param-nav .param-btn[data-status="warn"] { border-width: 3px; }
+  .param-nav .param-btn[data-status="missing"] { border-color: #000; }
+  .param-nav .param-btn[data-status="ok"] { border-color: #000; }
+}
+</style>
+{% endblock %}
