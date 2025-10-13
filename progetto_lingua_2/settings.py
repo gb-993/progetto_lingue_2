@@ -131,7 +131,7 @@ USE_TZ = True
 
 # ---------------------- Static / Media ----------------------
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "static"
 # abilita solo se esiste la cartella "static"
 if (BASE_DIR / "static").exists():
     STATICFILES_DIRS = [BASE_DIR / "static"]
