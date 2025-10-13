@@ -487,3 +487,41 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 }
 .back-to-top:hover { opacity: .85; }
 .back-to-top.is-hidden { display: none; }
+
+/* === Flash messages === */
+.flash-messages {
+  margin: 1rem 0;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  border-radius: .5rem;
+  margin-bottom: .5rem;
+  border: 1px solid var(--border);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Tipi standard */
+.alert-info    { background: #e7f3ff; border-color: #b3d6ff; color: #084298; }
+.alert-success { background: #e6f7e9; border-color: #b9e6c0; color: #0f5132; }
+.alert-warning { background: #fff6d9; border-color: #ffe39c; color: #664d03; }
+.alert-error   { background: #ffe8e8; border-color: #ffc1c1; color: #842029; }
+
+.alert-close {
+  background: none;
+  border: 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Dark theme override */
+:root[data-theme='dark'] .alert-info    { background:#12283b; color:#9ec5fe; }
+:root[data-theme='dark'] .alert-success { background:#10291a; color:#b1dfbb; }
+:root[data-theme='dark'] .alert-warning { background:#392f0a; color:#ffda6a; }
+:root[data-theme='dark'] .alert-error   { background:#3b1818; color:#f5b3b3; }

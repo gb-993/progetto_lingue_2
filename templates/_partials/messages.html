@@ -1,9 +1,11 @@
+{# templates/_partials/messages.html #}
 {% if messages %}
-  <div class="card">
-    <ul>
-      {% for message in messages %}
-        <li>{{ message }}</li>
-      {% endfor %}
-    </ul>
+  <div class="flash-messages" aria-live="polite" aria-atomic="true">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">
+        <span class="alert-text">{{ message }}</span>
+        <button type="button" class="alert-close" aria-label="Chiudi">&times;</button>
+      </div>
+    {% endfor %}
   </div>
 {% endif %}
