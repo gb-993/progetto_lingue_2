@@ -608,14 +608,20 @@ class SubmissionParam(models.Model):
     parameter_id = models.CharField(max_length=20)
     value_orig = models.CharField(max_length=1,null=True, blank=True)   
     warning_orig = models.BooleanField(default=False)
-    value_eval = models.CharField(max_length=1)   # '+','-','0'
+    value_eval = models.CharField(max_length=1, null=True, blank=True, choices=(('+', '+'), ('-', '-'), ('0', '0')),)   # '+','-','0'
     warning_eval = models.BooleanField(default=False)
     evaluated_at = models.DateTimeField(default=timezone.now)
 
-    class Meta:
+class Meta:
         constraints = [
             models.UniqueConstraint(fields=["submission", "parameter_id"], name="pk_submission_param"),
-            models.CheckConstraint(check=models.Q(value_orig__in=["+", "-", "0"]) | models.Q(value_orig__isnull=True), name="ck_sub_param_orig"),
-            models.CheckConstraint(check=models.Q(value_eval__in=["+", "-", "0"]), name="ck_sub_param_eval"),
+            models.CheckConstraint(
+                check=models.Q(value_orig__in=["+", "-", "0"]) | models.Q(value_orig__isnull=True),
+                name="ck_sub_param_orig",
+            ),
+            models.CheckConstraint(
+                check=models.Q(value_eval__in=["+", "-", "0"]) | models.Q(value_eval__isnull=True),
+                name="ck_sub_param_eval",
+            ),
         ]
         indexes = [models.Index(fields=["submission", "parameter_id"])]

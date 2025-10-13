@@ -4,59 +4,6 @@
 {% block title %}Language data{% endblock %}
 {% block breadcrumb %}Languages / {{ language.id }} / Data{% endblock %}
 
-{% block extra_head %}
-  <script src="{% static 'js/examples.js' %}"></script>
-  <style>
-    .param-nav {display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem;}
-    .param-btn {
-      width:2.4rem; height:2.4rem; border-radius:4px;
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer; font-weight:bold; border:1px solid var(--border);
-      transition:transform .1s;
-    }
-    .param-btn:hover {transform:scale(1.1);}
-    .param-section {display:none;}
-    .param-section.active {display:block;}
-
-    /* === BLOCCO VISIVO (solo grafico) === */
-    .is-readonly .card input,
-    .is-readonly .card select,
-    .is-readonly .card textarea {
-      background: var(--surface-2, #f1f3f5);
-      color: var(--muted-fg, #666);
-      border-color: var(--border, #d0d7de);
-      pointer-events: none;      /* niente click */
-    }
-    .is-readonly .card input::placeholder,
-    .is-readonly .card textarea::placeholder { color: #999; }
-
-    .is-readonly .btn,
-    .is-readonly .add-example-btn,
-    .is-readonly .btn-ex-toggle-delete {
-      opacity: .55;
-      cursor: not-allowed;
-      pointer-events: none;      /* niente click */
-    }
-
-    /* Etichetta “Locked” discreta */
-    .locked-hint {
-      font-size: .9rem; color: #666;
-      margin-left: .5rem;
-    }
-
-    .hint-disabled[title] { cursor: help; display: inline-block; }
-
-    .is-readonly form[action$="reopen/"] .btn {
-  opacity: 1;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-
-  </style>
-{% endblock %}
-
-
 {% block content %}
 <main class="{% with s=lang_status.overall %}{% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}is-readonly{% endif %}{% endwith %}">
   <div class="card">
@@ -94,46 +41,55 @@
       </div>
 
       <div class="toolbar" style="justify-content:flex-end; gap:.5rem; flex-wrap:wrap">
-        {# ====== Azioni per USER ====== #}
-        {% if not is_admin %}
-          {# Approve (submit): sempre visibile e sempre permesso #}
-          <form method="post" action="{% url 'language_submit' language.id %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn--primary">Approve (submit)</button>
-          </form>
-
-          {# Reopen visibile se stato è rejected #}
-          {% if lang_status.overall == "rejected" %}
-            <form method="post" action="{% url 'language_reopen' language.id %}">
-              {% csrf_token %}
-              <button type="submit" class="btn"
-                style="pointer-events:auto;opacity:1;cursor:pointer">
-                Reopen
-              </button>
-            </form>
-          {% endif %}
-        {% endif %}
-
         {# ====== Azioni per ADMIN ====== #}
         {% if is_admin %}
-          {# Reject con messaggio opzionale #}
-          <form method="post" action="{% url 'language_reject' language.id %}" class="grid" style="gap:.25rem; align-items:center">
+
+          {# --- CREA NUOVA SUBMISSION: POST alla view submission_create_for_language --- #}
+          <form id="submission-create-form"
+                method="post"
+                action="{% url 'submission_create_for_language' language.id %}"
+                {# questi data-* li usa lo script esterno, niente logica inline #}
+                {% if not all_answered %}data-confirm-missing="1"{% endif %}
+                data-confirm-message="Attenzione: ci sono risposte mancanti. Vuoi creare comunque la submission?"
+                style="display:flex; gap:.5rem; align-items:flex-start; flex-wrap:wrap">
             {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+            <button type="submit"
+                    class="btn"
+                    data-once="true"
+                    title="Crea una nuova submission con lo stato attuale della lingua">
+              Crea submission
+            </button>
+
             <details>
-              <summary>Aggiungi nota (opzionale)</summary>
+              <summary>Aggiungi nota</summary>
+              <div style="margin-top:.25rem; max-width:100%">
+                <label for="note_{{ language.id }}" class="sr-only">Nota per la submission</label>
+                <textarea id="note_{{ language.id }}" name="note" rows="2" style="min-width:18rem; max-width:100%"></textarea>
+              </div>
+            </details>
+          </form>
+
+
+
+          {# --- REJECT: bottone sopra, nota dopo (allineato in alto) --- #}
+          <form method="post" action="{% url 'language_reject' language.id %}"
+                style="display:flex; gap:.5rem; align-items:flex-start; flex-wrap:wrap">
+            {% csrf_token %}
+            <button type="submit" class="btn">Reject</button>
+            <details>
+              <summary>Aggiungi nota</summary>
               <div style="margin-top:.25rem">
                 <label for="reject_message_{{ language.id }}" class="sr-only">Nota per il rifiuto</label>
                 <textarea id="reject_message_{{ language.id }}" name="message" rows="2" style="min-width:18rem"></textarea>
               </div>
             </details>
-            <button type="submit" class="btn">Reject</button>
           </form>
 
-          {# Approve & Run DAG (approva + avvia DAG) #}
+          {# --- APPROVE & RUN DAG --- #}
           <form method="post" action="{% url 'language_approve' language.id %}">
             {% csrf_token %}
-
-            {# Quando mancano risposte: wrapper con title per mostrare il tooltip #}
             {% if not all_answered %}
               <span class="hint-disabled" title="Impossibile approvare finché mancano risposte" tabindex="0">
                 <button type="submit" class="btn btn--primary" disabled aria-disabled="true">
@@ -145,12 +101,11 @@
                 Approve &amp; Run DAG
               </button>
             {% endif %}
-
           </form>
 
-
-
         {% endif %}
+
+
       </div>
     </div>
   </div>
@@ -308,4 +263,58 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+
 {% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'js/examples.js' %}"></script>
+  <script src="{% static 'js/submission_create.js' %}"></script>
+  <script src="{% static 'js/examples.js' %}"></script>
+  <style>
+    .param-nav {display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem;}
+    .param-btn {
+      width:2.4rem; height:2.4rem; border-radius:4px;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-weight:bold; border:1px solid var(--border);
+      transition:transform .1s;
+    }
+    .param-btn:hover {transform:scale(1.1);}
+    .param-section {display:none;}
+    .param-section.active {display:block;}
+
+    /* === BLOCCO VISIVO (solo grafico) === */
+    .is-readonly .card input,
+    .is-readonly .card select,
+    .is-readonly .card textarea {
+      background: var(--surface-2, #f1f3f5);
+      color: var(--muted-fg, #666);
+      border-color: var(--border, #d0d7de);
+      pointer-events: none;      /* niente click */
+    }
+    .is-readonly .card input::placeholder,
+    .is-readonly .card textarea::placeholder { color: #999; }
+
+    .is-readonly .btn,
+    .is-readonly .add-example-btn,
+    .is-readonly .btn-ex-toggle-delete {
+      opacity: .55;
+      cursor: not-allowed;
+      pointer-events: none;      /* niente click */
+    }
+
+    /* Etichetta “Locked” discreta */
+    .locked-hint {
+      font-size: .9rem; color: #666;
+      margin-left: .5rem;
+    }
+
+    .hint-disabled[title] { cursor: help; display: inline-block; }
+
+    .is-readonly form[action$="reopen/"] .btn {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+  </style>
+{% endblock %}
+
