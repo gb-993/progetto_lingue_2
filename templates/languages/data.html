@@ -44,66 +44,76 @@
         {# ====== Azioni per ADMIN ====== #}
         {% if is_admin %}
 
-          {# --- CREA NUOVA SUBMISSION: POST alla view submission_create_for_language --- #}
+        <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+
+          {# --- BLOCCO 1: CREA SUBMISSION --- #}
           <form id="submission-create-form"
                 method="post"
                 action="{% url 'submission_create_for_language' language.id %}"
-                {# questi data-* li usa lo script esterno, niente logica inline #}
                 {% if not all_answered %}data-confirm-missing="1"{% endif %}
-                data-confirm-message="Attenzione: ci sono risposte mancanti. Vuoi creare comunque la submission?"
-                style="display:flex; gap:.5rem; align-items:flex-start; flex-wrap:wrap">
+                data-confirm-message="Warning: missing answers. Save anyway?">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
 
-            <button type="submit"
-                    class="btn"
-                    data-once="true"
-                    title="Crea una nuova submission con lo stato attuale della lingua">
-              Crea submission
-            </button>
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
+              <button type="submit"
+                      class="btn"
+                      data-once="true"
+                      title="Crea una nuova submission con lo stato attuale della lingua">
+                Save language
+              </button>
 
-            <details>
-              <summary>Aggiungi nota</summary>
-              <div style="margin-top:.25rem; max-width:100%">
-                <label for="note_{{ language.id }}" class="sr-only">Nota per la submission</label>
-                <textarea id="note_{{ language.id }}" name="note" rows="2" style="min-width:18rem; max-width:100%"></textarea>
-              </div>
-            </details>
+              <details>
+                <summary>Submission's note</summary>
+                <div style="margin-top:.25rem; max-width:100%">
+                  <label for="note_{{ language.id }}" class="sr-only">Submission's note</label>
+                  <textarea id="note_{{ language.id }}" name="note" rows="2"
+                            style="min-width:18rem; max-width:100%"></textarea>
+                </div>
+              </details>
+            </div>
           </form>
 
-
-
-          {# --- REJECT: bottone sopra, nota dopo (allineato in alto) --- #}
-          <form method="post" action="{% url 'language_reject' language.id %}"
-                style="display:flex; gap:.5rem; align-items:flex-start; flex-wrap:wrap">
+          {# --- BLOCCO 2: REJECT --- #}
+          <form method="post" action="{% url 'language_reject' language.id %}">
             {% csrf_token %}
-            <button type="submit" class="btn">Reject</button>
-            <details>
-              <summary>Aggiungi nota</summary>
-              <div style="margin-top:.25rem">
-                <label for="reject_message_{{ language.id }}" class="sr-only">Nota per il rifiuto</label>
-                <textarea id="reject_message_{{ language.id }}" name="message" rows="2" style="min-width:18rem"></textarea>
-              </div>
-            </details>
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
+              <button type="submit" class="btn" title="Rifiuta la submission della lingua">
+                Reject
+              </button>
+
+              <details>
+                <summary>Rejection's note</summary>
+                <div style="margin-top:.25rem; max-width:100%">
+                  <label for="reject_message_{{ language.id }}" class="sr-only">Rejection's note</label>
+                  <textarea id="reject_message_{{ language.id }}" name="message" rows="2"
+                            style="min-width:18rem; max-width:100%"></textarea>
+                </div>
+              </details>
+            </div>
           </form>
 
-          {# --- APPROVE & RUN DAG --- #}
+          {# --- BLOCCO 3: APPROVE & RUN DAG --- #}
           <form method="post" action="{% url 'language_approve' language.id %}">
             {% csrf_token %}
-            {% if not all_answered %}
-              <span class="hint-disabled" title="Impossibile approvare finché mancano risposte" tabindex="0">
-                <button type="submit" class="btn btn--primary" disabled aria-disabled="true">
-                  Approve &amp; Run DAG
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
+              {% if not all_answered %}
+                <span class="hint-disabled" title="Cannot approve while there are missing answers" tabindex="0">
+                  <button type="submit" class="btn btn--primary" disabled aria-disabled="true">
+                    Approve &amp; Run DAG
+                  </button>
+                </span>
+              {% else %}
+                <button type="submit" class="btn btn--primary">
+                  Approve &amp; Apply implications
                 </button>
-              </span>
-            {% else %}
-              <button type="submit" class="btn btn--primary">
-                Approve &amp; Run DAG
-              </button>
-            {% endif %}
+              {% endif %}
+            </div>
           </form>
 
+        </div>
         {% endif %}
+
 
 
       </div>
@@ -220,53 +230,10 @@
   {% endfor %}
 </main>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const navBtns = document.querySelectorAll('.param-btn');
-  const sections = document.querySelectorAll('.param-section');
-
-  function activate(id){
-    sections.forEach(s=>s.classList.remove('active'));
-    const tgt = document.getElementById(id);
-    if(tgt){tgt.classList.add('active'); window.scrollTo({top:tgt.offsetTop-80,behavior:'smooth'});}
-  }
-
-  // Click sui quadratini
-  navBtns.forEach(b=>{
-    b.addEventListener('click',()=>{
-      const target = b.dataset.target;
-      // aggiorno l'hash così il back/forward del browser resta coerente
-      location.hash = '#' + target;
-      activate(target);
-    });
-  });
-
-  // All’avvio: se c’è un hash (#p-XYZ) attiva quello, altrimenti il primo
-  const hash = window.location.hash;
-  const idFromHash = hash && hash.startsWith('#') ? hash.substring(1) : '';
-  if (idFromHash && document.getElementById(idFromHash)) {
-    activate(idFromHash);
-  } else if (navBtns[0]) {
-    activate(navBtns[0].dataset.target);
-  }
-
-  // Toggle motivazioni/esempi in base al valore YES/NO
-  document.querySelectorAll('.resp-select').forEach(sel=>{
-    sel.addEventListener('change',()=>{
-      const qid=sel.dataset.qid;
-      const mot=document.querySelector(`.mot-block[data-qid='${qid}']`);
-      const exb=document.querySelector(`.examples-block[data-qid='${qid}']`);
-      if(sel.value==='no'){mot.style.display='block';exb.style.display='none';}
-      else if(sel.value==='yes'){mot.style.display='none';exb.style.display='block';}
-      else{mot.style.display='none';exb.style.display='none';}
-    });
-  });
-});
-</script>
-
 {% endblock %}
 
 {% block extra_head %}
+  <script src="{% static 'js/param_organize.js' %}"></script>
   <script src="{% static 'js/examples.js' %}"></script>
   <script src="{% static 'js/submission_create.js' %}"></script>
   <script src="{% static 'js/examples.js' %}"></script>
