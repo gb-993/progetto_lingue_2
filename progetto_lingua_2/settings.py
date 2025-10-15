@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.postgres",
+    'django.contrib.staticfiles',  
+
 
     # Project apps
     "core.apps.CoreConfig",
@@ -131,7 +133,7 @@ USE_TZ = True
 
 # ---------------------- Static / Media ----------------------
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 # abilita solo se esiste la cartella "static"
 if (BASE_DIR / "static").exists():
     STATICFILES_DIRS = [BASE_DIR / "static"]

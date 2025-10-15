@@ -1,0 +1,11 @@
+New-Item -Path .gitignore -ItemType File -Force | Out-Null
+Set-Content .gitignore @"
+/staticfiles/
+/media/
+__pycache__/
+*.pyc
+*.pyo
+*.map
+.DS_Store
+Thumbs.db
+"@
