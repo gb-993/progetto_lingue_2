@@ -154,13 +154,22 @@ def _all_questions_answered(language: Language) -> bool:
 # -----------------------
 # List / CRUD lingua
 # -----------------------
+# languages_ui/views.py — SOSTITUISCI l'intera language_list con questa
+
 @login_required
 def language_list(request):
+    from django.db.models import Max, Q
     q = (request.GET.get("q") or "").strip()
     user = request.user
     is_admin = _is_admin(user)
 
-    qs = Language.objects.select_related("assigned_user").order_by("position")
+    # Annotiamo l'ultima modifica proveniente dalle Answer
+    qs = (
+        Language.objects
+        .select_related("assigned_user")
+        .annotate(last_change=Max("answers__updated_at"))
+        .order_by("position")
+    )
 
     # Solo proprie lingue se non admin
     if not is_admin:
@@ -189,6 +198,7 @@ def language_list(request):
         "is_admin": is_admin,
     }
     return render(request, "languages/list.html", ctx)
+
 
 
 @login_required

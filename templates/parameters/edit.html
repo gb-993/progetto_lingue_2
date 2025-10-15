@@ -1,30 +1,50 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% if is_create %}Add parameter{% else %}Edit parameter{% endif %}{% endblock %}
 {% block breadcrumb %}Parameters / {% if is_create %}Add{% else %}{{ parameter.id }}{% endif %}{% endblock %}
+
+{% block extra_head %}
+  {# CSS opzionale per lo stato disabled del bottone #}
+  <link rel="stylesheet" href="{% static 'css/parameter_edit.css' %}">
+  {# JS che gestisce change tracking e blocco Save #}
+  <script defer src="{% static 'js/parameter_edit.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 <section class="card" aria-labelledby="param-heading">
   <h2 id="param-heading">{% if is_create %}Add parameter{% else %}Parameter {{ parameter.id }}{% endif %}</h2>
 
-  <form method="post" novalidate>
+  <form id="param-edit-form" method="post" novalidate
+        {% if not is_create %}
+          data-requires-change-note="true"
+          data-change-note-name="{{ form.change_note.html_name|escapejs }}"
+        {% endif %}
+        data-tracked='[
+          "{{ form.name.html_name|escapejs }}",
+          "{{ form.short_description.html_name|escapejs }}",
+          "{{ form.implicational_condition.html_name|escapejs }}",
+          "{{ form.is_active.html_name|escapejs }}",
+          "{{ form.position.html_name|escapejs }}"{% if form.warning_default %},
+          "{{ form.warning_default.html_name|escapejs }}"{% endif %}
+        ]'>
+
     {% csrf_token %}
 
-  {% if is_create %}
-    <div class="form-row">
-      {{ form.id.label_tag }} {{ form.id }}
-      {% if form.id.errors %}<div class="form-error">{{ form.id.errors }}</div>{% endif %}
-    </div>
-  {% else %}
-    <div class="form-row">
-      {{ form.id.label_tag }}
-      <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
-      {{ form.id.as_hidden }}
-      <p class="muted">ID non modificabile.</p>
-    </div>
-  {% endif %}
-
+    {% if is_create %}
+      <div class="form-row">
+        {{ form.id.label_tag }} {{ form.id }}
+        {% if form.id.errors %}<div class="form-error">{{ form.id.errors }}</div>{% endif %}
+      </div>
+    {% else %}
+      <div class="form-row">
+        {{ form.id.label_tag }}
+        <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
+        {{ form.id.as_hidden }}
+        <p class="muted">ID non modificabile.</p>
+      </div>
+    {% endif %}
 
     <div class="form-row">
       {{ form.name.label_tag }} {{ form.name }}
@@ -42,24 +62,28 @@
       <p class="help">Usa token tipo <code>+FGM</code>, <code>-SCO</code>, <code>0ABC</code>, senza spazi tra segno e ID.</p>
     </div>
 
+    {# === Active con guard per disattivazione vincolata === #}
     <div class="form-row">
       <label for="{{ form.is_active.id_for_label }}">Active</label>
-      <input
-        id="{{ form.is_active.id_for_label }}"
-        name="{{ form.is_active.html_name }}"
-        type="checkbox"
-        value="1"
-        {% if form.instance.is_active %}checked{% endif %}
-        {% if not can_deactivate and form.instance.is_active %}disabled aria-disabled="true"{% endif %}
-      />
-      {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
 
       {% if form.instance.is_active and not can_deactivate %}
+        <input
+          type="checkbox"
+          id="{{ form.is_active.id_for_label }}"
+          checked
+          disabled
+          aria-disabled="true"
+        >
+        <input type="hidden" name="{{ form.is_active.html_name }}" value="1">
         <p class="hint b-bad" role="note">
           Non disattivabile: esistono parametri che citano questo ID.
           Consulta l’elenco qui sotto e ripulisci manualmente le condizioni degli altri parametri.
         </p>
+      {% else %}
+        {{ form.is_active }}
       {% endif %}
+
+      {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
     </div>
 
     <div class="form-row">
@@ -72,16 +96,18 @@
       {{ form.warning_default }}
       {% if form.warning_default.errors %}<div class="form-error">{{ form.warning_default.errors }}</div>{% endif %}
     </div>
-        {% if not is_create %}
+
+    {% if not is_create %}
       <fieldset class="form-row">
         <legend class="sr-only">Recap modifiche</legend>
         {{ form.change_note.label_tag }} {{ form.change_note }}
         {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
-        <p class="help">Obbligatorio se hai modificato uno o più campi di questo parametro.</p>
+        <p id="changeNoteHint" class="help">Obbligatorio se hai modificato uno o più campi di questo parametro.</p>
       </fieldset>
     {% endif %}
+
     <div class="actions">
-      <button type="submit" class="btn btn--primary">Save</button>
+      <button id="saveBtn" type="submit" class="btn btn--primary" aria-disabled="false">Save</button>
       <a class="btn" href="{% url 'parameter_list' %}">Back</a>
     </div>
   </form>

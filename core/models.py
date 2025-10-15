@@ -424,6 +424,7 @@ class Answer(models.Model):
     modifiable = models.BooleanField(default=True)
     response_text = models.CharField(max_length=3)  # 'yes'|'no'
     comments = models.TextField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
     class Meta:
         constraints = [

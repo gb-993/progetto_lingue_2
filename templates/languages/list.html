@@ -22,9 +22,14 @@
           <th scope="col">Group</th>
           <th scope="col">Supervisor</th>
           <th scope="col">Informant</th>
+          {% if is_admin %}
+            <th scope="col">Assigned to</th>
+          {% endif %}
+          <th scope="col">Last modified</th>
           <th scope="col" class="sr-only">Actions</th>
         </tr>
       </thead>
+
       <tbody>
         {% for l in languages %}
         <tr>
@@ -36,18 +41,35 @@
           <td>{{ l.grp }}</td>
           <td>{{ l.supervisor }}</td>
           <td>{{ l.informant }}</td>
+
+          {% if is_admin %}
+            <td>
+              {# mostra nome o email dell'utente assegnato, se presente #}
+              {% if l.assigned_user %}
+                {{ l.assigned_user.name }} {{ l.assigned_user.surname }} ({{ l.assigned_user.email }})
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </td>
+          {% endif %}
+
+          <td>
+            {% if l.last_change %}
+              {{ l.last_change|date:"Y-m-d H:i" }}
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+
           <td class="row-actions">
             <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
             {% if is_admin %}
               <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
-              {# nuovo link per debug parametri #}
               <a class="btn" href="{% url 'language_debug' l.id %}">Debug</a>
             {% endif %}
           </td>
-
         </tr>
-        {% empty %}
-          <tr><td colspan="8" class="muted">No languages</td></tr>
+
         {% endfor %}
       </tbody>
     </table>

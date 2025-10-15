@@ -13,7 +13,9 @@ from core.models import (
 # =========================
 # PARAMETER FORM (ModelForm)
 # =========================
+from django import forms
 from core.services.logic_parser import validate_expression, ParseException
+from core.models import ParameterDef
 
 class ParameterForm(forms.ModelForm):
     class Meta:
@@ -25,6 +27,7 @@ class ParameterForm(forms.ModelForm):
             "short_description",
             "implicational_condition",
             "is_active",
+            # NB: non tocco altri campi del modello; se esiste warning_default resta fuori dal Meta come da tuo setup
         ]
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
@@ -33,31 +36,45 @@ class ParameterForm(forms.ModelForm):
             ),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "short_description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
-            "implicational_condition": forms.TextInput(attrs={"class": "form-control", "placeholder": "(+FGM | +FGA) & -FGK"}),
+            "implicational_condition": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "(+FGM | +FGA) & -FGK"
+            }),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check"}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, can_deactivate: bool = True, **kwargs):
         super().__init__(*args, **kwargs)
+        self.can_deactivate = can_deactivate
 
-        # Campo "Recap modifiche": appare in edit; required solo se ci sono cambi
+        # Campo note modifiche (richiesto solo se ci sono cambi reali in edit)
         self.fields["change_note"] = forms.CharField(
             label="Recap modifiche",
-            required=False,  # lo forzeremo in clean() se necessario
-            widget=forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Descrivi sinteticamente COSA è cambiato e PERCHÉ"}),
+            required=False,
+            widget=forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 3,
+                "placeholder": "Descrivi sinteticamente COSA è cambiato e PERCHÉ"
+            }),
             help_text="Obbligatorio se modifichi qualsiasi campo del parametro.",
         )
 
+        # Se nel template mostri anche warning_default (campo extra non nel Meta), lascia che il template lo gestisca.
+
     def clean(self):
         cleaned = super().clean()
-
-        # In edit: se il form ha cambiamenti reali -> change_note obbligatorio
         instance = getattr(self, "instance", None)
         has_pk = bool(instance and instance.pk)
+
+        # Se NON posso disattivare e l'istanza è attiva, forza comunque is_active=True
+        # per evitare flip a False quando il checkbox è disabled (e quindi non postato).
+        if has_pk and getattr(self, "can_deactivate", True) is False and instance.is_active:
+            cleaned["is_active"] = True
+
+        # Audit: se ci sono modifiche reali (escluso change_note), la nota è obbligatoria
         if has_pk and self.has_changed():
-            note = (cleaned.get("change_note") or "").strip()
-            # Ignora il change_note stesso nel calcolo has_changed
             changed_fields = [f for f in self.changed_data if f != "change_note"]
+            note = (cleaned.get("change_note") or "").strip()
             if changed_fields and not note:
                 raise forms.ValidationError("Inserisci il recap delle modifiche effettuate.")
         return cleaned
@@ -71,24 +88,22 @@ class ParameterForm(forms.ModelForm):
     def clean_implicational_condition(self):
         """
         Regole:
-        - consentiti solo token senza spazi tra segno e parametro: +FGM, -FGK, 0ABC
+        - token senza spazi tra segno e parametro: +FGM, -FGK, 0ABC
         - operatori: &, |, AND/OR/NOT (case-insensitive)
         - niente spazi tra segno e parametro (anche NBSP, \u00A0)
         """
         raw = (self.cleaned_data.get("implicational_condition") or "").strip()
         if not raw:
             return ""  # condizione vuota = OK
-
         try:
-            # valida con il parser robusto (usa Combine, no spazi interni)
             validate_expression(raw)
         except ParseException as e:
-            # Messaggio user-friendly
             raise forms.ValidationError(
                 "Condizione invalida. Evita spazi tra segno e parametro (es. usa '-FGK', NON '- FGK'). "
                 f"Dettaglio: {e}"
             )
         return raw
+
 
 
 # =========================

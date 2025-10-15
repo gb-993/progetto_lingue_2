@@ -53,13 +53,13 @@
 <!-- finetsra ultime modifiche admin-->
   {% if is_admin %}
     <aside class="card news-box" aria-labelledby="last-changes-heading">
-      <h3 id="last-changes-heading">Ultime modifiche</h3>
+      <h3 id="last-changes-heading">Latest changes</h3>
       <ul class="list">
         {% for log in recent_param_changes %}
           <li>
             <strong>{{ log.parameter_id }}</strong>
             <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span><br>
-            <span class="muted small">di {{ log.changed_by.email|default:"(utente sconosciuto)" }}</span>
+            <span class="muted small">by {{ log.changed_by.name }} {{ log.changed_by.surname|default:"" }}</span>
             {% if log.recap %}
               <p class="mt-1 small">{{ log.recap|truncatechars:80 }}</p>
             {% endif %}
