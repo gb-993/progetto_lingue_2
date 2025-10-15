@@ -11,6 +11,7 @@
     <p class="muted">Data collection and storage</p>
   </header>
 
+  <div class="dashboard-flex">
   <nav class="nav-tiles" role="navigation" aria-label="Dashboard shortcuts">
     {# Sempre visibili a tutti #}
     <a class="card btn tile" href="{% url 'language_list' %}" aria-label="Open languages">
@@ -21,14 +22,12 @@
       <strong>Glossary</strong><span class="tile-sub">Termini e definizioni</span>
     </a>
 
-    {# Solo USER (non admin) #}
     {% if not is_admin %}
       <a class="card btn tile" href="{% url 'my_account' %}" aria-label="Open my account">
         <strong>My Account</strong><span class="tile-sub">Dati e preferenze profilo</span>
       </a>
     {% endif %}
 
-    {# Solo ADMIN #}
     {% if is_admin %}
       <a class="card btn tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
         <strong>Parameters</strong><span class="tile-sub">Definizioni e domande</span>
@@ -51,23 +50,24 @@
       </a>
     {% endif %}
   </nav>
-
-  {% if is_admin and recent_param_changes %}
-    <section class="card mt-2" aria-labelledby="last-changes-heading">
+<!-- finetsra ultime modifiche admin-->
+  {% if is_admin %}
+    <aside class="card news-box" aria-labelledby="last-changes-heading">
       <h3 id="last-changes-heading">Ultime modifiche</h3>
       <ul class="list">
         {% for log in recent_param_changes %}
           <li>
-            <div>
-              <strong>{{ log.parameter_id }}</strong>
-              <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span>
-            </div>
-            <div class="muted">di {{ log.changed_by.email|default:"(utente sconosciuto)" }}</div>
-            {% if log.recap %}<p class="mt-1">{{ log.recap }}</p>{% endif %}
+            <strong>{{ log.parameter_id }}</strong>
+            <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span><br>
+            <span class="muted small">di {{ log.changed_by.email|default:"(utente sconosciuto)" }}</span>
+            {% if log.recap %}
+              <p class="mt-1 small">{{ log.recap|truncatechars:80 }}</p>
+            {% endif %}
           </li>
         {% endfor %}
       </ul>
-    </section>
+    </aside>
   {% endif %}
+</div>
 </div>
 {% endblock %}
