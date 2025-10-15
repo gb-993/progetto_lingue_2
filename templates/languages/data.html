@@ -76,6 +76,17 @@
                 </details>
               </div>
             </form>
+            
+            <!-- Download Excel (Examples per tutti; Answers solo per admin) -->
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
+              <a href="{% url 'language_export_xlsx' language.id %}"
+                 class="btn"
+                 title="Download .xlsx">
+                Download Excel
+              </a>
+              <small class="muted">Download .xlsx</small>
+            </div>
+
 
             <form method="post" action="{% url 'language_approve' language.id %}">
               {% csrf_token %}
@@ -111,6 +122,13 @@
               <span class="hint-disabled" title="{% if s == 'waiting_for_approval' or s == 'waiting' %}In attesa di revisione dell'admin{% else %}Già approvata dall'admin{% endif %}" tabindex="0">
                 <button type="button" class="btn" disabled aria-disabled="true">Submit for review</button>
               </span>
+
+              <!-- Download Excel  -->
+            <a href="{% url 'language_export_xlsx' language.id %}"
+               class="btn"
+               title="Download .xlsx">
+              Download .xlsx
+            </a>
             {% endif %}
           {% endwith %}
         {% endif %}
