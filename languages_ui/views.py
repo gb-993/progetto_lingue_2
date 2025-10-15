@@ -906,7 +906,6 @@ def language_reopen(request, lang_id):
         messages.success(request, _t(f"Reopened: {changed} answers set to pending."))
     return redirect("language_data", lang_id=lang.id)
 
-
 @login_required
 def language_export_xlsx(request, lang_id: str):
     # --- Fetch lingua + autorizzazione coerente con tutta l'app ---
@@ -924,15 +923,14 @@ def language_export_xlsx(request, lang_id: str):
         .order_by("position", "id")
     )
 
-    # Domande per parametro 
+    # Domande per parametro
     qs_by_param = {}
     for q in (
         Question.objects
         .select_related("parameter")
-        .order_by("parameter__position", "id")   
+        .order_by("parameter__position", "id")
     ):
         qs_by_param.setdefault(q.parameter_id, []).append(q)
-
 
     # Risposte per lingua (indicizzate per question_id)
     answers = (
@@ -950,7 +948,7 @@ def language_export_xlsx(request, lang_id: str):
     examples = (
         Example.objects
         .select_related("answer")                # serve per accedere a answer.question_id
-        .filter(answer__language_id=lang.id)     
+        .filter(answer__language_id=lang.id)
     )
     for ex in examples:
         qid = ex.answer.question_id
@@ -965,6 +963,20 @@ def language_export_xlsx(request, lang_id: str):
                 return 10**9
         arr.sort(key=lambda e: _as_int(getattr(e, "number", "")))
 
+    # --- Valori parametro per lingua: orig + eval (se presente) ---
+    lps_qs = LanguageParameter.objects.filter(language=lang).select_related("parameter")
+    if HAS_EVAL:
+        lps_qs = lps_qs.select_related("eval")
+
+    value_orig_by_pid: dict[str, str] = {}
+    value_eval_by_pid: dict[str, str] = {}
+    for lp in lps_qs:
+        pid = lp.parameter_id
+        value_orig_by_pid[pid] = (lp.value_orig or "")
+        if getattr(lp, "eval", None):
+            value_eval_by_pid[pid] = (getattr(lp.eval, "value_eval", None) or "")
+        else:
+            value_eval_by_pid[pid] = ""
 
     # === Workbook ===
     wb = Workbook()
@@ -1043,8 +1055,15 @@ def language_export_xlsx(request, lang_id: str):
             p_label = getattr(p, "name", getattr(p, "label", p.id))
             for q in qs_by_param.get(p.id, []):
                 a = ans_by_qid.get(q.id)
+                # Valore parametro per questa domanda/parametro (prima eval, poi orig)
+                param_value = (
+                    value_eval_by_pid.get(q.parameter_id)
+                    or value_orig_by_pid.get(q.parameter_id)
+                    or ""
+                )
+
                 if a:
-                    # motivazioni via through AnswerMotivation
+                    # motivazioni via through AnswerMotivation (liste ID -> testi)
                     ids = list(
                         AnswerMotivation.objects
                         .filter(answer=a)
@@ -1057,9 +1076,9 @@ def language_export_xlsx(request, lang_id: str):
                         p_label,
                         q.id,
                         getattr(q, "text", ""),
-                        _pretty_qc_from_status(getattr(a, "status", None)),  # <-- QC da Answer.status
+                        _pretty_qc_from_status(getattr(a, "status", None)),  # QC da Answer.status
                         getattr(a, "response_text", ""),
-                        getattr(a, "param_value", ""),
+                        param_value,
                         mot_text,
                         getattr(a, "comments", ""),
                     ])
@@ -1071,7 +1090,7 @@ def language_export_xlsx(request, lang_id: str):
                         getattr(q, "text", ""),
                         "Not compiled",
                         "",
-                        "",
+                        param_value,  # anche se non c'è answer, il valore parametro può esistere
                         "",
                         "",
                     ])
