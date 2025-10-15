@@ -41,58 +41,83 @@
       </div>
 
       <div class="toolbar" style="justify-content:flex-end; gap:.5rem; flex-wrap:wrap">
-        {% if is_admin %}
-        <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
-          <form id="submission-create-form"
-                method="post"
-                action="{% url 'submission_create_for_language' language.id %}"
-                {% if not all_answered %}data-confirm-missing="1"{% endif %}
-                data-confirm-message="Warning: missing answers. Save anyway?">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-              <button type="submit" class="btn" data-once="true" title="Crea una nuova submission con lo stato attuale della lingua">Save language</button>
-              <details>
-                <summary>Submission's note</summary>
-                <div style="margin-top:.25rem; max-width:100%">
-                  <label for="note_{{ language.id }}" class="sr-only">Submission's note</label>
-                  <textarea id="note_{{ language.id }}" name="note" rows="2" style="min-width:18rem; max-width:100%"></textarea>
-                </div>
-              </details>
+  {% if is_admin %}
+    <!-- === Toolbar ADMIN (invariata) === -->
+    <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+      <form id="submission-create-form"
+            method="post"
+            action="{% url 'submission_create_for_language' language.id %}"
+            {% if not all_answered %}data-confirm-missing="1"{% endif %}
+            data-confirm-message="Warning: missing answers. Save anyway?">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
+          <button type="submit" class="btn" data-once="true" title="Crea una nuova submission con lo stato attuale della lingua">Save language</button>
+          <details>
+            <summary>Submission's note</summary>
+            <div style="margin-top:.25rem; max-width:100%">
+              <label for="note_{{ language.id }}" class="sr-only">Submission's note</label>
+              <textarea id="note_{{ language.id }}" name="note" rows="2" style="min-width:18rem; max-width:100%"></textarea>
             </div>
-          </form>
-
-          <form method="post" action="{% url 'language_reject' language.id %}">
-            {% csrf_token %}
-            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-              <button type="submit" class="btn" title="Rifiuta la submission della lingua">Reject</button>
-              <details>
-                <summary>Rejection's note</summary>
-                <div style="margin-top:.25rem; max-width:100%">
-                  <label for="reject_message_{{ language.id }}" class="sr-only">Rejection's note</label>
-                  <textarea id="reject_message_{{ language.id }}" name="message" rows="2" style="min-width:18rem; max-width:100%"></textarea>
-                </div>
-              </details>
-            </div>
-          </form>
-
-          <form method="post" action="{% url 'language_approve' language.id %}">
-            {% csrf_token %}
-            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-              {% if not all_answered %}
-                <span class="hint-disabled" title="Cannot approve while there are missing answers" tabindex="0">
-                  <button type="submit" class="btn btn--primary" disabled aria-disabled="true">Approve &amp; Run DAG</button>
-                </span>
-              {% else %}
-                <button type="submit" class="btn btn--primary">Approve &amp; Apply implications</button>
-              {% endif %}
-            </div>
-          </form>
+          </details>
         </div>
-        {% endif %}
-      </div>
+      </form>
+
+      <form method="post" action="{% url 'language_reject' language.id %}">
+        {% csrf_token %}
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
+          <button type="submit" class="btn" title="Rifiuta la submission della lingua">Reject</button>
+          <details>
+            <summary>Rejection's note</summary>
+            <div style="margin-top:.25rem; max-width:100%">
+              <label for="reject_message_{{ language.id }}" class="sr-only">Rejection's note</label>
+              <textarea id="reject_message_{{ language.id }}" name="message" rows="2" style="min-width:18rem; max-width:100%"></textarea>
+            </div>
+          </details>
+        </div>
+      </form>
+
+      <form method="post" action="{% url 'language_approve' language.id %}">
+        {% csrf_token %}
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
+          {% if not all_answered %}
+            <span class="hint-disabled" title="Cannot approve while there are missing answers" tabindex="0">
+              <button type="submit" class="btn btn--primary" disabled aria-disabled="true">Approve &amp; Apply implications</button>
+            </span>
+          {% else %}
+            <button type="submit" class="btn btn--primary">Approve &amp; Apply implications</button>
+          {% endif %}
+        </div>
+      </form>
     </div>
-  </div>
+  {% else %}
+    <!-- === Toolbar USER (nuova) === -->
+    {% with s=lang_status.overall %}
+      {% if s == 'rejected' %}
+        <!-- Quando c'è stato un reject dell'admin: mostra SOLO REOPEN -->
+        <form method="post" action="{% url 'language_reopen' language.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--primary">Reopen</button>
+          <span class="locked-hint">La lingua è stata rifiutata: premi “Reopen” per riaprire la modifica.</span>
+        </form>
+      {% elif s == 'pending' %}
+        <!-- Stato normale di compilazione: mostra SUBMIT -->
+        <form method="post" action="{% url 'language_submit' language.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--primary">Submit for review</button>
+        </form>
+      {% else %}
+        <!-- waiting_for_approval / approved: nessuna azione, bottone disabilitato come hint -->
+        <span class="hint-disabled" title="{% if s == 'waiting_for_approval' or s == 'waiting' %}In attesa di revisione dell'admin{% else %}Già approvata dall'admin{% endif %}" tabindex="0">
+          <button type="button" class="btn" disabled aria-disabled="true">Submit for review</button>
+        </span>
+      {% endif %}
+    {% endwith %}
+  {% endif %}
+</div>
+
+    </div>  <!-- /grid grid-2 -->
+  </div>    <!-- /card stato e azioni -->
 
   <!-- Barra di navigazione parametri -->
   <div class="param-nav" id="paramNav">
@@ -104,7 +129,7 @@
         style="background:{{ p.bg_color }}; color:{{ p.fg_color }};"
         role="button"
         tabindex="0"
-        title="Parameter {{ p.id }} — {% if p.status == 'missing' %}Not answered (cut corner){% elif p.status == 'warn' %}Partially answered (dashed border){% else %}Complete{% endif %}"
+        title="Parameter {{ p.id }} — {% if p.status == 'missing' %}Not answered {% elif p.status == 'warn' %}Partially answered {% else %}Complete{% endif %}"
         aria-label="Parameter {{ p.id }}, {% if p.status == 'missing' %}not answered{% elif p.status == 'warn' %}partially answered{% else %}complete{% endif %}">
         {{ p.id }}
       </div>
