@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from typing import Optional
+from django.db.models import OuterRef, Subquery, IntegerField, Prefetch
+from core.models import ParameterDef
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -109,20 +111,33 @@ def submissions_list(request):
 @user_passes_test(_is_admin)
 def submission_detail(request, submission_id):
     """
-    Detail con prefetch e ordinamenti DB-side sui model concreti.
+    Detail con prefetch e **ordinamento dei parametri** per ParameterDef.position
+    (via Subquery annotate DB-side).
     """
+    # Prefetch risposte
     answers_prefetch = Prefetch(
         "answers",
         queryset=SubmissionAnswer.objects.order_by("question_code"),
     )
+
+    # Prefetch parametri: annota la position del ParameterDef e ordina per quella
+    param_position_sq = ParameterDef.objects.filter(pk=OuterRef("parameter_id")).values("position")[:1]
     params_prefetch = Prefetch(
         "params",
-        queryset=SubmissionParam.objects.order_by("parameter_id"),
+        queryset=(
+            SubmissionParam.objects
+            .annotate(param_pos=Subquery(param_position_sq, output_field=IntegerField()))
+            .order_by("param_pos", "parameter_id")  # fallback su id in caso di pari posizione/None
+        ),
     )
+
+    # Prefetch motivazioni
     mots_prefetch = Prefetch(
         "answer_motivations",
         queryset=SubmissionAnswerMotivation.objects.order_by("question_code", "motivation_code"),
     )
+
+    # Prefetch esempi
     examples_prefetch = Prefetch(
         "examples",
         queryset=SubmissionExample.objects.order_by("question_code", "id"),
@@ -143,6 +158,6 @@ def submission_detail(request, submission_id):
             "sub_answers": list(sub.answers.all()),
             "sub_mots": list(sub.answer_motivations.all()),
             "sub_examples": list(sub.examples.all()),
-            "sub_params": list(sub.params.all()),
+            "sub_params": list(sub.params.all()),  # <-- ora in ordine per position
         },
     )

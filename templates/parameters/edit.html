@@ -6,10 +6,22 @@
 {% block breadcrumb %}Parameters / {% if is_create %}Add{% else %}{{ parameter.id }}{% endif %}{% endblock %}
 
 {% block extra_head %}
-  {# CSS opzionale per lo stato disabled del bottone #}
-  <link rel="stylesheet" href="{% static 'css/parameter_edit.css' %}">
-  {# JS che gestisce change tracking e blocco Save #}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <script defer src="{% static 'js/parameter_edit.js' %}"></script>
+  <style>
+    /* Lightweight row style for questions */
+    .q-list { display: grid; gap: .5rem; }
+    .q-row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: .75rem; padding: .75rem .9rem;
+      background: var(--surface, #fff); border: 1px solid var(--border, #dadde2);
+      border-radius: .6rem;
+    }
+    .q-row__text { flex: 1 1 auto; min-width: 0; }
+    .q-row__id { font-weight: 600; margin-right: .5rem; white-space: nowrap; }
+    .q-row__actions { flex: 0 0 auto; display: inline-flex; gap: .5rem; }
+    .q-section-title { margin: .25rem 0 .5rem; color: var(--text-muted,#61656b); font-weight: 600; }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -26,8 +38,8 @@
           "{{ form.short_description.html_name|escapejs }}",
           "{{ form.implicational_condition.html_name|escapejs }}",
           "{{ form.is_active.html_name|escapejs }}",
-          "{{ form.position.html_name|escapejs }}"{% if form.warning_default %},
-          "{{ form.warning_default.html_name|escapejs }}"{% endif %}
+          "{{ form.position.html_name|escapejs }}"{% if form.warning_default %}
+          , "{{ form.warning_default.html_name|escapejs }}"{% endif %}
         ]'>
 
     {% csrf_token %}
@@ -42,7 +54,7 @@
         {{ form.id.label_tag }}
         <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
         {{ form.id.as_hidden }}
-        <p class="muted">ID non modificabile.</p>
+        <p class="muted">ID is not editable.</p>
       </div>
     {% endif %}
 
@@ -59,10 +71,10 @@
     <div class="form-row">
       {{ form.implicational_condition.label_tag }} {{ form.implicational_condition }}
       {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
-      <p class="help">Usa token tipo <code>+FGM</code>, <code>-SCO</code>, <code>0ABC</code>, senza spazi tra segno e ID.</p>
+      <p class="help">Use tokens like <code>+FGM</code>, <code>-SCO</code>, <code>0ABC</code>, without spaces between sign and ID.</p>
     </div>
 
-    {# === Active con guard per disattivazione vincolata === #}
+    {# === Active with guard when deactivation is not allowed === #}
     <div class="form-row">
       <label for="{{ form.is_active.id_for_label }}">Active</label>
 
@@ -76,8 +88,7 @@
         >
         <input type="hidden" name="{{ form.is_active.html_name }}" value="1">
         <p class="hint b-bad" role="note">
-          Non disattivabile: esistono parametri che citano questo ID.
-          Consulta l’elenco qui sotto e ripulisci manualmente le condizioni degli altri parametri.
+          Cannot deactivate: other parameters reference this ID. See the list below and clean their conditions first.
         </p>
       {% else %}
         {{ form.is_active }}
@@ -98,11 +109,71 @@
     </div>
 
     {% if not is_create %}
-      <fieldset class="form-row">
-        <legend class="sr-only">Recap modifiche</legend>
+      {# =========================
+         QUESTIONS (compact rows)
+         ========================= #}
+      <fieldset class="form-row" aria-labelledby="questions-heading">
+        <legend id="questions-heading">Questions for this parameter</legend>
+
+        <div class="actions" style="margin-bottom: .5rem;">
+          <a class="btn btn--primary" href="{% url 'question_add' parameter.id %}">Add question</a>
+        </div>
+
+        <div class="grid grid--2">
+          <div>
+            <h4 class="q-section-title">Normal questions</h4>
+            {% if questions_normal and questions_normal|length > 0 %}
+              <div class="q-list">
+                {% for q in questions_normal %}
+                  <div class="q-row">
+                    <div class="q-row__text">
+                      <span class="q-row__id">{{ q.id }}</span>
+                      <span>{{ q.text }}</span>
+                    </div>
+                    <div class="q-row__actions">
+                      <a class="btn" href="{% url 'question_edit' parameter.id q.id %}">Edit</a>
+                      <a class="btn btn--danger" href="{% url 'question_delete' parameter.id q.id %}">Delete</a>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="muted">No normal questions.</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <h4 class="q-section-title">Stop questions</h4>
+            {% if questions_stop and questions_stop|length > 0 %}
+              <div class="q-list">
+                {% for q in questions_stop %}
+                  <div class="q-row">
+                    <div class="q-row__text">
+                      <span class="q-row__id">{{ q.id }}</span>
+                      <span>{{ q.text }}</span>
+                    </div>
+                    <div class="q-row__actions">
+                      <a class="btn" href="{% url 'question_edit' parameter.id q.id %}">Edit</a>
+                      <a class="btn btn--danger" href="{% url 'question_delete' parameter.id q.id %}">Delete</a>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="muted">No stop questions.</p>
+            {% endif %}
+          </div>
+        </div>
+      </fieldset>
+    {% endif %}
+
+    {% if not is_create %}
+      {# === Change recap AT THE BOTTOM === #}
+      <fieldset class="form-row" aria-labelledby="change-note-heading">
+        <legend id="change-note-heading" class="sr-only">Change recap</legend>
         {{ form.change_note.label_tag }} {{ form.change_note }}
         {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
-        <p id="changeNoteHint" class="help">Obbligatorio se hai modificato uno o più campi di questo parametro.</p>
+        <p id="changeNoteHint" class="help">Required if you modified one or more fields of this parameter.</p>
       </fieldset>
     {% endif %}
 
@@ -116,7 +187,7 @@
 <section class="card" aria-labelledby="where-used-heading">
   <h3 id="where-used-heading">Who references this parameter</h3>
   {% if where_used and where_used|length > 0 %}
-    <p class="muted">I seguenti parametri citano questo ID nella loro implicational condition. Modifica le loro condizioni prima di poter disattivare.</p>
+    <p class="muted">The following parameters reference this ID in their implicational condition. Edit their conditions before deactivating this parameter.</p>
     <ul class="list">
       {% for target, cond in where_used %}
         <li>
@@ -126,14 +197,14 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="muted">Nessuno cita questo parametro. È possibile procedere alla disattivazione, previo inserimento password.</p>
+    <p class="muted">No parameter references this ID. You can proceed with deactivation (password required).</p>
   {% endif %}
 </section>
 
 {% if can_deactivate %}
 <section class="card" aria-labelledby="deactivate-heading">
-  <h3 id="deactivate-heading">Disattiva parametro</h3>
-  <p>Questa azione rende il parametro inattivo. Conferma con la tua password.</p>
+  <h3 id="deactivate-heading">Deactivate parameter</h3>
+  <p>This will set the parameter as inactive. Confirm with your password.</p>
   <form method="post" action="{% url 'parameter_deactivate' parameter.id %}" novalidate>
     {% csrf_token %}
     <div class="form-row">
@@ -150,7 +221,7 @@
       <div class="form-error">{{ deactivate_form.non_field_errors }}</div>
     {% endif %}
     <div class="actions">
-      <button type="submit" class="btn btn--danger">Conferma disattivazione</button>
+      <button type="submit" class="btn btn--danger">Confirm deactivation</button>
     </div>
   </form>
 </section>

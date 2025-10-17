@@ -3,7 +3,7 @@
 {% block breadcrumb %}Glossary / Edit / {{ obj.word }}{% endblock %}
 
 {% block content %}
-  <div class="card">
+  <div class="card glossary-edit">
     <form method="post" novalidate>
       {% csrf_token %}
       <div class="grid">

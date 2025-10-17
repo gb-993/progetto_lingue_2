@@ -10,7 +10,7 @@
 {% endif %}
 
 
-  <div class="card">
+ <div class="table-responsive">
     <table class="table">
       <thead>
         <tr>
@@ -46,7 +46,7 @@
             <td>
               {# mostra nome o email dell'utente assegnato, se presente #}
               {% if l.assigned_user %}
-                {{ l.assigned_user.name }} {{ l.assigned_user.surname }} ({{ l.assigned_user.email }})
+                {{ l.assigned_user.name }} {{ l.assigned_user.surname }} 
               {% else %}
                 <span class="muted">—</span>
               {% endif %}

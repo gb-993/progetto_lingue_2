@@ -5,7 +5,7 @@
 
 {% include "_toolbar_search.html" with q=request.GET.q placeholder="Search users…" add_url="accounts_add" add_label="Add account" %}
 
-  <div class="grid grid-2">
+  <div>
     <div class="card">
       <h3>Administrators</h3>
       <table class="table">
@@ -26,7 +26,7 @@
               {% if u.role == "admin" %}
                 <span class="badge">All</span>
               {% endif %}
-              <span class="muted">({{ u.m2m_languages.count }})</span>
+              <span class="muted"></span>
               {% if u.m2m_languages.exists %}
                 <details>
                   <summary>Dettaglio</summary>
@@ -68,7 +68,7 @@
             <td>{{ u.email }}</td>
             <td>{{ u.name }} {{ u.surname }}</td>
             <td>
-              <span class="muted">({{ u.m2m_languages.count }})</span>
+              <span class="muted"></span>
               {% if u.m2m_languages.exists %}
                 <details>
                   <summary>Dettaglio</summary>

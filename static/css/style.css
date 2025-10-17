@@ -601,3 +601,29 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   pointer-events: none;
   cursor: not-allowed;
 }
+
+/* Solo nella pagina Glossary edit */
+.glossary-edit textarea#id_description {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* parameter visualize question */
+.pill {
+  display: inline-block;
+  padding: .15rem .4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: .85em;
+  background: var(--surface-2, #f1f2f4);
+}
+.pill--warn { background: var(--pill-warn-bg, #fff7e5); }
+
+details > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+details > summary::-webkit-details-marker { display:none; }

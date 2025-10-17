@@ -110,16 +110,16 @@ class ParameterForm(forms.ModelForm):
 # QUESTION FORM (ModelForm)
 # =========================
 class QuestionForm(forms.ModelForm):
-    # Scelte template per esempio/visualizzazione
+    # Scelte per la presentazione/numero degli esempi
     TEMPLATE_CHOICES = [
-        ("", "— nessun template —"),  # lascia questa
+        ("", "— nessun template —"),
         ("linear", "Numerazione semplice (1, 2, 3, ...)"),
         ("paired", "Coppie (1a, 1b, 2a, 2b, ...)"),
         ("decimal", "Decimale (1.1, 1.2, 2.1, 2.2, ...)"),
     ]
     template_type = forms.ChoiceField(choices=TEMPLATE_CHOICES, required=False)
 
-    # Campo “virtuale” per selezionare le motivazioni consentite per questa domanda
+    # Campo “virtuale” per selezionare le motivazioni consentite (gestito a mano)
     motivations = forms.ModelMultipleChoiceField(
         queryset=Motivation.objects.all(),
         required=False,
@@ -149,57 +149,81 @@ class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # === Gestione 'id' in modo robusto ===
+        # === Gestione 'id'
         if "id" in self.fields:
             if self.instance and self.instance.pk:
-                # In EDIT: l'id deve essere postato ma non modificato
+                # EDIT: id non modificabile ma deve rientrare nel POST (hidden)
                 self.fields["id"].required = False
-                self.fields["id"].widget = forms.HiddenInput()  # va dentro hidden_fields
+                self.fields["id"].widget = forms.HiddenInput()
                 self.initial["id"] = self.instance.pk
             else:
-                # In ADD: l'id deve essere inserito dall'utente
+                # CREATE: id obbligatorio
                 self.fields["id"].required = True
 
-        # Pre-seleziona le motivazioni già collegate (via M2M ufficiale)
+        # Pre-selezione motivazioni già collegate
         if self.instance and self.instance.pk:
             self.fields["motivations"].initial = list(
                 self.instance.allowed_motivations.values_list("pk", flat=True)
             )
 
+        # >>> Checkbox 'is_stop_question' SOLO in creazione
+        if self.instance and self.instance.pk:
+            # in edit la rimuoviamo del tutto
+            self.fields.pop("is_stop_question", None)
+
+    # --- Salvataggio & sincronizzazione ---
 
     def save(self, commit=True):
         """
-        Salva la Question e sincronizza la tabella ponte QuestionAllowedMotivation
-        in base a 'motivations' inviato dal form.
+        Salva la Question. Se commit=True, sincronizza subito le motivazioni
+        tramite save_m2m(). Se commit=False, la sincronizzazione andrà fatta
+        dopo che l'istanza è stata salvata, chiamando form.save_m2m().
         """
         instance = super().save(commit=commit)
+        # Se abbiamo già il PK (commit=True oppure l'istanza era già salvata),
+        # possiamo sincronizzare immediatamente; altrimenti si farà nel save_m2m().
+        if instance.pk and commit:
+            self.save_m2m()
+        return instance
 
-        if instance.pk and "motivations" in self.cleaned_data:
-            selected = set(self.cleaned_data["motivations"].values_list("pk", flat=True))
-            existing = set(
-                QuestionAllowedMotivation.objects.filter(question=instance)
-                .values_list("motivation_id", flat=True)
+    def save_m2m(self):
+        """
+        Override del hook chiamato da ModelForm quando si usa save(commit=False).
+        Qui sincronizziamo la tabella ponte QuestionAllowedMotivation in base a
+        'motivations' del form.
+        """
+        instance = getattr(self, "instance", None)
+        if not instance or not instance.pk:
+            # Nulla da fare se non abbiamo ancora un PK
+            return
+
+        # Se il campo non è nel cleaned_data (ad esempio form non valido), esci
+        if "motivations" not in self.cleaned_data:
+            return
+
+        selected = set(self.cleaned_data["motivations"].values_list("pk", flat=True))
+        existing = set(
+            QuestionAllowedMotivation.objects.filter(question=instance)
+            .values_list("motivation_id", flat=True)
+        )
+
+        # Aggiunte
+        to_add = selected - existing
+        if to_add:
+            QuestionAllowedMotivation.objects.bulk_create(
+                [
+                    QuestionAllowedMotivation(question=instance, motivation_id=mid)
+                    for mid in to_add
+                ],
+                ignore_conflicts=True,
             )
 
-            # Aggiunte
-            to_add = selected - existing
-            if to_add:
-                QuestionAllowedMotivation.objects.bulk_create(
-                    [
-                        QuestionAllowedMotivation(question=instance, motivation_id=mid)
-                        for mid in to_add
-                    ],
-                    ignore_conflicts=True,
-                )
-
-            # Rimozioni
-            to_del = existing - selected
-            if to_del:
-                QuestionAllowedMotivation.objects.filter(
-                    question=instance, motivation_id__in=to_del
-                ).delete()
-
-        return instance
+        # Rimozioni
+        to_del = existing - selected
+        if to_del:
+            QuestionAllowedMotivation.objects.filter(
+                question=instance, motivation_id__in=to_del
+            ).delete()
 
 
 # =========================

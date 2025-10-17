@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 from core.models import ParameterDef, Question , ParameterChangeLog 
-from .forms import ParameterForm, QuestionFormSet, DeactivateParameterForm
+from .forms import ParameterForm, QuestionForm, DeactivateParameterForm
 from django.db.models import Q, Count, Sum, Case, When, IntegerField
 from django.contrib.auth import get_user_model
 
@@ -102,34 +102,26 @@ def parameter_add(request):
         "deactivate_form": None,
     })
 
-
-
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def parameter_edit(request, param_id: str):
     """
-    Edit parametro + audit:
-    - se ci sono cambi effettivi, richiedi 'change_note' e crea una riga su ParameterChangeLog
-    - protezione: se non disattivabile, impedisci che 'is_active' venga spento da POST
+    Edit a parameter + compact list of its questions.
+    Questions are managed via dedicated CRUD pages.
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
 
-    # Chi cita questo parametro?
+    # Who references this parameter?
     where_used = find_where_used(param.id)
     can_deactivate = bool(param.is_active and len(where_used) == 0)
 
     if request.method == "POST":
         form = ParameterForm(request.POST, instance=param, can_deactivate=can_deactivate)
-
         if form.is_valid():
             cleaned = form.cleaned_data
-
-            # Costruisci un diff reale confrontando old vs cleaned (post-clean),
-            # ignorando 'change_note' e campi non presenti.
             old_obj = ParameterDef.objects.get(pk=param.pk)
             diff = {}
-            # campi candidati: prendi quelli del form.cleaned_data (escludi change_note e id)
             for f, new_val in cleaned.items():
                 if f in ("change_note", "id"):
                     continue
@@ -138,10 +130,8 @@ def parameter_edit(request, param_id: str):
                     if old_val != new_val:
                         diff[f] = {"old": old_val, "new": new_val}
 
-            # Salva
             form.save()
 
-            # Log solo se c'è almeno un cambiamento
             if diff:
                 ParameterChangeLog.objects.create(
                     parameter=param,
@@ -149,25 +139,44 @@ def parameter_edit(request, param_id: str):
                     diff=diff,
                     changed_by=request.user,
                 )
-                messages.success(request, "Parametro aggiornato.")
+                messages.success(request, "Parameter updated.")
             else:
-                messages.info(request, "Nessuna modifica rilevata.")
-
+                messages.info(request, "No changes detected.")
             return redirect("parameter_edit", param_id=param.id)
+        else:
+            messages.error(request, "Please fix the highlighted errors.")
     else:
-        # In GET passa sempre can_deactivate per allineare la logica del form
         form = ParameterForm(instance=param, can_deactivate=can_deactivate)
+
+    # Questions query
+    questions = (
+        param.questions
+        .order_by("is_stop_question", "id")
+        .select_related("parameter")
+        .prefetch_related("allowed_motivations")
+    )
+    # >>> split lists for reliable emptiness checks in the template
+    questions_normal = [q for q in questions if not q.is_stop_question]
+    questions_stop = [q for q in questions if q.is_stop_question]
 
     deactivate_form = DeactivateParameterForm(request=None) if can_deactivate else None
 
-    return render(request, "parameters/edit.html", {
-        "form": form,
-        "is_create": False,
-        "parameter": param,
-        "can_deactivate": can_deactivate,
-        "where_used": where_used,
-        "deactivate_form": deactivate_form,
-    })
+    return render(
+        request,
+        "parameters/edit.html",
+        {
+            "form": form,
+            "is_create": False,
+            "parameter": param,
+            "can_deactivate": can_deactivate,
+            "where_used": where_used,
+            "deactivate_form": deactivate_form,
+            "questions": questions,
+            "questions_normal": questions_normal, 
+            "questions_stop": questions_stop,      
+        },
+    )
+
 
 
 @login_required
@@ -225,3 +234,88 @@ def parameter_deactivate(request, param_id: str):
         f"Parametro {param.id} disattivato correttamente." + (f" Motivo: {reason}" if reason else "")
     )
     return redirect("parameter_edit", param_id=param.id)
+
+@login_required
+@user_passes_test(_is_admin)
+@require_http_methods(["GET", "POST"])
+def question_add(request, param_id: str):
+    """
+    Crea una nuova domanda per il parametro.
+    - Mostra la checkbox 'is_stop_question' SOLO qui (in creazione).
+    """
+    param = get_object_or_404(ParameterDef, pk=param_id)
+    instance = Question(parameter=param)
+
+    if request.method == "POST":
+        form = QuestionForm(request.POST, instance=instance)
+        # In creazione, la checkbox 'is_stop_question' è presente (vedi forms.__init__)
+        if form.is_valid():
+            with transaction.atomic():
+                obj = form.save(commit=False)
+                obj.parameter = param
+                obj.save()
+                # salva anche M2M/motivations (la save del form già gestisce la tabella ponte)
+                form.save_m2m()
+            messages.success(request, "Domanda creata.")
+            return redirect("parameter_edit", param_id=param.id)
+        else:
+            messages.error(request, "Correggi gli errori nella domanda.")
+    else:
+        form = QuestionForm(instance=instance)  # crea con checkbox visibile
+
+    return render(
+        request,
+        "parameters/question_form.html",
+        {"form": form, "parameter": param, "is_create": True},
+    )
+
+
+@login_required
+@user_passes_test(_is_admin)
+@require_http_methods(["GET", "POST"])
+def question_edit(request, param_id: str, question_id: str):
+    """
+    Modifica una domanda esistente.
+    - La checkbox 'is_stop_question' NON è mostrata (nascosta/poppata in forms.__init__).
+    """
+    param = get_object_or_404(ParameterDef, pk=param_id)
+    question = get_object_or_404(Question, pk=question_id, parameter=param)
+
+    if request.method == "POST":
+        form = QuestionForm(request.POST, instance=question)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Domanda aggiornata.")
+            return redirect("parameter_edit", param_id=param.id)
+        else:
+            messages.error(request, "Correggi gli errori nella domanda.")
+    else:
+        form = QuestionForm(instance=question)
+
+    return render(
+        request,
+        "parameters/question_form.html",
+        {"form": form, "parameter": param, "is_create": False, "question": question},
+    )
+
+
+@login_required
+@user_passes_test(_is_admin)
+@require_http_methods(["GET", "POST"])
+def question_delete(request, param_id: str, question_id: str):
+    """
+    Conferma/elimina una domanda.
+    """
+    param = get_object_or_404(ParameterDef, pk=param_id)
+    question = get_object_or_404(Question, pk=question_id, parameter=param)
+
+    if request.method == "POST":
+        question.delete()
+        messages.success(request, f"Domanda {question_id} eliminata.")
+        return redirect("parameter_edit", param_id=param.id)
+
+    return render(
+        request,
+        "parameters/question_confirm_delete.html",
+        {"parameter": param, "question": question},
+    )

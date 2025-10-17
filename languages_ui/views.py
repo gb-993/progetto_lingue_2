@@ -190,10 +190,9 @@ def language_list(request):
             filt |= Q(assigned_user__email__icontains=q)
         qs = qs.filter(filt)
 
-    page_obj = Paginator(qs, 20).get_page(request.GET.get("page"))
     ctx = {
-        "languages": page_obj.object_list,
-        "page_obj": page_obj,
+        "languages": qs,
+        "page_obj": None,
         "q": q,
         "is_admin": is_admin,
     }
@@ -686,22 +685,21 @@ def language_save_instructions(request, lang_id):
 @login_required
 def language_debug(request, lang_id: str):
     """
-    Debug per una lingua:
-      - Per ogni parametro attivo (in ordine di position)
-      - Mostra: ID domande, risposte yes/no, value_orig (+/-), value_eval (+/-/0),
-        warning init/final, condizione raw e pretty, e l'esito della condizione.
+    Debug per una lingua (solo admin):
+      - Tabella unica con: ID domande, risposte yes/no, value_orig (+/-), value_eval (+/-/0),
+        warning init/final, condizione raw/pretty e esito condizione (TRUE/FALSE).
+      - Sezione diagnostica inferiore rimossa: i campi TRUE/FALSE sono integrati nella tabella principale.
     """
     user = request.user
     lang = get_object_or_404(Language, pk=lang_id)
 
+    # Accesso
     if not _check_language_access(user, lang):
-        # 404 per non rivelare l'esistenza della lingua
         get_object_or_404(Language, pk="__deny__")
-
-    # SOLO admin
     if not _is_admin(user):
         get_object_or_404(Language, pk="__deny__")
 
+    # Parametri attivi + domande
     params = (
         ParameterDef.objects
         .filter(is_active=True)
@@ -709,6 +707,7 @@ def language_debug(request, lang_id: str):
         .prefetch_related(Prefetch("questions", queryset=Question.objects.order_by("id")))
     )
 
+    # Risposte per lingua
     answers = (
         Answer.objects
         .filter(language=lang)
@@ -717,15 +716,14 @@ def language_debug(request, lang_id: str):
     )
     answers_by_qid = {a.question_id: a for a in answers}
 
+    # Valori iniziali/finali + warning
     lps = (
         LanguageParameter.objects
         .filter(language=lang)
         .select_related("parameter", "eval")
     )
-
     init_by_pid, warni_by_pid = {}, {}
     final_by_pid, warnf_by_pid = {}, {}
-
     for lp in lps:
         pid = lp.parameter_id
         init_by_pid[pid] = (lp.value_orig or "")
@@ -737,6 +735,17 @@ def language_debug(request, lang_id: str):
             final_by_pid[pid] = ""
             warnf_by_pid[pid] = False
 
+    # Diagnostica parser (per cond_true)
+    diag_rows = diagnostics_for_language(lang)
+    # d.param_id, d.cond_true, d.cond_raw, d.cond_pretty, d.value_orig, d.value_eval, d.note
+    cond_map = {}
+    for d in diag_rows:
+        pid = getattr(d, "param_id", None) if not isinstance(d, dict) else d.get("param_id")
+        cond_true = getattr(d, "cond_true", None) if not isinstance(d, dict) else d.get("cond_true")
+        if pid:
+            cond_map[pid] = cond_true  # True / False / None
+
+    # Costruzione righe tabella principale (con cond_true)
     rows = []
     for p in params:
         q_ids, q_ans = [], []
@@ -755,11 +764,14 @@ def language_debug(request, lang_id: str):
             "warn_init": bool(warni_by_pid.get(p.id, False)),
             "warn_final": bool(warnf_by_pid.get(p.id, False)),
             "cond": (p.implicational_condition or ""),
+            "cond_true": cond_map.get(p.id, None),   # <<< NUOVO CAMPO USATO DAL TEMPLATE
         })
 
-    diag_rows = diagnostics_for_language(lang)
-
-    ctx = {"language": lang, "rows": rows, "diag_rows": diag_rows, "is_admin": _is_admin(user)}
+    ctx = {
+        "language": lang,
+        "rows": rows,
+        "is_admin": _is_admin(user),
+    }
     return render(request, "languages/debug_parameters.html", ctx)
 
 

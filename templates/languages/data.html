@@ -168,23 +168,25 @@
           <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
           {% if q.instruction %}<p class="muted">{{ q.instruction }}</p>{% endif %}
 
-          <div class="grid grid-3">
+          <div class="qa-fields">
             <div>
               <label for="resp_{{ q.id }}">Answer</label>
               <select id="resp_{{ q.id }}" name="resp_{{ q.id }}" class="resp-select" data-qid="{{ q.id }}">
                 <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
                 <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
-                <option value="no" {% if q.ans.response_text == "no" %}selected{% endif %}>NO</option>
+                <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
               </select>
             </div>
 
             <div>
               <label for="com_{{ q.id }}">Comments</label>
-              <input id="com_{{ q.id }}" name="com_{{ q.id }}" value="{{ q.ans.comments }}">
+              <textarea id="com_{{ q.id }}" name="com_{{ q.id }}" rows="2"
+                        class="auto-grow"
+                        data-autosize="1">{{ q.ans.comments }}</textarea>
             </div>
 
             <div class="mot-block" data-qid="{{ q.id }}"
-                 {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
+                {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
               <label for="mot_{{ q.id }}">Motivations (if NO)</label>
               <select id="mot_{{ q.id }}" name="mot_{{ q.id }}" multiple size="4">
                 {% for m in q.allowed_motivations_list %}
@@ -193,6 +195,7 @@
               </select>
             </div>
           </div>
+
 
           <div class="examples-block" data-qid="{{ q.id }}"
                {% if q.ans.response_text != "yes" %}style="display:none"{% endif %}>
@@ -256,6 +259,8 @@
   <script src="{% static 'js/param_organize.js' %}"></script>
   <script src="{% static 'js/examples.js' %}"></script>
   <script src="{% static 'js/submission_create.js' %}"></script>
+  <script src="{% static 'js/autosize_textareas.js' %}"></script>
+
   <style>
     .param-nav {display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem;}
     .param-btn {
@@ -332,5 +337,27 @@
   .param-nav .param-btn[data-status="missing"] { border-color: #000; }
   .param-nav .param-btn[data-status="ok"] { border-color: #000; }
 }
+
+/* Stacking verticale dei tre campi */
+  .qa-fields {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+  }
+
+  /* Textarea auto-espandibile, con limiti ragionevoli per mobile */
+  textarea.auto-grow {
+    width: 100%;
+    min-height: 2.5rem;   /* parte piccola */
+    max-height: 40vh;     /* non far esplodere la pagina */
+    overflow: hidden;     /* niente scrollbar mentre cresce */
+    resize: vertical;     /* l'utente può comunque allungarla se vuole */
+  }
+
+  /* Accessibilità: focus ben visibile */
+  textarea.auto-grow:focus {
+    outline: 2px solid var(--focus, #2266ff);
+    outline-offset: 2px;
+  }
 </style>
 {% endblock %}
