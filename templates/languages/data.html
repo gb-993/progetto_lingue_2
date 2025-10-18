@@ -223,13 +223,17 @@
                 </div>
                 <div class="toolbar" style="margin-top:.25rem">
                   <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
-                  <button class="btn btn-ex-toggle-delete" type="button" data-exid="{{ ex.id }}"
-                    {% with s=lang_status.overall %}
-                      {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                        disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
-                      {% endif %}
-                    {% endwith %}
+                  <button class="btn btn-ex-toggle-delete"
+                          type="button"
+                          data-qid="{{ q.id }}"
+                          data-exid="{{ ex.id }}"
+                          {% with s=lang_status.overall %}
+                            {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                              disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
+                            {% endif %}
+                          {% endwith %}
                   >Delete</button>
+
                 </div>
               </div>
               {% empty %}

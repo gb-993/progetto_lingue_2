@@ -2,7 +2,9 @@
 (function () {
   "use strict";
 
-  // ---------- helpers numerazione ----------
+  // ===============================
+  // Helpers: numerazione prossimi #
+  // ===============================
   function nextLinear(nums) {
     const ints = nums.map(n => {
       const m = n.match(/^(\d+)$/);
@@ -66,7 +68,40 @@
     }
   }
 
-  // ---------- rinumerazione completa dopo add/delete ----------
+  // ===============================
+  // Helpers: contesto domanda/QID
+  // ===============================
+  function getQidFrom(el) {
+    // prova: attributo data-qid su bottone
+    let qid = el && el.getAttribute && el.getAttribute("data-qid");
+    if (qid) return qid;
+    // prova: wrapper .examples-block
+    const block = el && el.closest && el.closest(".examples-block");
+    if (block && block.getAttribute) {
+      qid = block.getAttribute("data-qid");
+      if (qid) return qid;
+    }
+    // prova: lista .examples-list
+    const list = el && el.closest && el.closest(".examples-list");
+    if (list && list.getAttribute) {
+      qid = list.getAttribute("data-qid");
+      if (qid) return qid;
+    }
+    return null;
+  }
+
+  function getTemplateTypeForQid(qid) {
+    const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
+    return block ? (block.getAttribute("data-template") || "").toLowerCase() : "";
+  }
+
+  function getForm(el) {
+    return (el && el.closest && el.closest("form")) || document.querySelector("form");
+  }
+
+  // ===============================
+  // Rinumerazione
+  // ===============================
   function renumberExamplesForQuestion(qid) {
     const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
     if (!block) return;
@@ -74,7 +109,7 @@
     const list = block.querySelector(`.examples-list[data-qid="${qid}"]`);
     if (!list) return;
 
-    // prendi SOLO le righe NON marcate per delete
+    // prendi SOLO le righe NON marcate per delete (nuovi/vecchi ancora visibili)
     const rows = Array.from(list.querySelectorAll(".example-row"))
       .filter(r => !r.classList.contains("is-marked-delete"));
 
@@ -98,16 +133,22 @@
     });
   }
 
+  // ===============================
+  // Show/hide blocco examples
+  // ===============================
   function toggleExamplesBlock(selectEl) {
     const qid = selectEl.getAttribute("data-question-id");
     const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
     if (!block) return;
-    const show = (selectEl.value === "yes");
+    const show = (selectEl.value === "yes"); // NB: se vuoi esempi anche su "no", cambiare qui.
     block.style.display = show ? "" : "none";
     const sr = block.querySelector(".examples-hint");
     if (sr) sr.textContent = show ? "Examples section shown." : "Examples section hidden.";
   }
 
+  // ===============================
+  // Costruzione riga NUOVO esempio
+  // ===============================
   function buildExampleRow(qid, uid, numberValue) {
     const wrapper = document.createElement("div");
     wrapper.className = "card example-row";
@@ -148,8 +189,11 @@
     return wrapper;
   }
 
+  // ===============================
+  // Inizializzazione
+  // ===============================
   document.addEventListener("DOMContentLoaded", function () {
-    // show/hide blocco examples
+    // show/hide blocco examples al cambio risposta
     document.querySelectorAll(".resp-select").forEach(sel => {
       sel.addEventListener("change", () => toggleExamplesBlock(sel));
       toggleExamplesBlock(sel);
@@ -160,7 +204,10 @@
       btn.addEventListener("click", e => {
         e.preventDefault();
         if (btn.hasAttribute("disabled")) return;
-        const qid = btn.getAttribute("data-qid");
+
+        const qid = btn.getAttribute("data-qid") || getQidFrom(btn);
+        if (!qid) return;
+
         const container = document.querySelector(`.examples-list[data-qid="${qid}"]`);
         const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
         if (!container || !block) return;
@@ -169,6 +216,7 @@
         const existingNumberInputs = container.querySelectorAll('input[name$="_number"]');
         const nextNum = computeNextNumber(templateType, existingNumberInputs);
         const uid = String(Date.now()) + "_" + Math.floor(Math.random() * 10000);
+
         const row = buildExampleRow(qid, uid, nextNum);
         container.appendChild(row);
 
@@ -179,47 +227,58 @@
       });
     });
 
-    // Delegated clicks (robusto ai click sui figli dentro il bottone)
+    // Delegated clicks (robusto anche se il click parte da un figlio del bottone)
     document.addEventListener("click", function (e) {
+      // -----------------------------
       // Delete NUOVO esempio (non salvato): rimuovi dal DOM + renumera
+      // -----------------------------
       const delNewBtn = e.target.closest(".btn-newex-delete");
       if (delNewBtn) {
         e.preventDefault();
         if (delNewBtn.hasAttribute("disabled")) return;
+
         const row = delNewBtn.closest(".example-row");
-        const qid = delNewBtn.getAttribute("data-qid");
+        const qid = delNewBtn.getAttribute("data-qid") || getQidFrom(delNewBtn);
         if (row) row.remove();
-        renumberExamplesForQuestion(qid);
+        if (qid) renumberExamplesForQuestion(qid);
         return;
       }
 
-      // Toggle Delete/Undo per ESEMPIO ESISTENTE
+      // -----------------------------
+      // Delete ESEMPIO ESISTENTE: hard-remove
+      // - crea/sposta input hidden nel FORM: del_ex_<ID>=1
+      // - rimuovi SUBITO la riga dal DOM
+      // - rinumerazione visiva
+      // -----------------------------
       const toggleBtn = e.target.closest(".btn-ex-toggle-delete");
       if (toggleBtn) {
         e.preventDefault();
         if (toggleBtn.hasAttribute("disabled")) return;
-        const row = toggleBtn.closest(".example-row");
-        const qid = toggleBtn.getAttribute("data-qid");
-        const exid = toggleBtn.getAttribute("data-exid");
-        if (!row || !qid || !exid) return;
 
-        // hidden flag
-        let hidden = row.querySelector(`input[type="hidden"][name="del_ex_${exid}"]`);
+        const row  = toggleBtn.closest(".example-row");
+        const exid = toggleBtn.getAttribute("data-exid");
+        if (!row || !exid) return;
+
+        const qid  = toggleBtn.getAttribute("data-qid") || getQidFrom(toggleBtn);
+        const form = getForm(toggleBtn);
+        if (!form) return;
+
+        // Hidden flag nel FORM (non nella riga che stiamo per rimuovere)
+        let hidden = form.querySelector(`input[type="hidden"][name="del_ex_${exid}"]`);
         if (!hidden) {
           hidden = document.createElement("input");
           hidden.type = "hidden";
           hidden.name = `del_ex_${exid}`;
-          row.appendChild(hidden);
+          form.appendChild(hidden);
         }
-        // toggle
-        const isDel = row.classList.toggle("is-marked-delete");
-        hidden.value = isDel ? "1" : "0";
-        toggleBtn.textContent = isDel ? "Undo delete" : "Delete";
-        row.style.opacity = isDel ? "0.5" : "";
-        row.style.filter = isDel ? "grayscale(1)" : "";
+        hidden.value = "1";
 
-        // rinumera escludendo le righe marcate
-        renumberExamplesForQuestion(qid);
+        // Rimuovi SUBITO la riga (scompare immediatamente)
+        row.remove();
+
+        // Rinumerazione residua
+        if (qid) renumberExamplesForQuestion(qid);
+        return;
       }
     });
   });
