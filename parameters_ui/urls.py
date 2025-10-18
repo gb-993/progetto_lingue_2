@@ -8,4 +8,6 @@ urlpatterns = [
     path("parameters/<str:param_id>/questions/add/", views.question_add, name="question_add"),
     path("parameters/<str:param_id>/questions/<str:question_id>/edit/", views.question_edit, name="question_edit"),
     path("parameters/<str:param_id>/questions/<str:question_id>/delete/", views.question_delete, name="question_delete"),
+    path("languages/<str:lang_id>/review-flags/", views.review_flags_list, name="review_flags_list"),
+    path("languages/<str:lang_id>/parameters/<str:param_id>/review-flag/", views.toggle_review_flag, name="toggle_review_flag"),
 ]

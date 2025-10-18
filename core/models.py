@@ -339,6 +339,7 @@ class Question(models.Model):
     instruction = models.TextField(null=True, blank=True)
     template_type = models.CharField(max_length=50, null=True, blank=True)
     is_stop_question = models.BooleanField(default=False)
+    help_info = models.TextField(null=True, blank=True)
 
     # M2M ufficiale
     allowed_motivations = models.ManyToManyField(
@@ -439,6 +440,33 @@ class Answer(models.Model):
             ),
         ]
         indexes = [models.Index(fields=["language"]), models.Index(fields=["question"])]
+
+        
+class ParameterReviewFlag(models.Model):
+    """
+    Flag personale (per-utente) per segnare un parametro di una lingua come "da rivedere".
+    Unique: (language, parameter, user)
+    """
+    language = models.ForeignKey("Language", on_delete=models.CASCADE, related_name="review_flags")
+    parameter = models.ForeignKey("ParameterDef", on_delete=models.CASCADE, related_name="review_flags")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="review_flags")
+    flag = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["language", "parameter", "user"],
+                name="uq_reviewflag_lang_param_user"
+            )
+        ]
+        indexes = [
+            models.Index(fields=["language", "user"]),
+            models.Index(fields=["parameter"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.language_id}-{self.parameter_id} by {self.user_id}: {self.flag}"
 
 
 class Example(models.Model):

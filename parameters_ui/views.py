@@ -12,6 +12,9 @@ from core.models import ParameterDef, Question , ParameterChangeLog
 from .forms import ParameterForm, QuestionForm, DeactivateParameterForm
 from django.db.models import Q, Count, Sum, Case, When, IntegerField
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse, HttpResponseBadRequest
+from core.models import ParameterDef, Question, ParameterChangeLog, Language, ParameterReviewFlag
+from django.views.decorators.http import require_http_methods, require_POST
 
 # -------------------------------
 # Utilità / Policy
@@ -319,3 +322,34 @@ def question_delete(request, param_id: str, question_id: str):
         "parameters/question_confirm_delete.html",
         {"parameter": param, "question": question},
     )
+
+
+@login_required
+@require_http_methods(["GET"])
+def review_flags_list(request, lang_id: str):
+    """
+    Restituisce i parametri segnati 'da rivedere' dall'utente corrente su una lingua.
+    JSON: { "flags": ["FGM", "FGA", ...] }
+    """
+    lang = get_object_or_404(Language, pk=lang_id)
+    qs = ParameterReviewFlag.objects.filter(language=lang, user=request.user, flag=True).values_list("parameter_id", flat=True)
+    return JsonResponse({"flags": list(qs)})
+
+
+@login_required
+@require_POST
+def toggle_review_flag(request, lang_id: str, param_id: str):
+    """
+    Imposta o rimuove il flag 'da rivedere' per (utente, lingua, parametro).
+    POST: flag=1|0
+    """
+    lang = get_object_or_404(Language, pk=lang_id)
+    param = get_object_or_404(ParameterDef, pk=param_id)
+    flag_val = request.POST.get("flag")
+    if flag_val not in ("0", "1"):
+        return HttpResponseBadRequest("flag must be 0 or 1")
+
+    obj, _ = ParameterReviewFlag.objects.get_or_create(language=lang, parameter=param, user=request.user)
+    obj.flag = (flag_val == "1")
+    obj.save(update_fields=["flag", "updated_at"])
+    return JsonResponse({"ok": True, "flag": obj.flag})

@@ -627,3 +627,34 @@ details > summary {
   gap: .5rem;
 }
 details > summary::-webkit-details-marker { display:none; }
+
+/* === Review flag UI === */
+.param-title {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+}
+.review-flag {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-weight: 600;
+}
+.review-flag input[type="checkbox"] {
+  width: 1.05rem; height: 1.05rem;
+}
+.param-btn {
+  position: relative;
+}
+.param-btn .badge-review {
+  position: absolute;
+  top: -6px; right: -6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--warn); color: #000; font-weight: 800; font-size: .8rem;
+  border: 2px solid #fff;
+}
+:root[data-theme="dark"] .param-btn .badge-review {
+  border-color: var(--surface);
+}
+
+/* Tooltip "More info" (usa <details>) */
+details.help-info { margin: .35rem 0 .5rem; }
+details.help-info > summary { cursor: pointer; gap: .35rem; }
+details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--border); }

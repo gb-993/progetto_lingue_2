@@ -147,16 +147,30 @@
         style="background:{{ p.bg_color }}; color:{{ p.fg_color }};"
         role="button"
         tabindex="0"
-        title="Parameter {{ p.id }} — {% if p.status == 'missing' %}Not answered {% elif p.status == 'warn' %}Partially answered {% else %}Complete{% endif %}"
-        aria-label="Parameter {{ p.id }}, {% if p.status == 'missing' %}not answered{% elif p.status == 'warn' %}partially answered{% else %}complete{% endif %}">
+        title="Parameter {{ p.id }} — ..."
+        aria-label="Parameter {{ p.id }}, ...">
         {{ p.id }}
+        <span class="badge-review" aria-hidden="true" hidden>!</span>  {# JS toglie hidden se flaggato #}
       </div>
+
     {% endfor %}
   </div>
 
   {% for p in parameters %}
   <section id="p-{{ p.id }}" class="param-section card">
-    <h3>{{ p.id }} — {{ p.name }}</h3>
+    <h3 class="param-title">
+  {{ p.id }} — {{ p.name }}
+  <label class="review-flag">
+    <input
+      type="checkbox"
+      class="review-flag-input"
+      data-param="{{ p.id }}"
+      data-lang="{{ language.id }}"
+      aria-label="Mark {{ p.id }} as 'to review'">
+    <span class="pill pill--warn" aria-hidden="true">!</span>
+    <span class="muted small">To review</span>
+  </label>
+</h3>
     {% if p.short_description %}
       <p class="muted">{{ p.short_description }}</p>
     {% endif %}
@@ -167,6 +181,13 @@
         <div class="card" style="margin-bottom:.5rem">
           <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
           {% if q.instruction %}<p class="muted">{{ q.instruction }}</p>{% endif %}
+          {% if q.help_info %}
+          <details class="help-info">
+            <summary><span aria-hidden="true">❓</span> More info</summary>
+            <div class="muted">{{ q.help_info|linebreaksbr }}</div>
+          </details>
+        {% endif %}
+
 
           <div class="qa-fields">
             <div>
@@ -400,4 +421,74 @@
     outline-offset: 2px;
   }
 </style>
+{% endblock %}
+{% block extra_js %}
+<script>
+// CSRF
+function getCookie(name) {
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? m.pop() : '';
+}
+const csrftoken = getCookie('csrftoken');
+
+// A) Fetch dei flag per l'utente corrente su questa lingua
+(async function initReviewFlags(){
+  try {
+    const url = "{% url 'review_flags_list' language.id %}";
+    const resp = await fetch(url, { headers: { 'Accept': 'application/json' }});
+    if (!resp.ok) return;
+    const data = await resp.json();  // { flags: ["FGM", "FGA", ...] }
+    const flagged = new Set(data.flags || []);
+
+    // 1) set checkboxes
+    document.querySelectorAll('.review-flag-input').forEach(cb => {
+      const pid = cb.dataset.param;
+      cb.checked = flagged.has(pid);
+    });
+
+    // 2) badge sui quadratini
+    document.querySelectorAll('.param-btn').forEach(btn => {
+      const pid = (btn.dataset.target || '').replace(/^p-/, '');
+      const badge = btn.querySelector('.badge-review');
+      if (!badge) return;
+      if (flagged.has(pid)) {
+        badge.hidden = false;
+        badge.setAttribute('aria-label', 'Marked to review');
+      } else {
+        badge.hidden = true;
+      }
+    });
+  } catch(e) { /* silenzioso */ }
+})();
+
+// B) Toggle salvataggio immediato (AJAX) quando spunti la checkbox
+document.addEventListener('change', async function(e){
+  const el = e.target;
+  if (!el.classList || !el.classList.contains('review-flag-input')) return;
+  const pid = el.dataset.param;
+  const lang = el.dataset.lang;
+  const flag = el.checked ? '1' : '0';
+
+  try {
+    const url = "{% url 'toggle_review_flag' 'LANG' 'PARAM' %}"
+      .replace('LANG','__LANG__').replace('PARAM','__PARAM__')
+      .replace('__LANG__', encodeURIComponent(lang))
+      .replace('__PARAM__', encodeURIComponent(pid));
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken, 'Accept': 'application/json' },
+      body: new URLSearchParams({ flag })
+    });
+    if (!resp.ok) throw new Error('Bad response');
+
+    // Aggiorna badge immediatamente
+    const btn = document.querySelector(`.param-btn[data-target="p-${pid}"] .badge-review`);
+    if (btn) btn.hidden = (flag !== '1');
+  } catch (err) {
+    alert('Errore nel salvataggio del promemoria. Riprova.');
+    // revert UI
+    el.checked = !el.checked;
+  }
+});
+</script>
 {% endblock %}

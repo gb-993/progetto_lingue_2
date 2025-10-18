@@ -134,6 +134,7 @@ class QuestionForm(forms.ModelForm):
             "id",
             "text",
             "instruction",
+            "help_info",
             "example_yes",
             "template_type",
             "is_stop_question",
@@ -142,6 +143,7 @@ class QuestionForm(forms.ModelForm):
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
             "text": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "instruction": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+            "help_info": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "example_yes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "is_stop_question": forms.CheckboxInput(attrs={"class": "form-check"}),
         }

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if is_create %}Add question{% else %}Edit question{% endif %}{% endblock %}
+{% block breadcrumb %}Parameters / {{ parameter.id }} / {% if is_create %}Add question{% else %}Edit {{ form.initial.id|default_if_none:"" }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>{% if is_create %}Add question{% else %}Edit question{% endif %} — {{ parameter.id }}</h2>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert--error" role="alert">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="grid grid-2">
+      <div class="form-row">
+        {{ form.id.label_tag }} {{ form.id }}
+        {% if form.id.errors %}<div class="field-error">{{ form.id.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        {{ form.template_type.label_tag }} {{ form.template_type }}
+        {% if form.template_type.errors %}<div class="field-error">{{ form.template_type.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="grid-column: 1 / -1;">
+        {{ form.text.label_tag }} {{ form.text }}
+        {% if form.text.errors %}<div class="field-error">{{ form.text.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="grid-column: 1 / -1;">
+        {{ form.instruction.label_tag }} {{ form.instruction }}
+        {% if form.instruction.errors %}<div class="field-error">{{ form.instruction.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="grid-column: 1 / -1;">
+        {{ form.help_info.label_tag }} {{ form.help_info }}
+        <div class="muted">Short extra context shown to users via a little “More info” popover.</div>
+        {% if form.help_info.errors %}<div class="field-error">{{ form.help_info.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="grid-column: 1 / -1;">
+        {{ form.example_yes.label_tag }} {{ form.example_yes }}
+        {% if form.example_yes.errors %}<div class="field-error">{{ form.example_yes.errors }}</div>{% endif %}
+      </div>
+
+      {% if form.is_stop_question and not form.is_stop_question.is_hidden %}
+      <div class="form-row">
+        <label class="form-check">
+          {{ form.is_stop_question }} Stop question
+        </label>
+        {% if form.is_stop_question.errors %}<div class="field-error">{{ form.is_stop_question.errors }}</div>{% endif %}
+      </div>
+      {% endif %}
+
+      <div class="form-row" style="grid-column: 1 / -1;">
+        <label>Allowed motivations</label>
+        {{ form.motivations }}
+        {% if form.motivations.errors %}<div class="field-error">{{ form.motivations.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:.75rem;">
+      <button class="btn btn--primary" type="submit">{% if is_create %}Create{% else %}Save{% endif %}</button>
+      <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Back</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
