@@ -198,7 +198,7 @@
 
 
           <div class="examples-block" data-qid="{{ q.id }}"
-               {% if q.ans.response_text != "yes" %}style="display:none"{% endif %}>
+               {% if q.ans.response_text == "" %}style="display:none"{% endif %}>
             <div class="toolbar" style="margin:.5rem 0">
               <strong>Examples</strong>
               <button class="btn add-example-btn" type="button" data-qid="{{ q.id }}"
@@ -263,7 +263,7 @@
   <script src="{% static 'js/param_organize.js' %}"></script>
   <script src="{% static 'js/examples.js' %}"></script>
   <script src="{% static 'js/submission_create.js' %}"></script>
-  <script src="{% static 'js/autosize_textareas.js' %}"></script>
+  <script src="{% static 'js/autosize_textarea.js' %}"></script>
 
   <style>
     .param-nav {display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem;}

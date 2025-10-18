@@ -137,14 +137,24 @@
   // Show/hide blocco examples
   // ===============================
   function toggleExamplesBlock(selectEl) {
-    const qid = selectEl.getAttribute("data-question-id");
+    // PRIMA (bug):
+    // const qid = selectEl.getAttribute("data-question-id");
+
+    // DOPO (fix):
+    const qid = selectEl.getAttribute("data-qid");
+
     const block = document.querySelector(`.examples-block[data-qid="${qid}"]`);
     if (!block) return;
-    const show = (selectEl.value === "yes"); // NB: se vuoi esempi anche su "no", cambiare qui.
+
+    const v = (selectEl.value || "").toLowerCase();
+    const show = (v === "yes" || v === "no"); // visibile anche per NO
     block.style.display = show ? "" : "none";
+
     const sr = block.querySelector(".examples-hint");
     if (sr) sr.textContent = show ? "Examples section shown." : "Examples section hidden.";
   }
+
+
 
   // ===============================
   // Costruzione riga NUOVO esempio
@@ -199,6 +209,7 @@
       toggleExamplesBlock(sel);
     });
 
+
     // Add example
     document.querySelectorAll(".add-example-btn").forEach(btn => {
       btn.addEventListener("click", e => {
@@ -250,6 +261,7 @@
       // - rimuovi SUBITO la riga dal DOM
       // - rinumerazione visiva
       // -----------------------------
+      // Delete ESEMPIO ESISTENTE: hard-remove + sposta hidden nel form
       const toggleBtn = e.target.closest(".btn-ex-toggle-delete");
       if (toggleBtn) {
         e.preventDefault();
@@ -263,23 +275,26 @@
         const form = getForm(toggleBtn);
         if (!form) return;
 
-        // Hidden flag nel FORM (non nella riga che stiamo per rimuovere)
-        let hidden = form.querySelector(`input[type="hidden"][name="del_ex_${exid}"]`);
+        // 1) cerca hidden (anche se è dentro la riga)…
+        let hidden = row.querySelector(`input[type="hidden"][name="del_ex_${exid}"]`)
+                  || form.querySelector(`input[type="hidden"][name="del_ex_${exid}"]`);
         if (!hidden) {
           hidden = document.createElement("input");
           hidden.type = "hidden";
           hidden.name = `del_ex_${exid}`;
-          form.appendChild(hidden);
         }
         hidden.value = "1";
 
-        // Rimuovi SUBITO la riga (scompare immediatamente)
+        // 2) …e POI assicurati che stia nel FORM (non nella riga che rimuovi)
+        if (hidden.parentElement !== form) form.appendChild(hidden);
+
+        // 3) rimuovi subito la riga
         row.remove();
 
-        // Rinumerazione residua
         if (qid) renumberExamplesForQuestion(qid);
         return;
       }
+
     });
   });
 })();
