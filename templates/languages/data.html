@@ -185,22 +185,22 @@
                         data-autosize="1">{{ q.ans.comments }}</textarea>
             </div>
 
-            <div class="mot-block" data-qid="{{ q.id }}"
-                {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
-              <label for="mot_{{ q.id }}">Motivations (if NO)</label>
-              <select id="mot_{{ q.id }}" name="mot_{{ q.id }}" multiple size="4">
-                {% for m in q.allowed_motivations_list %}
-                  <option value="{{ m.id }}" {% if m.id in q.ans.motivation_ids %}selected{% endif %}>{{ m.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
+            
+
           </div>
 
 
           <div class="examples-block" data-qid="{{ q.id }}"
+          
                {% if q.ans.response_text == "" %}style="display:none"{% endif %}>
             <div class="toolbar" style="margin:.5rem 0">
               <strong>Examples</strong>
+            </div>
+                <p class="muted" style="margin:.25rem 0 .5rem;">
+                  Please provide the ungrammatical example. If the example cannot be provided, select the appropriate motivation(s) below.
+                </p>
+
+            <div>
               <button class="btn add-example-btn" type="button" data-qid="{{ q.id }}"
                 {% with s=lang_status.overall %}
                   {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
@@ -241,6 +241,42 @@
               {% endfor %}
             </div>
           </div>
+
+          {# --- MOTIVATIONS (solo quando risposta == NO) --- #}
+            <div class="mot-block" data-qid="{{ q.id }}" {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
+              <div class="muted" style="margin-bottom:.25rem">
+                Select one or more motivations (if applicable).
+              </div>
+
+              <fieldset class="mot-checklist" aria-label="Motivations for NO" data-qid="{{ q.id }}">
+                {% for m in q.allowed_motivations_list %}
+                  <label class="checkbox-item" style="display:flex;gap:.5rem;align-items:flex-start;margin:.2rem 0;">
+                    <input
+                      type="checkbox"
+                      name="mot_{{ q.id }}"
+                      value="{{ m.id }}"
+                      data-exclusive="{% if m.code == 'MOT1' %}1{% else %}0{% endif %}"
+                      {% if m.id in q.ans.motivation_ids %}checked{% endif %}
+                      {% with s=lang_status.overall %}
+                        {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                          disabled aria-disabled="true"
+                        {% endif %}
+                      {% endwith %}
+                    >
+                    <span>
+                      <span>
+                        <strong>{{ m.label|default:m.code }}</strong>
+                      </span>
+
+                    </span>
+
+                  </label>
+                {% empty %}
+                  <div class="muted">No motivations configured for this question.</div>
+                {% endfor %}
+              </fieldset>
+            </div>
+
         </div>
       {% endfor %}
 

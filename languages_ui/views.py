@@ -237,61 +237,75 @@ def language_edit(request, lang_id):
 # -----------------------
 @login_required
 def language_data(request, lang_id):
-    user = request.user
-    is_admin = _is_admin(user)
-    lang = get_object_or_404(Language, pk=lang_id)
+    """
+    Pagina di compilazione dati per una lingua.
 
-    if not _check_language_access(user, lang):
+    - Accesso: admin sempre; altrimenti la lingua deve essere assegnata all'utente (FK o M2M).
+    - Prefetch:
+        * Parametri attivi (ordinati per position)
+        * Domande per parametro
+        * Through "allowed_motivation_links" (ordinato per position, con motivation prefetchata)
+    - Per ogni domanda costruiamo:
+        * q.allowed_motivations_list -> lista di Motivation ordinate per position
+        * q.ans -> SimpleNamespace con risposta, commenti, motivazioni, esempi, id answer
+    - Calcoliamo un "semaforo" per parametro (ok/warn/missing) in base alle risposte yes/no.
+    - Esplicitamente **NON** limitiamo più gli esempi a YES: il template/JS li mostra per YES e NO;
+      il backend già salva/elimina esempi indipendentemente dal valore della risposta.
+    """
+    user = request.user
+    is_admin = _is_admin(user)  # definita altrove nel file
+
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(user, lang):  # definita altrove nel file
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
-    # Parametri attivi con domande e motivazioni
+    # === Prefetch ===
+    # - Domande per parametro
+    # - Through allowed_motivation_links con motivation in select_related e ordinati per position
+    questions_qs = Question.objects.order_by("id")
+    through_qs = (
+        QuestionAllowedMotivation.objects
+        .select_related("motivation")
+        .order_by("position", "id")
+    )
+
     parameters = (
         ParameterDef.objects.filter(is_active=True)
         .order_by("position")
         .prefetch_related(
-            Prefetch(
-                "questions",
-                queryset=(
-                    Question.objects.order_by("id").prefetch_related(
-                        Prefetch(
-                            "allowed_motivation_links",
-                            queryset=(
-                                QuestionAllowedMotivation.objects
-                                .select_related("motivation")
-                                .order_by("position", "id")
-                            ),
-                            to_attr="allowed_motivs_through",
-                        )
-                    )
-                ),
-            )
+            Prefetch("questions", queryset=questions_qs),
+            Prefetch("questions__allowed_motivation_links", queryset=through_qs, to_attr="pref_links"),
         )
     )
 
-    # risposte per lingua
+    # === Risposte ed esempi per questa lingua ===
     answers_qs = (
-        Answer.objects.filter(language=lang)
+        Answer.objects
+        .filter(language=lang)
         .select_related("question")
         .prefetch_related("answer_motivations__motivation", "examples")
     )
-    by_qid = {a.question_id: a for a in answers_qs}
+    answers_by_qid = {a.question_id: a for a in answers_qs}
 
-    # view model per template + stato e colori per parametro
+    # === Arricchisci le domande con motivazioni ordinate e stato per parametro ===
     for p in parameters:
         total = 0
         answered = 0
+
         for q in p.questions.all():
             total += 1
-            q.allowed_motivations_list = [
-                thr.motivation for thr in getattr(q, "allowed_motivs_through", [])
-            ]
 
-            a = by_qid.get(q.id)
+            # 1) Motivazioni per la domanda (ordinate per position)
+            links = getattr(q, "pref_links", [])  # creato da Prefetch(to_attr="pref_links")
+            q.allowed_motivations_list = [l.motivation for l in links] if links else []
+
+            # 2) Risposta/Commenti/Motivazioni/Esempi (se presenti)
+            a = answers_by_qid.get(q.id)
             if a:
-                ans_ns = SimpleNamespace(
-                    response_text=a.response_text,
-                    comments=a.comments or "",
+                q.ans = SimpleNamespace(
+                    response_text=(a.response_text or ""),
+                    comments=(a.comments or ""),
                     motivation_ids=[am.motivation_id for am in a.answer_motivations.all()],
                     examples=list(a.examples.all()),
                     answer_id=a.id,
@@ -299,15 +313,15 @@ def language_data(request, lang_id):
                 if a.response_text in ("yes", "no"):
                     answered += 1
             else:
-                ans_ns = SimpleNamespace(
+                q.ans = SimpleNamespace(
                     response_text="",
                     comments="",
                     motivation_ids=[],
                     examples=[],
                     answer_id=None,
                 )
-            q.ans = ans_ns
 
+        # 3) Stato sintetico per parametro (per colorare i "quadratini" wizard)
         if total == 0:
             p.status = "ok"
         elif answered == 0:
@@ -317,7 +331,7 @@ def language_data(request, lang_id):
         else:
             p.status = "ok"
 
-        # colori per la navigazione: verde=ok, giallo=warn, rosso=missing
+        # palette (se già usata dal template)
         if p.status == "ok":
             p.bg_color = "#d4edda"
             p.fg_color = "#155724"
@@ -328,7 +342,7 @@ def language_data(request, lang_id):
             p.bg_color = "#f8d7da"
             p.fg_color = "#721c24"
 
-    # verifica se tutte le domande attive hanno risposta yes/no
+    # === Verifica completezza (tutte le domande attive hanno YES/NO) ===
     active_q_total = 0
     active_q_answered = 0
     for p in parameters:
@@ -338,7 +352,8 @@ def language_data(request, lang_id):
                 active_q_answered += 1
     all_answered = (active_q_total > 0 and active_q_answered == active_q_total)
 
-    lang_status = _language_overall_status(lang)
+    # === Stato complessivo e ultimo reject ===
+    lang_status = _language_overall_status(lang)  # definita altrove
     last_reject = (
         LanguageReview.objects.filter(language=lang, decision="reject")
         .order_by("-created_at")
@@ -354,7 +369,6 @@ def language_data(request, lang_id):
         "last_reject": last_reject,
     }
     return render(request, "languages/data.html", ctx)
-
 
 
 # -----------------------
