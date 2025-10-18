@@ -149,8 +149,8 @@
         tabindex="0"
         title="Parameter {{ p.id }} — ..."
         aria-label="Parameter {{ p.id }}, ...">
-        {{ p.id }}
-        <span class="badge-review" aria-hidden="true" hidden>!</span>  {# JS toglie hidden se flaggato #}
+        <span class="badge-review" aria-hidden="true" hidden>!</span> 
+        {{ p.id }} 
       </div>
 
     {% endfor %}
@@ -420,6 +420,31 @@
     outline: 2px solid var(--focus, #2266ff);
     outline-offset: 2px;
   }
+/* === Badge "to review" — pallino rosso a SINISTRA === */
+.param-btn { position: relative; }
+
+.param-btn .badge-review {
+  position: absolute;
+  top: -6px;
+  left: -6px;          /* ← spostato a sinistra */
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bad, #b00020);  /* rosso */
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.15);
+  z-index: 2;
+}
+
+:root[data-theme="dark"] .param-btn .badge-review {
+  border-color: var(--surface, #1e1f22);
+}
+
+@media (min-width: 1200px) {
+  .param-btn .badge-review { width: 16px; height: 16px; top: -7px; left: -7px; }
+}
+
+
 </style>
 {% endblock %}
 {% block extra_js %}
