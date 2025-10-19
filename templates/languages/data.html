@@ -363,27 +363,32 @@
 
 /* PARZIALE (gialli) -> view usa 'warn' : bordo tratteggiato */
 .param-nav .param-btn[data-status="warn"] {
-  border: 2px dashed var(--edge);       /* tratteggio ad alto contrasto, stesso tono scurito */
+  border: 2px dashed var(--edge);
   border-radius: 4px;
-  position: relative;
-  overflow: hidden;
+  position: relative;      
 }
 
 /* MANCANTI (rossi): angolo tagliato + bordo marcato */
 .param-nav .param-btn[data-status="missing"] {
   border: 2px solid var(--edge);
-  -webkit-clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
-          clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  border-radius: 4px;
+  position: relative;
+  overflow: visible; /* necessario per il badge */
+  background-color: var(--surface, #fff); /* colore di base */
+
+  /* taglio diagonale in alto a destra */
+  -webkit-mask: linear-gradient(
+    225deg,          /* direzione: taglio verso l'angolo in alto a destra */
+    transparent 10px,
+    black 0
+  );
+          mask: linear-gradient(
+    225deg,
+    transparent 10px,
+    black 0
+  );
 }
 
-@supports not (clip-path: polygon(0 0, 90% 0, 100% 10%, 100% 100%, 0 100%)) {
-  .param-nav .param-btn[data-status="missing"]::after {
-    content:""; position:absolute; top:0; right:0; width:12px; height:12px;
-    background: var(--bg, #fff);
-    box-shadow: 0 -2px 0 0 var(--edge), -2px 0 0 0 var(--edge);
-    pointer-events:none;
-  }
-}
 
 /* OK (verdi):  */
 .param-nav .param-btn:not([data-status]),
@@ -443,6 +448,10 @@
 @media (min-width: 1200px) {
   .param-btn .badge-review { width: 16px; height: 16px; top: -7px; left: -7px; }
 }
+/* forza il nascondimento quando c'è l'attributo hidden */
+.badge-review[hidden] { 
+  display: none !important;
+}
 
 
 </style>
@@ -455,6 +464,8 @@ function getCookie(name) {
   return m ? m.pop() : '';
 }
 const csrftoken = getCookie('csrftoken');
+
+document.querySelectorAll('.badge-review').forEach(b => b.hidden = true);
 
 // A) Fetch dei flag per l'utente corrente su questa lingua
 (async function initReviewFlags(){
