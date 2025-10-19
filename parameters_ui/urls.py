@@ -10,4 +10,6 @@ urlpatterns = [
     path("parameters/<str:param_id>/questions/<str:question_id>/delete/", views.question_delete, name="question_delete"),
     path("languages/<str:lang_id>/review-flags/", views.review_flags_list, name="review_flags_list"),
     path("languages/<str:lang_id>/parameters/<str:param_id>/review-flag/", views.toggle_review_flag, name="toggle_review_flag"),
+    path("lookups/", views.lookups_manage, name="param_lookups_manage"),
+
 ]

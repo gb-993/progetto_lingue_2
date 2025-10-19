@@ -15,9 +15,23 @@ from core.models import (
 # =========================
 from django import forms
 from core.services.logic_parser import validate_expression, ParseException
-from core.models import ParameterDef
+from core.models import ParameterDef, ParamSchema, ParamType
 
 class ParameterForm(forms.ModelForm):
+    # menu a tendina 
+    schema = forms.ChoiceField(
+        required=False,
+        choices=[],
+        widget=forms.Select(attrs={"class": "form-control"}),
+        label="Schema",
+    )
+    param_type = forms.ChoiceField(
+        required=False,
+        choices=[],
+        widget=forms.Select(attrs={"class": "form-control"}),
+        label="Type",
+    )
+
     class Meta:
         model = ParameterDef
         fields = [
@@ -27,19 +41,15 @@ class ParameterForm(forms.ModelForm):
             "short_description",
             "implicational_condition",
             "is_active",
-            # NB: non tocco altri campi del modello; se esiste warning_default resta fuori dal Meta come da tuo setup
+            "schema",       
+            "param_type",   
         ]
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
-            "position": forms.NumberInput(
-                attrs={"class": "form-control", "min": "1", "step": "1", "inputmode": "numeric"}
-            ),
+            "position": forms.NumberInput(attrs={"class": "form-control", "min": "1", "step": "1", "inputmode": "numeric"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "short_description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
-            "implicational_condition": forms.TextInput(attrs={
-                "class": "form-control",
-                "placeholder": "(+FGM | +FGA) & -FGK"
-            }),
+            "implicational_condition": forms.TextInput(attrs={"class": "form-control", "placeholder": "(+FGM | +FGA) & -FGK"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check"}),
         }
 
@@ -47,19 +57,37 @@ class ParameterForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.can_deactivate = can_deactivate
 
-        # Campo note modifiche (richiesto solo se ci sono cambi reali in edit)
-        self.fields["change_note"] = forms.CharField(
-            label="Recap modifiche",
-            required=False,
-            widget=forms.Textarea(attrs={
-                "class": "form-control",
-                "rows": 3,
-                "placeholder": "Descrivi sinteticamente COSA è cambiato e PERCHÉ"
-            }),
-            help_text="Obbligatorio se modifichi qualsiasi campo del parametro.",
-        )
+        # Popola le scelte dai lookup 
+        schema_labels = list(ParamSchema.objects.order_by("label").values_list("label", flat=True))
+        type_labels   = list(ParamType.objects.order_by("label").values_list("label", flat=True))
 
-        # Se nel template mostri anche warning_default (campo extra non nel Meta), lascia che il template lo gestisca.
+        schema_choices = [("", "— select schema —")] + [(s, s) for s in schema_labels]
+        type_choices   = [("", "— select type —")]   + [(t, t) for t in type_labels]
+
+        # Se il record ha valori legacy non più in lista, aggiungili per mostrare e salvare
+        inst = getattr(self, "instance", None)
+        if inst and inst.pk:
+            if inst.schema and inst.schema not in {c for c, _ in schema_choices}:
+                schema_choices.insert(1, (inst.schema, f"{inst.schema} (legacy)"))
+            if inst.param_type and inst.param_type not in {c for c, _ in type_choices}:
+                type_choices.insert(1, (inst.param_type, f"{inst.param_type} (legacy)"))
+
+        self.fields["schema"].choices = schema_choices
+        self.fields["param_type"].choices = type_choices
+
+        # Campo "change_note" lo lascio intatto se già presente altrove; se manca, lo aggiungo
+        if "change_note" not in self.fields:
+            self.fields["change_note"] = forms.CharField(
+                label="Recap modifiche",
+                required=False,
+                widget=forms.Textarea(attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": "Describe what changes you made to this parameter and why..."
+                }),
+                help_text="Mandatory if you changed any field.",
+            )
+
 
     def clean(self):
         cleaned = super().clean()
@@ -76,13 +104,13 @@ class ParameterForm(forms.ModelForm):
             changed_fields = [f for f in self.changed_data if f != "change_note"]
             note = (cleaned.get("change_note") or "").strip()
             if changed_fields and not note:
-                raise forms.ValidationError("Inserisci il recap delle modifiche effettuate.")
+                raise forms.ValidationError("Insert recap of changes made to this parameter.")
         return cleaned
 
     def clean_position(self):
         pos = self.cleaned_data.get("position")
         if pos is None or pos < 1:
-            raise forms.ValidationError("Position deve essere un intero ≥ 1.")
+            raise forms.ValidationError("Position must be an integer ≥ 1.")
         return pos
 
     def clean_implicational_condition(self):
@@ -99,8 +127,8 @@ class ParameterForm(forms.ModelForm):
             validate_expression(raw)
         except ParseException as e:
             raise forms.ValidationError(
-                "Condizione invalida. Evita spazi tra segno e parametro (es. usa '-FGK', NON '- FGK'). "
-                f"Dettaglio: {e}"
+                "Invalid condition. Don't put spaces between sign and parameter (es. usa '-FGK', NON '- FGK'). "
+                f"Details: {e}"
             )
         return raw
 

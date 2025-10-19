@@ -15,6 +15,7 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponseBadRequest
 from core.models import ParameterDef, Question, ParameterChangeLog, Language, ParameterReviewFlag
 from django.views.decorators.http import require_http_methods, require_POST
+from core.models import ParamSchema, ParamType
 
 # -------------------------------
 # Utilità / Policy
@@ -53,23 +54,45 @@ def find_where_used(param_id: str) -> List[Tuple[ParameterDef, str]]:
                 break
     return results
 
+def _to_jsonable(value):
+    """
+    Converte valori (inclusi Model instance) in strutture JSON-safe.
+    - Model -> {"id": pk, "label": str(obj)}
+    - liste/tuple/set/dict -> ricorsivo
+    - tipi base -> come sono
+    """
+    from django.db.models import Model
 
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, Model):
+        return {"id": getattr(value, "pk", None), "label": str(value)}
+    if isinstance(value, (list, tuple, set)):
+        return [_to_jsonable(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _to_jsonable(v) for k, v in value.items()}
+    return str(value)
 # -------------------------------
 # Views principali
 # -------------------------------
-
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET"])
 def parameter_list(request):
     q = (request.GET.get("q") or "").strip()
-    qs = ParameterDef.objects.order_by("position")
+    qs = (
+        ParameterDef.objects
+        .order_by("position")
+        # .select_related("schema", "param_type")  # <-- RIMOSSO: ora sono CharField
+    )
     if q:
         qs = qs.filter(
             Q(id__icontains=q)
             | Q(name__icontains=q)
             | Q(short_description__icontains=q)
             | Q(implicational_condition__icontains=q)
+            | Q(schema__icontains=q)
+            | Q(param_type__icontains=q)
         )
     qs = qs.annotate(
         questions_count=Count("questions", distinct=True),
@@ -83,8 +106,6 @@ def parameter_list(request):
     )
     return render(request, "parameters/list.html", {"parameters": qs})
 
-
-
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
@@ -97,13 +118,26 @@ def parameter_add(request):
             return redirect("parameter_list")
     else:
         form = ParameterForm()
-    return render(request, "parameters/edit.html", {
-        "form": form,
-        "is_create": True,
-        "can_deactivate": False,   # in create non ha senso
-        "where_used": [],          # idem
-        "deactivate_form": None,
-    })
+
+    schema_options = list(ParamSchema.objects.order_by("label").values_list("label", flat=True))
+    type_options   = list(ParamType.objects.order_by("label").values_list("label", flat=True))
+
+    return render(
+        request,
+        "parameters/edit.html",
+        {
+            "form": form,
+            "is_create": True,
+            "can_deactivate": False,
+            "where_used": [],
+            "deactivate_form": None,
+            "schema_options": schema_options,
+            "type_options": type_options,
+        },
+    )
+
+
+
 
 @login_required
 @user_passes_test(_is_admin)
@@ -111,34 +145,37 @@ def parameter_add(request):
 def parameter_edit(request, param_id: str):
     """
     Edit a parameter + compact list of its questions.
-    Questions are managed via dedicated CRUD pages.
+    - Richiede change_note SE ci sono modifiche (logica già in form.clean()).
+    - Serializza i campi FK nel diff per il JSONField (id+label).
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
 
-    # Who references this parameter?
+    # Dove è referenziato?
     where_used = find_where_used(param.id)
     can_deactivate = bool(param.is_active and len(where_used) == 0)
 
     if request.method == "POST":
         form = ParameterForm(request.POST, instance=param, can_deactivate=can_deactivate)
         if form.is_valid():
-            cleaned = form.cleaned_data
             old_obj = ParameterDef.objects.get(pk=param.pk)
+
+            # Costruisco il diff solo sui campi realmente cambiati (escludo id/change_note)
+            changed_fields = [f for f in form.changed_data if f not in ("change_note", "id")]
             diff = {}
-            for f, new_val in cleaned.items():
-                if f in ("change_note", "id"):
-                    continue
-                if hasattr(old_obj, f):
-                    old_val = getattr(old_obj, f, None)
-                    if old_val != new_val:
-                        diff[f] = {"old": old_val, "new": new_val}
+            for f in changed_fields:
+                old_val = getattr(old_obj, f, None)
+                new_val = form.cleaned_data.get(f)
+                if old_val != new_val:
+                    diff[f] = {"old": _to_jsonable(old_val), "new": _to_jsonable(new_val)}
 
-            form.save()
+            # Salvo il parametro
+            param = form.save()
 
+            # Log solo se c'è qualcosa di cambiato
             if diff:
                 ParameterChangeLog.objects.create(
                     parameter=param,
-                    recap=(cleaned.get("change_note") or "").strip(),
+                    recap=(form.cleaned_data.get("change_note") or "").strip(),
                     diff=diff,
                     changed_by=request.user,
                 )
@@ -151,14 +188,13 @@ def parameter_edit(request, param_id: str):
     else:
         form = ParameterForm(instance=param, can_deactivate=can_deactivate)
 
-    # Questions query
+    # Query domande (come prima)
     questions = (
         param.questions
         .order_by("is_stop_question", "id")
         .select_related("parameter")
         .prefetch_related("allowed_motivations")
     )
-    # >>> split lists for reliable emptiness checks in the template
     questions_normal = [q for q in questions if not q.is_stop_question]
     questions_stop = [q for q in questions if q.is_stop_question]
 
@@ -175,8 +211,9 @@ def parameter_edit(request, param_id: str):
             "where_used": where_used,
             "deactivate_form": deactivate_form,
             "questions": questions,
-            "questions_normal": questions_normal, 
-            "questions_stop": questions_stop,      
+            "questions_normal": questions_normal,
+            "questions_stop": questions_stop,
+
         },
     )
 
@@ -206,9 +243,13 @@ def parameter_deactivate(request, param_id: str):
                 "can_deactivate": can_deactivate,
                 "where_used": where_used,
                 "deactivate_form": form,
+                "schema_options": list(ParamSchema.objects.order_by("label").values_list("label", flat=True)),
+                "type_options": list(ParamType.objects.order_by("label").values_list("label", flat=True)),
             },
             status=400,
         )
+
+
 
     with transaction.atomic():
         # Lock del record per evitare race tra più admin
@@ -417,3 +458,54 @@ def toggle_review_flag(request, lang_id: str, param_id: str):
     obj.flag = (flag_val == "1")
     obj.save(update_fields=["flag", "updated_at"])
     return JsonResponse({"ok": True, "flag": obj.flag})
+
+
+
+@login_required
+@user_passes_test(_is_admin)
+@require_http_methods(["GET", "POST"])
+def lookups_manage(request):
+    """
+    Gestione minimale per ParamSchema/ParamType con un solo campo 'label'.
+    Azioni:
+      - POST add_schema: label
+      - POST del_schema: id
+      - POST add_type: label
+      - POST del_type: id
+    """
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "add_schema":
+                ParamSchema.objects.create(
+                    label=(request.POST.get("label") or "").strip(),
+                )
+                messages.success(request, "Schema added.")
+                return redirect("param_lookups_manage")
+
+            if action == "del_schema":
+                pk = request.POST.get("id")
+                ParamSchema.objects.filter(pk=pk).delete()
+                messages.success(request, "Schema deleted.")
+                return redirect("param_lookups_manage")
+
+            if action == "add_type":
+                ParamType.objects.create(
+                    label=(request.POST.get("label") or "").strip(),
+                )
+                messages.success(request, "Type added.")
+                return redirect("param_lookups_manage")
+
+            if action == "del_type":
+                pk = request.POST.get("id")
+                ParamType.objects.filter(pk=pk).delete()
+                messages.success(request, "Type deleted.")
+                return redirect("param_lookups_manage")
+
+            messages.error(request, "Unknown action.")
+        except Exception as e:
+            messages.error(request, f"Operation failed: {e}")
+
+    schemas = ParamSchema.objects.order_by("label")
+    types = ParamType.objects.order_by("label")
+    return render(request, "parameters/lookups.html", {"schemas": schemas, "types": types})

@@ -368,13 +368,12 @@
   position: relative;      
 }
 
-/* MANCANTI (rossi): angolo tagliato a destra + badge non tagliato */
-/* === PARAMETRI MANCANTI (rossi) — angoli smussati (chamfer), badge visibile === */
+/* MANCANTI (rossi):  */
 .param-nav .param-btn[data-status="missing"] {
   border: 2px solid var(--edge);
   border-radius: 4px;
   position: relative;
-  overflow: visible;  /* lascia uscire il badge */
+  overflow: visible;  
 }
 
 
@@ -382,9 +381,9 @@
 .param-nav .param-btn[data-status="ok"],
 .param-nav .param-btn:not([data-status]) {
   border: 2px solid var(--edge);
-  border-radius: 50%;     /* ← rende il bottone perfettamente circolare */
+  border-radius: 50%;     
   position: relative;
-  overflow: visible;      /* il badge può uscire dai bordi */
+  overflow: visible;    
 }
 
 

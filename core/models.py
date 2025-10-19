@@ -204,12 +204,34 @@ class Language(models.Model):
                 return
             raise
 
+# =======================
+# LOOKUPS per ParameterDef 
+# =======================
+
+class ParamSchema(models.Model):
+    # prima: code + label + is_active → ORA: solo label unico
+    label = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["label"]
+
+    def __str__(self):
+        return self.label
+
+
+class ParamType(models.Model):
+    label = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["label"]
+
+    def __str__(self):
+        return self.label
 
 
 # =======================
 # PARAMETER DEFINITIONS
 # =======================
-
 
 class ParameterDef(models.Model):
     id = models.CharField(primary_key=True, max_length=10)
@@ -219,6 +241,10 @@ class ParameterDef(models.Model):
     is_active = models.BooleanField(default=True)
     position = models.PositiveIntegerField()
     warning_default = models.BooleanField(default=False)
+
+    # 🔹 SEMPLIFICATI: ora sono stringhe (niente FK)
+    schema = models.CharField(max_length=100, blank=True, default="")
+    param_type = models.CharField(max_length=100, blank=True, default="")
 
     class Meta:
         ordering = ["position"]
@@ -240,16 +266,17 @@ class ParameterDef(models.Model):
             self._advisory_lock()
 
             if is_new:
-                if not self.position:  
+                if not self.position:  # append in coda
                     max_pos = type(self).objects.aggregate(m=Max("position"))["m"] or 0
                     self.position = max_pos + 1
                     return super().save(*args, **kwargs)
 
+                # inserisco a 'position' richiesta e shifto le successive
                 type(self).objects.filter(position__gte=self.position)\
                     .update(position=F("position") + 1)
                 return super().save(*args, **kwargs)
 
-            # UPDATE
+            # UPDATE (gestione shift ordinamento)
             try:
                 old = type(self).objects.get(pk=self.pk)
             except ObjectDoesNotExist:
@@ -303,6 +330,8 @@ class ParameterDef(models.Model):
                     raise ValidationError(filtered)
                 return
             raise
+
+
 
 
 class ParameterChangeLog(models.Model):

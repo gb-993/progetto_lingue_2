@@ -38,9 +38,12 @@
           "{{ form.short_description.html_name|escapejs }}",
           "{{ form.implicational_condition.html_name|escapejs }}",
           "{{ form.is_active.html_name|escapejs }}",
-          "{{ form.position.html_name|escapejs }}"{% if form.warning_default %}
-          , "{{ form.warning_default.html_name|escapejs }}"{% endif %}
-        ]'>
+          "{{ form.position.html_name|escapejs }}"{% if form.warning_default %},
+          "{{ form.warning_default.html_name|escapejs }}"{% endif %},
+          "{{ form.schema.html_name|escapejs }}",
+          "{{ form.param_type.html_name|escapejs }}"
+        ]'
+        >   
 
     {% csrf_token %}
 
@@ -67,6 +70,28 @@
       {{ form.short_description.label_tag }} {{ form.short_description }}
       {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
     </div>
+    <!-- Pulsante gestione lookups SOPRA ai due campi -->
+    <div class="actions" style="margin:.5rem 0 .25rem">
+      <a class="btn" href="{% url 'param_lookups_manage' %}" target="_blank" rel="noopener"
+         aria-label="Open Schema/Type manager in a new tab">
+        Manage schema & type
+      </a>
+    </div>
+
+
+
+    <div class="form-row">
+      {{ form.schema.label_tag }} {{ form.schema }}
+      {% if form.schema.errors %}<div class="form-error">{{ form.schema.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      {{ form.param_type.label_tag }} {{ form.param_type }}
+      {% if form.param_type.errors %}<div class="form-error">{{ form.param_type.errors }}</div>{% endif %}
+    </div>
+
+
+
 
     <div class="form-row">
       {{ form.implicational_condition.label_tag }} {{ form.implicational_condition }}

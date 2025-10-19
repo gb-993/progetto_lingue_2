@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Parameter lookups{% endblock %}
+{% block breadcrumb %}Parameters / Lookups{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Parameter lookups</h2>
+  <p class="muted">Add or remove options for <strong>Schema</strong> and <strong>Type</strong>. These values feed the dropdowns in the Parameter form.</p>
+
+  <div class="grid grid-2">
+    <div>
+      <h3>Schemas</h3>
+      <form method="post" class="grid" style="grid-template-columns:1fr 120px; gap:.5rem; align-items:end;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_schema">
+        <div>
+          <label>New schema</label>
+          <input class="form-control" name="label" required>
+        </div>
+        <div>
+          <button class="btn btn--primary" type="submit">Add</button>
+        </div>
+      </form>
+
+      <table class="table" style="margin-top:.75rem;">
+        <thead><tr><th>List</th><th></th></tr></thead>
+        <tbody>
+          {% for s in schemas %}
+          <tr>
+            <td>{{ s.label }}</td>
+            <td>
+              <form method="post" style="display:inline" onsubmit="return confirm('Delete this schema?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="del_schema">
+                <input type="hidden" name="id" value="{{ s.id }}">
+                <button class="btn btn--danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2"><p class="muted">No schemas yet.</p></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <h3>Types</h3>
+      <form method="post" class="grid" style="grid-template-columns:1fr 120px; gap:.5rem; align-items:end;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_type">
+        <div>
+          <label>New type</label>
+          <input class="form-control" name="label" required>
+        </div>
+        <div>
+          <button class="btn btn--primary" type="submit">Add</button>
+        </div>
+      </form>
+
+      <table class="table" style="margin-top:.75rem;">
+        <thead><tr><th>List</th><th></th></tr></thead>
+        <tbody>
+          {% for t in types %}
+          <tr>
+            <td>{{ t.label }}</td>
+            <td>
+              <form method="post" style="display:inline" onsubmit="return confirm('Delete this type?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="del_type">
+                <input type="hidden" name="id" value="{{ t.id }}">
+                <button class="btn btn--danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2"><p class="muted">No types yet.</p></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

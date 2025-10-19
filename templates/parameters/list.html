@@ -19,6 +19,8 @@
         <!--<th scope="col">Position</th> -->
         <th scope="col">Label</th>
         <th scope="col">Name</th>
+        <th scope="col">Schema</th>   
+        <th scope="col">Type</th>
         <th scope="col">#Q</th>
         <th scope="col">#Stop</th>
         <th scope="col">Status</th>
@@ -33,6 +35,8 @@
         <!--<td data-label="Position">{{ p.position }}</td> -->
         <td data-label="Label">{{ p.id }}</td>
         <td data-label="Name">{{ p.name }}</td>
+        <td data-label="Schema">{{ p.schema|default:"—" }}</td>
+        <td data-label="Type">{{ p.param_type|default:"—" }}</td>
         <td data-label="#Q">{{ p.questions_count }}</td>
         <td data-label="#Stop">{{ p.stop_count }}</td>
         <td data-label="Status">
