@@ -301,27 +301,91 @@ def question_edit(request, param_id: str, question_id: str):
         {"form": form, "parameter": param, "is_create": False, "question": question},
     )
 
+# parameters_ui/views.py — SOSTITUISCI l'intera funzione question_delete
+
+from django.db import transaction
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+
+from core.models import (
+    ParameterDef,
+    Question,
+    Answer,
+    Example,
+    AnswerMotivation,
+    QuestionAllowedMotivation,
+)
 
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def question_delete(request, param_id: str, question_id: str):
-    """
-    Conferma/elimina una domanda.
-    """
     param = get_object_or_404(ParameterDef, pk=param_id)
     question = get_object_or_404(Question, pk=question_id, parameter=param)
 
-    if request.method == "POST":
-        question.delete()
-        messages.success(request, f"Domanda {question_id} eliminata.")
-        return redirect("parameter_edit", param_id=param.id)
+    # conteggi per UX
+    answers_qs = Answer.objects.filter(question=question)
+    examples_qs = Example.objects.filter(answer__question=question)
+    amots_qs   = AnswerMotivation.objects.filter(answer__question=question)
+    qam_qs     = QuestionAllowedMotivation.objects.filter(question=question)
 
-    return render(
-        request,
-        "parameters/question_confirm_delete.html",
-        {"parameter": param, "question": question},
-    )
+    counts = {
+        "answers": answers_qs.count(),
+        "examples": examples_qs.count(),
+        "answer_motivations": amots_qs.count(),
+        "allowed_motivations": qam_qs.count(),
+    }
+
+    if request.method == "GET":
+        # pagina di conferma
+        return render(
+            request,
+            "parameters/question_confirm_delete.html",
+            {
+                "parameter": param,
+                "question": question,
+                "counts": counts,
+                # se ci sono figli, abilito la UI del "force"
+                "can_force": (counts["answers"] > 0 or counts["examples"] > 0 or counts["answer_motivations"] > 0),
+            },
+        )
+
+    # POST
+    force = request.POST.get("force") == "1"
+
+    # se esistono figli e non è richiesto force, blocco con messaggio chiaro
+    if (counts["answers"] > 0 or counts["examples"] > 0 or counts["answer_motivations"] > 0) and not force:
+        messages.error(
+            request,
+            (
+                f"Impossibile eliminare: trovate {counts['answers']} risposte, "
+                f"{counts['examples']} esempi e {counts['answer_motivations']} motivazioni di risposta. "
+                "Spunta 'Elimina anche i dati collegati' per forzare l'eliminazione."
+            ),
+        )
+        return render(
+            request,
+            "parameters/question_confirm_delete.html",
+            {
+                "parameter": param,
+                "question": question,
+                "counts": counts,
+                "can_force": True,
+            },
+            status=409,
+        )
+
+    # force delete: elimino prima i figli, poi la domanda
+    with transaction.atomic():
+        # ordine prudente: prima motivazioni di risposta, poi esempi, poi risposte, poi allowed motivations della domanda
+        amots_qs.delete()
+        examples_qs.delete()
+        answers_qs.delete()
+        qam_qs.delete()
+        question.delete()
+
+    messages.success(request, f"Domanda {question_id} eliminata.")
+    return redirect("parameter_edit", param.id)
 
 
 @login_required

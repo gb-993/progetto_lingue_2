@@ -368,34 +368,25 @@
   position: relative;      
 }
 
-/* MANCANTI (rossi): angolo tagliato + bordo marcato */
+/* MANCANTI (rossi): angolo tagliato a destra + badge non tagliato */
+/* === PARAMETRI MANCANTI (rossi) — angoli smussati (chamfer), badge visibile === */
 .param-nav .param-btn[data-status="missing"] {
   border: 2px solid var(--edge);
   border-radius: 4px;
   position: relative;
-  overflow: visible; /* necessario per il badge */
-  background-color: var(--surface, #fff); /* colore di base */
-
-  /* taglio diagonale in alto a destra */
-  -webkit-mask: linear-gradient(
-    225deg,          /* direzione: taglio verso l'angolo in alto a destra */
-    transparent 10px,
-    black 0
-  );
-          mask: linear-gradient(
-    225deg,
-    transparent 10px,
-    black 0
-  );
+  overflow: visible;  /* lascia uscire il badge */
 }
 
 
-/* OK (verdi):  */
-.param-nav .param-btn:not([data-status]),
-.param-nav .param-btn[data-status="ok"] {
-  border: 2px solid var(--edge);        
-  border-radius: 4px;
+/* === PARAMETRI OK (verdi) — forma circolare === */
+.param-nav .param-btn[data-status="ok"],
+.param-nav .param-btn:not([data-status]) {
+  border: 2px solid var(--edge);
+  border-radius: 50%;     /* ← rende il bottone perfettamente circolare */
+  position: relative;
+  overflow: visible;      /* il badge può uscire dai bordi */
 }
+
 
 /* Preferenze utente alta visibilità */
 @media (prefers-contrast: more) {
