@@ -298,3 +298,19 @@
     });
   });
 })();
+
+
+// === INIT: rinumerazione iniziale in base al template presente nel DOM ===
+document.addEventListener("DOMContentLoaded", function () {
+  const blocks = document.querySelectorAll(".examples-block[data-qid]");
+  blocks.forEach(block => {
+    const qid = block.getAttribute("data-qid");
+    // Se esiste una funzione di rinumerazione già definita, usala
+    if (typeof window.renumberExamplesForQuestion === "function") {
+      window.renumberExamplesForQuestion(qid);
+    } else {
+      // Fallback molto leggero: se non esiste la funzione globale,
+      // non facciamo nulla per evitare di rompere JS esistente.
+    }
+  });
+});

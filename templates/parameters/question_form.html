@@ -7,7 +7,17 @@
 <div class="card">
   <h2>{% if is_create %}Add question{% else %}Edit question{% endif %} — {{ parameter.id }}</h2>
 
+  {# ---- Banner solo-informativo, non modificabile ---- #}
+  {% if not is_create %}
+    <div class="card" style="margin:.5rem 0 1rem;">
+      <strong>Editing question:</strong>
+      <span style="white-space:nowrap">{{ form.instance.id }}</span> — 
+      <span>{{ form.instance.text }}</span>
+    </div>
+  {% endif %}
+
   <form method="post" novalidate>
+
     {% csrf_token %}
 
     {% if form.non_field_errors %}

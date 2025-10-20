@@ -180,7 +180,20 @@
       {% for q in p.questions.all %}
         <div class="card" style="margin-bottom:.5rem">
           <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
-          {% if q.instruction %}<p class="muted">{{ q.instruction }}</p>{% endif %}
+
+          {% if q.example_yes %}
+            <div class="muted" style="margin:.25rem 0 .5rem;">
+              <strong>Example YES:</strong> {{ q.example_yes|linebreaksbr }}
+            </div>
+          {% endif %}
+
+          {% if q.instruction %}
+            <div class="muted" style="margin:.25rem 0 .5rem;">
+              <strong>Instruction:</strong> {{ q.instruction|linebreaksbr }}
+            </div>
+          {% endif %}
+
+
           {% if q.help_info %}
           <details class="help-info">
             <summary><span aria-hidden="true">❓</span> More info</summary>
@@ -212,24 +225,15 @@
 
 
           <div class="examples-block" data-qid="{{ q.id }}"
-          
-               {% if q.ans.response_text == "" %}style="display:none"{% endif %}>
+              data-template="{{ q.template_type|default:'linear' }}"
+              {% if q.ans.response_text == "" %}style="display:none"{% endif %}>
+
             <div class="toolbar" style="margin:.5rem 0">
               <strong>Examples</strong>
             </div>
-                <p class="muted" style="margin:.25rem 0 .5rem;">
-                  Please provide the ungrammatical example. If the example cannot be provided, select the appropriate motivation(s) below.
-                </p>
-
-            <div>
-              <button class="btn add-example-btn" type="button" data-qid="{{ q.id }}"
-                {% with s=lang_status.overall %}
-                  {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                    disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
-                  {% endif %}
-                {% endwith %}
-              >Add example</button>
-            </div>
+            <p class="muted" style="margin:.25rem 0 .5rem;">
+              Please provide the ungrammatical example. If the example cannot be provided, select the appropriate motivation(s) below.
+            </p>
 
             <div class="examples-list" data-qid="{{ q.id }}">
               {% for ex in q.ans.examples %}
@@ -261,6 +265,17 @@
               <div class="muted">No examples yet</div>
               {% endfor %}
             </div>
+
+            <div>
+              <button class="btn add-example-btn" type="button" data-qid="{{ q.id }}"
+                {% with s=lang_status.overall %}
+                  {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                    disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
+                  {% endif %}
+                {% endwith %}
+              >Add example</button>
+            </div>
+
           </div>
 
           {# --- MOTIVATIONS (solo quando risposta == NO) --- #}
