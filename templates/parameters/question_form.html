@@ -7,14 +7,7 @@
 <div class="card">
   <h2>{% if is_create %}Add question{% else %}Edit question{% endif %} — {{ parameter.id }}</h2>
 
-  {# ---- Banner solo-informativo, non modificabile ---- #}
-  {% if not is_create %}
-    <div class="card" style="margin:.5rem 0 1rem;">
-      <strong>Editing question:</strong>
-      <span style="white-space:nowrap">{{ form.instance.id }}</span> — 
-      <span>{{ form.instance.text }}</span>
-    </div>
-  {% endif %}
+
 
   <form method="post" novalidate>
 
@@ -26,9 +19,11 @@
 
     <div class="grid grid-2">
       <div class="form-row">
-        {{ form.id.label_tag }} {{ form.id }}
-        {% if form.id.errors %}<div class="field-error">{{ form.id.errors }}</div>{% endif %}
+        <label>ID</label>
+        <input class="form-control" value="{{ form.instance.id }}" readonly>
+        {{ form.id.as_hidden }}
       </div>
+
 
       <div class="form-row">
         {{ form.template_type.label_tag }} {{ form.template_type }}

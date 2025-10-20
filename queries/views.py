@@ -1,323 +1,283 @@
 from __future__ import annotations
-from typing import Any, Dict, Tuple
-from .forms import (
-    DATASET_CHOICES,              
-    BaseFilterForm, UserFilterForm, LanguageFilterForm, ParameterFilterForm,
-    QuestionFilterForm, AnswerFilterForm, ExampleFilterForm,
-    MotivationFilterForm, LangParamFilterForm,
-)
+from typing import Dict, List, Tuple, Set
+from dataclasses import dataclass
+
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core.paginator import Paginator
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q
 from django.shortcuts import render
 from django.utils.translation import gettext as _
 
 from core.models import (
-    User, Language, ParameterDef, Question, Answer, Example,
-    Motivation, AnswerMotivation, QuestionAllowedMotivation,
-    LanguageParameter,
+    Language, ParameterDef, LanguageParameter, LanguageParameterEval,
 )
-
-try:
-    from core.models import LanguageParameterEval
-    HAS_EVAL = True
-except Exception:
-    LanguageParameterEval = None  # type: ignore
-    HAS_EVAL = False
+from core.services.logic_parser import evaluate_with_parser, pretty_print_expression  # parser/pretty
+# NOTA: useremo un semplice estrattore token come in dag_eval
+import re
 
 from .forms import (
-    BaseFilterForm, UserFilterForm, LanguageFilterForm, ParameterFilterForm,
-    QuestionFilterForm, AnswerFilterForm, ExampleFilterForm,
-    MotivationFilterForm, LangParamFilterForm,
+    ParamPickForm, ParamNeutralizationForm, LangOnlyForm, LangPairForm
 )
 
-def _is_linguist_or_admin(u: User) -> bool:
+# ------------- Accesso (linguists/admin) -------------
+def _is_linguist_or_admin(u) -> bool:
     if not u.is_authenticated:
         return False
     role = getattr(u, "role", "")
     return u.is_staff or role in {"admin", "linguist"}
 
-FORM_BY_DATASET = {
-    "user":      UserFilterForm,
-    "language":  LanguageFilterForm,
-    "parameter": ParameterFilterForm,
-    "question":  QuestionFilterForm,
-    "answer":    AnswerFilterForm,
-    "example":   ExampleFilterForm,
-    "motivation":MotivationFilterForm,
-    "langparam": LangParamFilterForm,
-}
+# ------------- Token extractor per cond implicazionali (+FGM, -SCO, 0ABC) -------------
+TOKEN_RE = re.compile(r'([+\-0])([A-Za-z][A-Za-z0-9_]*)')
 
-# ----------------- Query builders (sicuri) -----------------
-def build_user_qs(data: Dict[str, Any]):
-    qs = User.objects.all().order_by("email")
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(email__icontains=q) | Q(name__icontains=q) | Q(surname__icontains=q))
-    role = data.get("role") or ""
-    if role:
-        qs = qs.filter(role=role)
-    v = data.get("is_active")
-    if v in {"1","0"}:
-        qs = qs.filter(is_active=(v=="1"))
-    v = data.get("is_staff")
-    if v in {"1","0"}:
-        qs = qs.filter(is_staff=(v=="1"))
+def extract_tokens(expr: str) -> List[Tuple[str, str]]:
+    return TOKEN_RE.findall((expr or "").strip().upper())
 
-    # Lingue assegnate (FK) esistono?
-    v = data.get("has_assigned_languages")
-    if v in {"1","0"}:
-        sub = Language.objects.filter(assigned_user=OuterRef("pk"))
-        qs = qs.annotate(_has_fk=Exists(sub))
-        qs = qs.filter(_has_fk=(v=="1"))
+# ------------- Helper dati “finali” (+/-/0/None) -------------
+@dataclass
+class FinalValue:
+    """Valore finale per (lingua, parametro): preferisci eval, altrimenti orig."""
+    value: str | None  # '+', '-', '0' oppure None
 
-    # Lingue M2M esistono?
-    v = data.get("has_m2m_languages")
-    if v in {"1","0"}:
-        sub = Language.objects.filter(users__id=OuterRef("pk"))
-        qs = qs.annotate(_has_m2m=Exists(sub))
-        qs = qs.filter(_has_m2m=(v=="1"))
+def final_value_for(lang_id: str, param_id: str) -> FinalValue:
+    # 1) prova eval
+    lpe = (
+        LanguageParameterEval.objects
+        .filter(language_parameter__language_id=lang_id,
+                language_parameter__parameter_id=param_id)
+        .only("value_eval")
+        .first()
+    )
+    if lpe and lpe.value_eval in {"+", "-", "0"}:
+        return FinalValue(lpe.value_eval)
 
-    # Ha risposte su lingue dell’utente?
-    v = data.get("has_answers_on_languages")
-    if v in {"1","0"}:
-        sub = Answer.objects.filter(language__in=Language.objects.filter(
-            Q(assigned_user=OuterRef("pk")) | Q(users__id=OuterRef("pk"))
-        ))
-        qs = qs.annotate(_has_ans=Exists(sub))
-        qs = qs.filter(_has_ans=(v=="1"))
+    # 2) fallback orig
+    lp = (
+        LanguageParameter.objects
+        .filter(language_id=lang_id, parameter_id=param_id)
+        .only("value_orig")
+        .first()
+    )
+    return FinalValue(lp.value_orig if lp else None)
 
-    # Ha submission?
-    v = data.get("has_submissions")
-    if v in {"1","0"}:
-        from core.models import Submission
-        sub = Submission.objects.filter(submitted_by=OuterRef("pk"))
-        qs = qs.annotate(_has_sub=Exists(sub)).filter(_has_sub=(v=="1"))
+def final_map_for_language(lang: Language) -> Dict[str, str | None]:
+    """
+    Ritorna una mappa param_id -> valore finale (+/-/0/None), privilegiando eval.
+    """
+    out: Dict[str, str | None] = {}
+    # eval noti
+    for lpe in LanguageParameterEval.objects.filter(language_parameter__language=lang)\
+                                           .select_related("language_parameter"):
+        out[lpe.language_parameter.parameter_id] = lpe.value_eval
+    # completa con orig mancanti
+    for lp in LanguageParameter.objects.filter(language=lang).only("parameter_id", "value_orig"):
+        out.setdefault(lp.parameter_id, lp.value_orig)
+    return out
 
-    return qs
+# ------------- Query #1 e #2: implicati/implicanti e distribuzione lingue -------------
+def implicated_and_implicating(parameter: ParameterDef) -> Tuple[Set[str], Set[str]]:
+    """
+    Ritorna:
+      - refs_in_param: set dei param citati nella condizione di 'parameter' (implicanti)
+      - targets_using_param: set di target che citano 'parameter' (implicati da 'parameter')
+    """
+    # implicanti (citati dalla condizione del parametro stesso)
+    refs_in_param = {tok for _, tok in extract_tokens(parameter.implicational_condition or "")}
 
-def build_language_qs(data: Dict[str, Any]):
-    qs = Language.objects.select_related("assigned_user").order_by("position")
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(name_full__icontains=q) | Q(id__icontains=q))
-    for f in ("grp","isocode","glottocode"):
-        val = (data.get(f) or "").strip()
-        if val:
-            qs = qs.filter(**{f+"__icontains": val})
-    if data.get("assigned_user"):
-        qs = qs.filter(assigned_user=data["assigned_user"])
-    v = data.get("has_answers")
-    if v in {"1","0"}:
-        sub = Answer.objects.filter(language=OuterRef("pk"))
-        qs = qs.annotate(_has_ans=Exists(sub)).filter(_has_ans=(v=="1"))
-    v = data.get("has_params")
-    if v in {"1","0"}:
-        sub = LanguageParameter.objects.filter(language=OuterRef("pk")).exclude(value_orig__isnull=True)
-        qs = qs.annotate(_has_par=Exists(sub)).filter(_has_par=(v=="1"))
-    return qs
+    # implicati (altri parametri che referenziano questo)
+    targets_using_param: Set[str] = set()
+    for p in ParameterDef.objects.exclude(pk=parameter.pk).only("id", "implicational_condition"):
+        cond = (p.implicational_condition or "")
+        for _, tok in extract_tokens(cond):
+            if tok == parameter.pk:
+                targets_using_param.add(p.pk)
+                break
+    return refs_in_param, targets_using_param
 
-def build_parameter_qs(data: Dict[str, Any]):
-    qs = ParameterDef.objects.all().order_by("position")
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(id__icontains=q))
-    v = data.get("is_active")
-    if v in {"1","0"}:
-        qs = qs.filter(is_active=(v=="1"))
-    v = data.get("has_questions")
-    if v in {"1","0"}:
-        sub = Question.objects.filter(parameter=OuterRef("pk"))
-        qs = qs.annotate(_has_q=Exists(sub)).filter(_has_q=(v=="1"))
-    return qs
+def language_distribution_for_param(parameter: ParameterDef) -> Dict[str, List[Language]]:
+    """
+    Raggruppa le lingue in tre insiemi:
+      '+': value_eval=='+'
+      '-': value_eval=='-'
+      '0': value_eval=='0'  (neutralizzate)
+    Se manca eval, usa orig (+/-) e NON le mette tra '0'.
+    """
+    plus, minus, zero = [], [], []
 
-def build_question_qs(data: Dict[str, Any]):
-    qs = Question.objects.select_related("parameter").order_by("id")
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(text__icontains=q) | Q(instruction__icontains=q))
-    if data.get("parameter"):
-        qs = qs.filter(parameter=data["parameter"])
-    v = data.get("is_stop")
-    if v in {"1","0"}:
-        qs = qs.filter(is_stop_question=(v=="1"))
-    v = data.get("has_answers")
-    if v in {"1","0"}:
-        sub = Answer.objects.filter(question=OuterRef("pk"))
-        qs = qs.annotate(_has_a=Exists(sub)).filter(_has_a=(v=="1"))
-    v = data.get("has_allowed_motiv")
-    if v in {"1","0"}:
-        sub = QuestionAllowedMotivation.objects.filter(question=OuterRef("pk"))
-        qs = qs.annotate(_has_m=Exists(sub)).filter(_has_m=(v=="1"))
-    return qs
+    # Preleva direttamente da eval se presente (join su LP -> LPE)
+    eval_qs = LanguageParameterEval.objects.filter(
+        language_parameter__parameter=parameter
+    ).select_related("language_parameter__language")
 
-def build_answer_qs(data: Dict[str, Any]):
-    qs = Answer.objects.select_related("language","question").order_by("id")
-    if data.get("language"):
-        qs = qs.filter(language=data["language"])
-    if data.get("question"):
-        qs = qs.filter(question=data["question"])
-    v = data.get("response_text")
-    if v:
-        qs = qs.filter(response_text=v)
-    v = data.get("status")
-    if v:
-        qs = qs.filter(status=v)
-    v = data.get("has_examples")
-    if v in {"1","0"}:
-        sub = Example.objects.filter(answer=OuterRef("pk"))
-        qs = qs.annotate(_h_ex=Exists(sub)).filter(_h_ex=(v=="1"))
-    v = data.get("has_motivations")
-    if v in {"1","0"}:
-        sub = AnswerMotivation.objects.filter(answer=OuterRef("pk"))
-        qs = qs.annotate(_h_m=Exists(sub)).filter(_h_m=(v=="1"))
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(comments__icontains=q))
-    return qs
+    seen_langs: Set[str] = set()
+    for lpe in eval_qs:
+        lang = lpe.language_parameter.language
+        seen_langs.add(lang.pk)
+        if lpe.value_eval == "+":
+            plus.append(lang)
+        elif lpe.value_eval == "-":
+            minus.append(lang)
+        elif lpe.value_eval == "0":
+            zero.append(lang)
 
-def build_example_qs(data: Dict[str, Any]):
-    qs = Example.objects.select_related("answer","answer__language","answer__question").order_by("id")
-    v = data.get("has_gloss")
-    if v in {"1","0"}:
-        qs = qs.filter(gloss__isnull=(v=="0")).exclude(gloss="") if v=="1" else qs.filter(Q(gloss__isnull=True) | Q(gloss=""))
-    v = data.get("has_translation")
-    if v in {"1","0"}:
-        qs = qs.filter(translation__isnull=(v=="0")).exclude(translation="") if v=="1" else qs.filter(Q(translation__isnull=True) | Q(translation=""))
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(gloss__icontains=q) | Q(translation__icontains=q) | Q(reference__icontains=q))
-    return qs
+    # Fallback: per le lingue senza riga eval, usa orig (+/-)
+    for lp in LanguageParameter.objects.filter(parameter=parameter)\
+                                       .select_related("language"):
+        if lp.language_id in seen_langs:
+            continue
+        if lp.value_orig == "+":
+            plus.append(lp.language)
+        elif lp.value_orig == "-":
+            minus.append(lp.language)
+        # None resta fuori
 
-def build_motivation_qs(data: Dict[str, Any]):
-    qs = Motivation.objects.all().order_by("code")
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(code__icontains=q) | Q(label__icontains=q))
-    v = data.get("used_in_answers")
-    if v in {"1","0"}:
-        sub = AnswerMotivation.objects.filter(motivation=OuterRef("pk"))
-        qs = qs.annotate(_u=Exists(sub)).filter(_u=(v=="1"))
-    v = data.get("allowed_in_questions")
-    if v in {"1","0"}:
-        sub = QuestionAllowedMotivation.objects.filter(motivation=OuterRef("pk"))
-        qs = qs.annotate(_a=Exists(sub)).filter(_a=(v=="1"))
-    return qs
+    return {"+": plus, "-": minus, "0": zero}
 
-def build_langparam_qs(data: Dict[str, Any]):
-    qs = LanguageParameter.objects.select_related("language","parameter").order_by("language__position","parameter__position")
-    if data.get("parameter"):
-        qs = qs.filter(parameter=data["parameter"])
-    v = data.get("value_orig")
-    if v:
-        if v == "null":
-            qs = qs.filter(value_orig__isnull=True)
-        else:
-            qs = qs.filter(value_orig=v)
-    v = data.get("warning_orig")
-    if v in {"1","0"}:
-        qs = qs.filter(warning_orig=(v=="1"))
-    if HAS_EVAL:
-        v = data.get("value_eval")
-        if v:
-            sub = LanguageParameterEval.objects.filter(language=OuterRef("language_id"),
-                                                       parameter=OuterRef("parameter_id"),
-                                                       value_eval=v)
-            qs = qs.annotate(_ve=Exists(sub)).filter(_ve=True)
-        v = data.get("warning_eval")
-        if v in {"1","0"}:
-            sub = LanguageParameterEval.objects.filter(language=OuterRef("language_id"),
-                                                       parameter=OuterRef("parameter_id"),
-                                                       warning_eval=(v=="1"))
-            qs = qs.annotate(_we=Exists(sub)).filter(_we=True)
-    q = (data.get("q_name") or "").strip()
-    if q:
-        qs = qs.filter(Q(language__name_full__icontains=q) | Q(parameter__name__icontains=q))
-    return qs
+# ------------- Query #3: perché neutralizzato (condizioni non soddisfatte) -------------
+@dataclass
+class UnsatisfiedLiteral:
+    sign: str  # '+', '-', '0'
+    param_id: str
+    reason: str  # "expected '+', got '-'", "derived zero", "unknown", ...
 
-BUILDERS = {
-    "user": build_user_qs,
-    "language": build_language_qs,
-    "parameter": build_parameter_qs,
-    "question": build_question_qs,
-    "answer": build_answer_qs,
-    "example": build_example_qs,
-    "motivation": build_motivation_qs,
-    "langparam": build_langparam_qs,
-}
+def explain_neutralization(language: Language, parameter: ParameterDef) -> Dict:
+    """
+    Spiega perché value_eval == '0' per (lingua,parametro):
+      - se qualsiasi riferimento ha già '0' => derivazione da zero
+      - altrimenti: condizione valutata a FALSE => elenca i token non soddisfatti
+    """
+    final_map = final_map_for_language(language)  # param -> '+','-','0',None
+    cond = (parameter.implicational_condition or "").strip()
+    tokens = extract_tokens(cond)
 
-# --- SOSTITUISCI SOLO LA VIEW QUI SOTTO ---
+    # 1) zero upstream?
+    refs = [t for (_, t) in tokens]
+    zero_refs = [p for p in refs if final_map.get(p) == "0"]
+    derived_by_zero = bool(zero_refs)
 
+    # 2) prova a valutare la condizione (dando al parser '+','-' e '0')
+    values = {k: v for k, v in final_map.items() if v in {"+", "-", "0"}}
+    cond_true = evaluate_with_parser(cond, values)
+
+    unsatisfied: List[UnsatisfiedLiteral] = []
+    if derived_by_zero:
+        for z in zero_refs:
+            unsatisfied.append(UnsatisfiedLiteral("0", z, "derived zero"))
+    elif cond_true is False:
+        # elenca i letterali non rispettati
+        for s, pid in tokens:
+            v = final_map.get(pid)
+            if v is None:
+                unsatisfied.append(UnsatisfiedLiteral(s, pid, "unknown"))
+            elif s in {"+", "-"} and v != s:
+                unsatisfied.append(UnsatisfiedLiteral(s, pid, f"expected '{s}', got '{v}'"))
+            elif s == "0" and v != "0":
+                unsatisfied.append(UnsatisfiedLiteral(s, pid, f"expected '0', got '{v or 'None'}'"))
+    return {
+        "pretty": pretty_print_expression(cond) if cond else "",
+        "derived_by_zero": derived_by_zero,
+        "unsatisfied": unsatisfied,
+    }
+
+# ------------- Query #7: parametri confrontabili -------------
+def comparable_params_for(lang_a: Language, lang_b: Language) -> List[Tuple[ParameterDef, str, str]]:
+    """
+    Parametri con valore finale determinato (+/-) in **entrambe** le lingue.
+    Escludiamo '0' e None.
+    """
+    map_a = final_map_for_language(lang_a)
+    map_b = final_map_for_language(lang_b)
+
+    rows: List[Tuple[ParameterDef, str, str]] = []
+    for p in ParameterDef.objects.filter(is_active=True).order_by("position"):
+        va = map_a.get(p.pk)
+        vb = map_b.get(p.pk)
+        if va in {"+", "-"} and vb in {"+", "-"}:
+            rows.append((p, va, vb))
+    return rows
+
+# ------------- VIEW: una pagina con 7 tab -------------
 @login_required
 @user_passes_test(_is_linguist_or_admin)
-def search_home(request):
-    # dataset richiesto (default: language)
-    ds_req = (request.GET.get("dataset") or "language").strip()
-    if ds_req not in FORM_BY_DATASET:
-        ds_req = "language"
+def home(request):
+    """
+    UI a tab:
+      1) Per parametro -> implicanti/implicati
+      2) Per parametro -> lingue + / - / neutralizzate
+      3) Per lingua+param -> perché neutralizzato (0)
+      4) Per lingua -> elenco param con '+'
+      5) Per lingua -> elenco param con '-'
+      6) Per lingua -> elenco param neutralizzati + condizione
+      7) Per coppia lingue -> parametri confrontabili (+/-) con valori
+    """
+    active_tab = request.GET.get("tab") or ""
 
-    # Form attiva (quella che userai davvero in backend)
-    FormCls = FORM_BY_DATASET.get(ds_req, LanguageFilterForm)
-    form = FormCls(request.GET or None)
-
-    # Mantieni sempre tutte le scelte nel select "dataset"
-    try:
-        all_choices = DATASET_CHOICES
-    except NameError:
-        all_choices = list(BaseFilterForm.base_fields["dataset"].choices)
-    if "dataset" in form.fields:
-        form.fields["dataset"].choices = all_choices
-    else:
-        from django import forms as _forms
-        form.fields["dataset"] = _forms.ChoiceField(
-            choices=all_choices, required=True, label=_("Dataset")
-        )
-        form.initial["dataset"] = ds_req
-
-    # Costruisci queryset risultati
-    if form.is_valid():
-        data = form.cleaned_data
-        dataset = (data.get("dataset") or ds_req).strip()
-        if dataset not in BUILDERS:
-            dataset = "language"
-        qs = BUILDERS[dataset](data)
-    else:
-        dataset = ds_req
-        qs = BUILDERS[dataset]({})
-
-    # Paginazione
-    page = int(request.GET.get("page") or 1)
-    paginator = Paginator(qs or [], 25)
-    page_obj = paginator.get_page(page)
-
-    # Colonne per tabella (template già le gestisce per dataset)
-    columns_by_ds = {
-        "user": ["email", "role", "is_staff", "is_active"],
-        "language": ["id", "name_full", "grp", "isocode", "glottocode", "assigned_user"],
-        "parameter": ["id", "name", "is_active", "position"],
-        "question": ["id", "parameter", "is_stop_question"],
-        "answer": ["id", "language", "question", "response_text", "status"],
-        "example": ["id", "answer", "gloss", "translation"],
-        "motivation": ["code", "label"],
-        "langparam": ["language", "parameter", "value_orig", "warning_orig"],
+    ctx = {
+        "tab": active_tab,
+        # forms
+        "form_q1": ParamPickForm(request.GET if request.GET.get("tab") == "q1" else None),
+        "form_q2": ParamPickForm(request.GET if request.GET.get("tab") == "q2" else None),
+        "form_q3": ParamNeutralizationForm(request.GET if request.GET.get("tab") == "q3" else None),
+        "form_q4": LangOnlyForm(request.GET if request.GET.get("tab") == "q4" else None),
+        "form_q5": LangOnlyForm(request.GET if request.GET.get("tab") == "q5" else None),
+        "form_q6": LangOnlyForm(request.GET if request.GET.get("tab") == "q6" else None),
+        "form_q7": LangPairForm(request.GET if request.GET.get("tab") == "q7" else None),
+        # results placeholders
+        "q1": None, "q2": None, "q3": None, "q4": None, "q5": None, "q6": None, "q7": None,
     }
-    columns = columns_by_ds.get(dataset, [])
 
-    # NOVITÀ: costruisci TUTTI i form (vuoti), uno per dataset, da mostrare/nascondere lato client.
-    # NOTE: metti "dataset" inizializzato nel rispettivo form per comodità del template.
-    forms_by_ds = {}
-    for key, F in FORM_BY_DATASET.items():
-        f = F()
-        if "dataset" in f.fields:
-            f.fields["dataset"].choices = all_choices
-            f.initial["dataset"] = key
-        forms_by_ds[key] = f
+    # -------- Q1: Per ogni parametro, elenco implicanti/implicati --------
+    if ctx["form_q1"].is_bound and ctx["form_q1"].is_valid():
+        p = ctx["form_q1"].cleaned_data["parameter"]
+        refs_in_param, targets_using_param = implicated_and_implicating(p)
+        ctx["q1"] = {
+            "parameter": p,
+            "implicanti": ParameterDef.objects.filter(pk__in=refs_in_param).order_by("position"),
+            "implicati": ParameterDef.objects.filter(pk__in=targets_using_param).order_by("position"),
+        }
 
-    return render(request, "queries/home.html", {
-        "form": form,                 # form attivo (per submit)
-        "forms_by_ds": forms_by_ds,   # tutti i gruppi filtri da mostrare/nascondere
-        "dataset": dataset,
-        "page_obj": page_obj,
-        "columns": columns,
-    })
+    # -------- Q2: Per parametro -> lingue + / - / neutralizzate --------
+    if ctx["form_q2"].is_bound and ctx["form_q2"].is_valid():
+        p = ctx["form_q2"].cleaned_data["parameter"]
+        dist = language_distribution_for_param(p)
+        ctx["q2"] = {"parameter": p, "plus": dist.get("+", []), "minus": dist.get("-", []), "zero": dist.get("0", [])}
 
+    # -------- Q3: Per parametro neutralizzato in una lingua -> condizioni non soddisfatte --------
+    if ctx["form_q3"].is_bound and ctx["form_q3"].is_valid():
+        lang = ctx["form_q3"].cleaned_data["language"]
+        p = ctx["form_q3"].cleaned_data["parameter"]
+        fv = final_value_for(lang.pk, p.pk).value
+        if fv != "0":
+            ctx["q3"] = {"parameter": p, "language": lang, "not_zero": True}
+        else:
+            detail = explain_neutralization(lang, p)
+            ctx["q3"] = {
+                "parameter": p,
+                "language": lang,
+                "pretty": detail["pretty"],
+                "derived_by_zero": detail["derived_by_zero"],
+                "unsatisfied": detail["unsatisfied"],
+            }
+
+    # -------- Q4/Q5/Q6: Per lingua -> param fissati a + / - / neutralizzati --------
+    for tab, want in (("q4", "+"), ("q5", "-"), ("q6", "0")):
+        form = ctx[f"form_{tab}"]
+        if form.is_bound and form.is_valid():
+            lang = form.cleaned_data["language"]
+            fmap = final_map_for_language(lang)
+            # filtra
+            wanted_ids = [pid for pid, v in fmap.items() if v == want]
+            params = list(ParameterDef.objects.filter(pk__in=wanted_ids).order_by("position"))
+            if want == "0":
+                # Aggiungi condizione implicazionale in chiaro
+                rows = [{"parameter": p, "condition": (p.implicational_condition or ""), "pretty": pretty_print_expression(p.implicational_condition or "") if p.implicational_condition else ""} for p in params]
+                ctx[tab] = {"language": lang, "rows": rows}
+            else:
+                ctx[tab] = {"language": lang, "params": params}
+
+    # -------- Q7: Coppia lingue -> param confrontabili (+/-) --------
+    if ctx["form_q7"].is_bound and ctx["form_q7"].is_valid():
+        a = ctx["form_q7"].cleaned_data["language_a"]
+        b = ctx["form_q7"].cleaned_data["language_b"]
+        rows = comparable_params_for(a, b)
+        ctx["q7"] = {"a": a, "b": b, "rows": rows}
+
+    return render(request, "queries/home.html", ctx)
