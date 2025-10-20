@@ -185,7 +185,17 @@ def language_list(request):
             | Q(grp__icontains=q)
             | Q(informant__icontains=q)
             | Q(supervisor__icontains=q)
+            | Q(family__icontains=q)
+            | Q(top_level_family__icontains=q)
+            | Q(source__icontains=q)
         )
+
+        # match grezzo per booleano ("hist", "stor", "true"/"false")
+        if q.lower() in {"hist", "stor", "storica", "storico", "true", "yes"}:
+            filt |= Q(historical_language=True)
+        if q.lower() in {"false", "no"}:
+            filt |= Q(historical_language=False)
+
         if is_admin:
             filt |= Q(assigned_user__email__icontains=q)
         qs = qs.filter(filt)

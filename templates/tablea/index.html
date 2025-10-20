@@ -4,7 +4,28 @@
 
 {% block content %}
   <div class="toolbar" role="region" aria-label="Azioni tabella">
-    <div aria-hidden="true"></div>
+    <form method="get" class="row-actions" aria-label="Filters">
+      <label for="family" class="visually-hidden">Top level family</label>
+      <select id="family" name="family">
+        <option value="">All families</option>
+        {% for fam in families %}
+          <option value="{{ fam }}" {% if fam == selected_family %}selected{% endif %}>{{ fam|default:"(empty)" }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="historical" class="visually-hidden">Historical language</label>
+      <select id="historical" name="historical">
+        <option value="all" {% if selected_historical == "all" %}selected{% endif %}>All</option>
+        <option value="yes" {% if selected_historical == "yes" %}selected{% endif %}>Only historical</option>
+        <option value="no"  {% if selected_historical == "no"  %}selected{% endif %}>Only non-historical</option>
+      </select>
+
+      <button class="btn" type="submit">Apply</button>
+      {% if selected_family or selected_historical != "all" %}
+        <a class="btn" href="{% url 'tablea_index' %}">Reset</a>
+      {% endif %}
+    </form>
+
     <div class="row-actions">
       <a class="btn" href="{% url 'tablea_export_xlsx' %}">Export .xlsx</a>
       <a class="btn" href="{% url 'tablea_export_csv' %}">Export .csv</a>
@@ -17,11 +38,11 @@
           aria-label="Table A – scroll horizontally to see all languages"
           tabindex="0">
         <table class="table table--freeze" aria-describedby="tablea-desc">
-            <colgroup>
-              <col class="w-label" />
-              <col class="w-name" />
-              <col /> <!-- Implication -->
-            </colgroup>
+          <colgroup>
+            <col class="w-label" />
+            <col class="w-name" />
+            <col /> <!-- Implication -->
+          </colgroup>
           <caption id="tablea-desc">
             Valori per parametro (righe) e lingua (colonne).
           </caption>
@@ -29,7 +50,8 @@
           <thead>
             <tr>
               <th scope="col" class="col-sticky-left">Label</th>
-              <th scope="col" class="col-sticky-left-2">Name</th>
+              {# ⚠️ RIMOSSA sticky dalla colonna Name #}
+              <th scope="col">Name</th>
               <th scope="col">Implication</th>
               {% for lang in languages %}
                 <th scope="col">{{ lang.id }}</th>
@@ -43,7 +65,8 @@
             {% for row in rows %}
               <tr>
                 <th scope="row" class="col-sticky-left">{{ row.p.id }}</th>
-                <td class="col-sticky-left-2">{{ row.p.name }}</td>
+                {# ⚠️ RIMOSSA sticky dalla cella Name #}
+                <td>{{ row.p.name }}</td>
                 <td class="muted">{{ row.p.implicational_condition }}</td>
 
                 {% for val in row.cells %}
@@ -65,6 +88,5 @@
     {% else %}
       <p role="status">Nessun dato disponibile per Table A.</p>
     {% endif %}
-  </div>  
-
+  </div>
 {% endblock %}

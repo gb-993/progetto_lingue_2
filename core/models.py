@@ -94,6 +94,10 @@ class Language(models.Model):
     glottocode = models.CharField(max_length=50, null=True, blank=True)
     informant = models.CharField(max_length=255, null=True, blank=True)
     supervisor = models.CharField(max_length=255, null=True, blank=True)
+    source = models.CharField(max_length=255, blank=True, default="")
+    historical_language = models.BooleanField(default=False)
+    top_level_family = models.CharField(max_length=255, blank=True, default="")
+    family = models.CharField(max_length=255, blank=True, default="")
     assigned_user = models.ForeignKey(
         "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="languages"
     )
@@ -102,6 +106,9 @@ class Language(models.Model):
         indexes = [
             models.Index(fields=["position"]),
             models.Index(fields=["assigned_user"]),
+            models.Index(fields=["family"]),
+            models.Index(fields=["top_level_family"]),
+
         ]
         ordering = ["position"]
         constraints = [

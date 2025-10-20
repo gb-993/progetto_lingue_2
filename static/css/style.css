@@ -658,3 +658,12 @@ details > summary::-webkit-details-marker { display:none; }
 details.help-info { margin: .35rem 0 .5rem; }
 details.help-info > summary { cursor: pointer; gap: .35rem; }
 details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--border); }
+
+/* === Languages list: usa tutta la larghezza e centra il contenuto === */
+body.languages-list main > .container {
+  max-width: 80% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}

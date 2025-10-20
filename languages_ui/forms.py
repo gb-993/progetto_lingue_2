@@ -8,7 +8,18 @@ class LanguageForm(forms.ModelForm):
     class Meta:
         model = Language
         # NOTA: assigned_user NON è nel form (non modificabile qui)
-        fields = ["id", "name_full", "position", "grp", "isocode", "glottocode", "informant", "supervisor"]
+        fields = ["id", 
+                  "name_full", 
+                  "position", 
+                  "grp", 
+                  "isocode", 
+                  "glottocode", 
+                  "informant", 
+                  "supervisor",
+                  "source", 
+                  "historical_language", 
+                  "top_level_family", 
+                  "family",]
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
             "name_full": forms.TextInput(attrs={"class": "form-control"}),
@@ -17,7 +28,12 @@ class LanguageForm(forms.ModelForm):
             "isocode": forms.TextInput(attrs={"class": "form-control"}),
             "glottocode": forms.TextInput(attrs={"class": "form-control"}),
             "informant": forms.TextInput(attrs={"class": "form-control"}),
-            "supervisor": forms.TextInput(attrs={"class": "form-control"}),
+            "supervisor": forms.TextInput(attrs={"class": "form-control"}),           
+            "source": forms.TextInput(attrs={"class": "form-control"}),
+            "historical_language": forms.CheckboxInput(attrs={"class": ""}),
+            "top_level_family": forms.TextInput(attrs={"class": "form-control"}),
+            "family": forms.TextInput(attrs={"class": "form-control"}),
+
         }
 
     def clean_position(self):

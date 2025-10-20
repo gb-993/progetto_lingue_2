@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Languages{% endblock %}
 {% block breadcrumb %}Languages{% endblock %}
+
+{% block body_class %}languages-list{% endblock %}
+
+
 {% block content %}
 
 {% if is_admin %}
@@ -9,81 +13,99 @@
   {% include "_toolbar_search.html" with q=q placeholder="Search languages…" %}
 {% endif %}
 
+<div class="table-responsive">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Label</th>
+        {# REMOVED: <th scope="col">Position</th> #}
+        <th scope="col">Name</th>
+        <th scope="col" class="nowrap w-10ch">Glottocode</th>
+        <th scope="col" class="nowrap w-10ch">ISO</th>
+        <th scope="col">Group</th>
+        <th scope="col">Family</th>
+        <th scope="col">Top-level</th>
+        <th scope="col">Historical</th>
+        <th scope="col">Source</th>
+        <th scope="col">Supervisor</th>
+        <th scope="col">Informant</th>
+        {% if is_admin %}
+          <th scope="col">Assigned to</th>
+        {% endif %}
+        <th scope="col">Last modified</th>
+        <th scope="col" class="sr-only">Actions</th>
+      </tr>
+    </thead>
 
- <div class="table-responsive">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Label</th>
-          <th scope="col">Position</th>
-          <th scope="col">Name</th>
-          <th scope="col">Glottocode</th>
-          <th scope="col">ISO</th>
-          <th scope="col">Group</th>
-          <th scope="col">Supervisor</th>
-          <th scope="col">Informant</th>
-          {% if is_admin %}
-            <th scope="col">Assigned to</th>
+    <tbody>
+      {% for l in languages %}
+      <tr>
+        <td data-label="Label">{{ l.id }}</td>
+        {# REMOVED: <td data-label="Position">{{ l.position }}</td> #}
+        <td data-label="Name">{{ l.name_full }}</td>
+        <td data-label="Glottocode" class="nowrap w-10ch">{{ l.glottocode }}</td>
+        <td data-label="ISO" class="nowrap w-10ch">{{ l.isocode }}</td>
+        <td data-label="Group">{{ l.grp }}</td>
+        <td data-label="Family">{{ l.family }}</td>
+        <td data-label="Top-level">{{ l.top_level_family }}</td>
+        <td data-label="Historical">
+          {% if l.historical_language %}
+            <span class="badge b-warn" title="Historical language">Historical</span>
+          {% else %}
+            <span class="muted">—</span>
           {% endif %}
-          <th scope="col">Last modified</th>
-          <th scope="col" class="sr-only">Actions</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        {% for l in languages %}
-        <tr>
-          <td>{{ l.id }}</td>
-          <td>{{ l.position }}</td>
-          <td>{{ l.name_full }}</td>
-          <td>{{ l.glottocode }}</td>
-          <td>{{ l.isocode }}</td>
-          <td>{{ l.grp }}</td>
-          <td>{{ l.supervisor }}</td>
-          <td>{{ l.informant }}</td>
-
-          {% if is_admin %}
-            <td>
-              {# mostra nome o email dell'utente assegnato, se presente #}
-              {% if l.assigned_user %}
-                {{ l.assigned_user.name }} {{ l.assigned_user.surname }} 
-              {% else %}
-                <span class="muted">—</span>
-              {% endif %}
-            </td>
+        </td>
+        <td data-label="Source">
+          {% if l.source %}
+            {{ l.source }}
+          {% else %}
+            <span class="muted">—</span>
           {% endif %}
+        </td>
 
-          <td>
-            {% if l.last_change %}
-              {{ l.last_change|date:"Y-m-d H:i" }}
+        <td data-label="Supervisor">{{ l.supervisor }}</td>
+        <td data-label="Informant">{{ l.informant }}</td>
+
+        {% if is_admin %}
+          <td data-label="Assigned to">
+            {% if l.assigned_user %}
+              {{ l.assigned_user.name }} {{ l.assigned_user.surname }}
             {% else %}
               <span class="muted">—</span>
             {% endif %}
           </td>
+        {% endif %}
 
-          <td class="row-actions">
-            <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
-            {% if is_admin %}
-              <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
-              <a class="btn" href="{% url 'language_debug' l.id %}">Debug</a>
-            {% endif %}
-          </td>
-        </tr>
+        <td data-label="Last modified">
+          {% if l.last_change %}
+            {{ l.last_change|date:"Y-m-d H:i" }}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
 
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+        <td class="row-actions" data-label="Actions">
+          <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
+          {% if is_admin %}
+            <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
+            <a class="btn" href="{% url 'language_debug' l.id %}">Debug</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-  {% if page_obj %}
-  <nav class="pagination" aria-label="Pagination">
-    {% if page_obj.has_previous %}
-      <a class="btn" href="?q={{ q }}&page={{ page_obj.previous_page_number }}">Previous</a>
-    {% endif %}
-    <span class="muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}
-      <a class="btn" href="?q={{ q }}&page={{ page_obj.next_page_number }}">Next</a>
-    {% endif %}
-  </nav>
+{% if page_obj %}
+<nav class="pagination" aria-label="Pagination">
+  {% if page_obj.has_previous %}
+    <a class="btn" href="?q={{ q }}&page={{ page_obj.previous_page_number }}">Previous</a>
   {% endif %}
+  <span class="muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="btn" href="?q={{ q }}&page={{ page_obj.next_page_number }}">Next</a>
+  {% endif %}
+</nav>
+{% endif %}
 {% endblock %}
