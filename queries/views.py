@@ -31,6 +31,17 @@ TOKEN_RE = re.compile(r'([+\-0])([A-Za-z][A-Za-z0-9_]*)')
 def extract_tokens(expr: str) -> List[Tuple[str, str]]:
     return TOKEN_RE.findall((expr or "").strip().upper())
 
+def safe_pretty(expr: str) -> str:
+    s = (expr or "").strip()
+    if not s:
+        return ""
+    try:
+        return pretty_print_expression(s)
+    except Exception:
+        # fallback: mostra la stringa originale senza interrompere la pagina
+        return (expr or "")
+
+
 # ------------- Helper dati “finali” (+/-/0/None) -------------
 @dataclass
 class FinalValue:
@@ -172,7 +183,7 @@ def explain_neutralization(language: Language, parameter: ParameterDef) -> Dict:
             elif s == "0" and v != "0":
                 unsatisfied.append(UnsatisfiedLiteral(s, pid, f"expected '0', got '{v or 'None'}'"))
     return {
-        "pretty": pretty_print_expression(cond) if cond else "",
+        "pretty": safe_pretty(cond),
         "derived_by_zero": derived_by_zero,
         "unsatisfied": unsatisfied,
     }
@@ -268,8 +279,16 @@ def home(request):
             params = list(ParameterDef.objects.filter(pk__in=wanted_ids).order_by("position"))
             if want == "0":
                 # Aggiungi condizione implicazionale in chiaro
-                rows = [{"parameter": p, "condition": (p.implicational_condition or ""), "pretty": pretty_print_expression(p.implicational_condition or "") if p.implicational_condition else ""} for p in params]
+                rows = []
+                for p in params:
+                    cond = p.implicational_condition or ""
+                    rows.append({
+                        "parameter": p,
+                        "condition": cond,
+                        "pretty": safe_pretty(cond),
+                    })
                 ctx[tab] = {"language": lang, "rows": rows}
+
             else:
                 ctx[tab] = {"language": lang, "params": params}
 

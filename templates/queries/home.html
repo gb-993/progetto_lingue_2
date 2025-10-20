@@ -5,56 +5,29 @@
 {% block breadcrumb %}Queries{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card queries-page">
   <div class="card-header">
     <strong>Queries</strong>
   </div>
 
-<nav class="mb-3" aria-label="Select query">
-  <ul class="nav nav-tabs flex-wrap" style="gap: 0.25rem;">
-    <li class="nav-item">
-      <a class="nav-link px-3 py-2 {% if tab == 'q1' %}active fw-semibold{% endif %}" href="?tab=q1">
-        Implicating / Implicated parameters
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link px-3 py-2 {% if tab == 'q2' %}active fw-semibold{% endif %}" href="?tab=q2">
-        Languages with + / – / 0
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link px-3 py-2 {% if tab == 'q3' %}active fw-semibold{% endif %}" href="?tab=q3">
-        Why neutralized (language + parameter)
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link px-3 py-2 {% if tab == 'q4' %}active fw-semibold{% endif %}" href="?tab=q4">
-        Per language: parameters with +
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link px-3 py-2 {% if tab == 'q5' %}active fw-semibold{% endif %}" href="?tab=q5">
-        Per language: parameters with –
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link px-3 py-2 {% if tab == 'q6' %}active fw-semibold{% endif %}" href="?tab=q6">
-        Per language: neutralized parameters
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link px-3 py-2 {% if tab == 'q7' %}active fw-semibold{% endif %}" href="?tab=q7">
-        Pair of languages: comparable parameters
-      </a>
-    </li>
+<nav class="queries-nav" aria-label="Select query">
+  <ul>
+    <li><a href="?tab=q1" class="{% if tab == 'q1' %}active{% endif %}">Implicating / Implicated parameters</a></li>
+    <li><a href="?tab=q2" class="{% if tab == 'q2' %}active{% endif %}">Languages with + / – / 0</a></li>
+    <li><a href="?tab=q3" class="{% if tab == 'q3' %}active{% endif %}">Why neutralized (language + parameter)</a></li>
+    <li><a href="?tab=q4" class="{% if tab == 'q4' %}active{% endif %}">Per language: parameters with +</a></li>
+    <li><a href="?tab=q5" class="{% if tab == 'q5' %}active{% endif %}">Per language: parameters with –</a></li>
+    <li><a href="?tab=q6" class="{% if tab == 'q6' %}active{% endif %}">Per language: neutralized parameters</a></li>
+    <li><a href="?tab=q7" class="{% if tab == 'q7' %}active{% endif %}">Pair of languages: comparable parameters</a></li>
   </ul>
 </nav>
 
-{% if not tab %}
-  <div class="alert alert-secondary mt-3" role="status">
-    Please select a query above to start.
-  </div>
-{% endif %}
+
+  {% if not tab %}
+    <div class="alert alert-secondary mt-3" role="status">
+      Please select a query above to start.
+    </div>
+  {% endif %}
 
 
     <!-- Q1 -->
@@ -271,7 +244,6 @@
                 <th>Pos.</th>
                 <th>Parameter</th>
                 <th>Condition</th>
-                <th>Readable form</th>
               </tr>
             </thead>
             <tbody>
@@ -280,7 +252,6 @@
                   <td>{{ r.parameter.position }}</td>
                   <td>{{ r.parameter.id }} — {{ r.parameter.name }}</td>
                   <td><code>{{ r.condition }}</code></td>
-                  <td>{{ r.pretty }}</td>
                 </tr>
               {% empty %}
                 <tr><td colspan="4" class="text-muted p-3">No neutralized parameters (0)</td></tr>

@@ -667,3 +667,60 @@ body.languages-list main > .container {
   margin-left: auto !important;
   margin-right: auto !important;
 }
+/* === QUERIES NAVIGATION (vertical menu version) === */
+.queries-page .queries-nav {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.queries-page .queries-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column; /* vertical stack */
+  gap: 0.6rem; /* vertical spacing between items */
+}
+
+.queries-page .queries-nav li {
+  width: 100%;
+}
+
+.queries-page .queries-nav a {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 1rem;
+  text-decoration: none;
+  color: var(--text-muted);
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 1rem; /* rounded corners like your cards */
+  font-size: 0.95rem;
+  transition: all 0.15s ease-in-out;
+  line-height: 1.3;
+}
+
+.queries-page .queries-nav a:hover {
+  background-color: var(--surface);
+  border-color: var(--brand);
+  color: var(--text);
+}
+
+.queries-page .queries-nav a.active {
+  background-color: var(--brand, #d14124);
+  color: #fff;
+  border-color: var(--brand, #d14124);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* === Spacing for form buttons on the Queries page === */
+.queries-page form .btn {
+  margin-top: 0.6rem;     /* adds vertical space above each button */
+}
+
+/* === Spacing between the page title and the list of queries === */
+.queries-page .card-header {
+  margin-bottom: 1rem;  /* adds space below the "Queries" title */
+}
