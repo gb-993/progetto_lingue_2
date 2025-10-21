@@ -8,45 +8,53 @@
 <div class="container dashboard" role="main">
   <header class="dashboard-hero">
     <h1>Dashboard</h1>
-    <p class="muted">Data collection and storage</p>
+    <!-- <p class="muted">Data collection and storage</p> -->
   </header>
 
   <div class="dashboard-flex">
   <nav class="nav-tiles" role="navigation" aria-label="Dashboard shortcuts">
     {# Sempre visibili a tutti #}
     <a class="card btn tile" href="{% url 'language_list' %}" aria-label="Open languages">
-      <strong>Languages</strong><span class="tile-sub">Gestisci/visualizza lingue e dati</span>
+      <strong>Languages</strong>
+      <!-- <span class="tile-sub">Gestisci/visualizza lingue e dati</span> -->
     </a>
 
     <a class="card btn tile" href="{% url 'glossary_list' %}" aria-label="Open glossary">
-      <strong>Glossary</strong><span class="tile-sub">Termini e definizioni</span>
+      <strong>Glossary</strong>
+      <!-- <span class="tile-sub">Termini e definizioni</span> -->
     </a>
 
     {% if not is_admin %}
       <a class="card btn tile" href="{% url 'my_account' %}" aria-label="Open my account">
-        <strong>My Account</strong><span class="tile-sub">Dati e preferenze profilo</span>
+        <strong>My Account</strong>
+        <!-- <span class="tile-sub">Dati e preferenze profilo</span> -->
       </a>
     {% endif %}
 
     {% if is_admin %}
       <a class="card btn tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
-        <strong>Parameters</strong><span class="tile-sub">Definizioni e domande</span>
+        <strong>Parameters</strong>
+        <!-- <span class="tile-sub">Definizioni e domande</span> -->
       </a>
 
       <a class="card btn tile" href="{% url 'tablea_index' %}" aria-label="Open Table A">
-        <strong>Table A</strong><span class="tile-sub">Riepilogo parametri × lingue</span>
+        <strong>Table A</strong>
+        <!-- <span class="tile-sub">Riepilogo parametri × lingue</span> -->
       </a>
 
       <a class="card btn tile" href="{% url 'accounts_list' %}" aria-label="Open accounts">
-        <strong>Accounts</strong><span class="tile-sub">Admin &amp; Users</span>
+        <strong>Accounts</strong>
+        <!-- <span class="tile-sub">Admin &amp; Users</span> -->
       </a>
 
       <a class="card btn tile" href="{% url 'queries:home' %}" aria-label="Open queries">
-        <strong>Queries</strong><span class="tile-sub">Interrogazioni al database</span>
+        <strong>Queries</strong>
+        <!-- <span class="tile-sub">Interrogazioni al database</span> -->
       </a>
 
       <a class="card btn tile" href="{% url 'submissions_list' %}" aria-label="Open submissions">
-        <strong>Submissions</strong><span class="tile-sub">Gestisci/visualizza submissions</span>
+        <strong>Submissions</strong>
+        <!-- <span class="tile-sub">Gestisci/visualizza submissions</span> -->
       </a>
     {% endif %}
   </nav>

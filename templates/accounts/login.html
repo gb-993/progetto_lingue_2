@@ -19,7 +19,7 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <title>Accedi</title>
+  <title>Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <link rel="stylesheet" href="{% static 'css/mobile.css' %}" media="(max-width: 768px)">
@@ -29,7 +29,7 @@
 
   <main id="main" class="container" role="main" aria-labelledby="login-title">
     <section class="card" role="region" aria-labelledby="login-title">
-      <h1 id="login-title">Accedi</h1>
+      <h1 id="login-title">Login</h1>
 
       {% if messages %}
         <div role="status" aria-live="polite">
@@ -70,15 +70,15 @@
         </div>
 
         <div class="actions">
-          <button type="submit" class="btn btn--primary">Entra</button>
+          <button type="submit" class="btn btn--primary">Log in</button>
         </div>
       </form>
 
       <p class="muted" aria-live="polite">
-        Non hai un account? Contatta un amministratore.
+        <!-- Non hai un account? Contatta un amministratore. -->
       </p>
       <p>
-        <a href="{% url 'password_reset' %}">Password dimenticata?</a>
+        <a href="{% url 'password_reset' %}">Forgot your password?</a>
       </p>
 
     </section>

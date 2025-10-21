@@ -5,7 +5,7 @@
 
 {% block content %}
   <div class="card">
-    <h3 class="mb-2">Profilo</h3>
+    <h3 class="mb-2">Account</h3>
     <form method="post" novalidate>
       {% csrf_token %}
       <input type="hidden" name="action" value="profile" />
@@ -48,7 +48,7 @@
   </div>
 
   <div class="card mt-4">
-    <h3 class="mb-2">Cambia password</h3>
+    <h3 class="mb-2">Change password</h3>
     <form method="post" novalidate>
       {% csrf_token %}
       <input type="hidden" name="action" value="password" />
@@ -59,7 +59,7 @@
 
       <div class="grid grid-2">
         <div class="form-group">
-          <label for="{{ pwd_form.old_password.id_for_label }}">Password attuale</label>
+          <label for="{{ pwd_form.old_password.id_for_label }}">Current password</label>
           {{ pwd_form.old_password }}
           {% if pwd_form.old_password.errors %}
             <div class="field-error" role="alert">{{ pwd_form.old_password.errors|striptags }}</div>
@@ -67,7 +67,7 @@
         </div>
 
         <div class="form-group">
-          <label for="{{ pwd_form.new_password1.id_for_label }}">Nuova password</label>
+          <label for="{{ pwd_form.new_password1.id_for_label }}">New password</label>
           {{ pwd_form.new_password1 }}
           {% if pwd_form.new_password1.errors %}
             <div class="field-error" role="alert">{{ pwd_form.new_password1.errors|striptags }}</div>
@@ -75,7 +75,7 @@
         </div>
 
         <div class="form-group">
-          <label for="{{ pwd_form.new_password2.id_for_label }}">Conferma nuova password</label>
+          <label for="{{ pwd_form.new_password2.id_for_label }}">Confirm new password</label>
           {{ pwd_form.new_password2 }}
           {% if pwd_form.new_password2.errors %}
             <div class="field-error" role="alert">{{ pwd_form.new_password2.errors|striptags }}</div>

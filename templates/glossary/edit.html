@@ -8,14 +8,14 @@
       {% csrf_token %}
       <div class="grid">
         <div>
-          <label for="{{ form.word.id_for_label }}">Word (primary key)</label>
+          <label for="{{ form.word.id_for_label }}">Entry</label>
           {{ form.word }}
           <div id="word-help" class="muted">Cambiare la parola equivale a cambiare la chiave primaria.</div>
           {% if form.word.errors %}<div class="errorlist">{{ form.word.errors }}</div>{% endif %}
         </div>
 
         <div>
-          <label for="{{ form.description.id_for_label }}">Description</label>
+          <label for="{{ form.description.id_for_label }}">Definition</label>
           {{ form.description }}
           {% if form.description.errors %}<div class="errorlist">{{ form.description.errors }}</div>{% endif %}
         </div>

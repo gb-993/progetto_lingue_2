@@ -4,9 +4,9 @@
 
 {% block content %}
 {% if is_admin %}
-  {% include "_toolbar_search.html" with q=q placeholder="Search word or description…" add_url="glossary_add" add_label="Add new word" %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search entry or description…" add_url="glossary_add" add_label="Add a new entry" %}
 {% else %}
-  {% include "_toolbar_search.html" with q=q placeholder="Search word or description…" %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search entry or description…" %}
 {% endif %}
 
 
@@ -16,8 +16,8 @@
       <table class="table">
         <thead>
           <tr>
-            <th scope="col">Word</th>
-            <th scope="col">Description</th>
+            <th scope="col">Entry</th>
+            <th scope="col">Definition</th>
             <th scope="col" class="fit"></th>
           </tr>
         </thead>
