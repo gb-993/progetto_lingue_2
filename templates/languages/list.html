@@ -8,9 +8,9 @@
 {% block content %}
 
 {% if is_admin %}
-  {% include "_toolbar_search.html" with q=q placeholder="Search languages…" add_url="language_add" add_label="Add language" %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search a language…" add_url="language_add" add_label="Add a new language" %}
 {% else %}
-  {% include "_toolbar_search.html" with q=q placeholder="Search languages…" %}
+  {% include "_toolbar_search.html" with q=q placeholder="Search language…" %}
 {% endif %}
 
 <div class="table-responsive">

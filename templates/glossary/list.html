@@ -12,8 +12,13 @@
 
 
   {% if page_obj.object_list %}
-    <div class="card">
-      <table class="table">
+    <!-- <div class="card"> -->
+      <table class="table" style="width:100%">
+        <colgroup>
+          <col style="width: 15%">
+          <col style="width: 70%">
+          <col style="width: 15%">
+        </colgroup>
         <thead>
           <tr>
             <th scope="col">Entry</th>
@@ -28,7 +33,7 @@
               <a href="{% url 'glossary_view' obj.word %}">{{ obj.word }}</a>
             </td>
             <td>{{ obj.description|default:"" }}</td>
-            <td class="fit">
+            <td class="fit" style="text-align: right;">
               {% if is_admin %}
                 <a class="btn" href="{% url 'glossary_edit' obj.word %}">Edit</a>
                 <form method="post" action="{% url 'glossary_delete' obj.word %}" style="display:inline">
@@ -45,7 +50,7 @@
         {% endfor %}
         </tbody>
       </table>
-    </div>
+    <!-- </div> -->
 
     {# pagination #}
     {% if page_obj.paginator.num_pages > 1 %}
@@ -60,6 +65,6 @@
       </nav>
     {% endif %}
   {% else %}
-    <div class="muted">No words found.</div>
+    <div class="muted">No entries found</div>
   {% endif %}
 {% endblock %}
