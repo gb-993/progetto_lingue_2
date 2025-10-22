@@ -1034,7 +1034,7 @@ def language_export_xlsx(request, lang_id: str):
     ]
     ex_header = [
         "Language ID", "Question ID", "Example #",
-        "Data", "Transliteration", "Gloss", "English translation", "Reference"
+        "Example text", "Transliteration", "Gloss", "English translation", "Reference"
     ]
 
     bold_white = Font(bold=True, color="FFFFFF")

@@ -6,7 +6,7 @@
   <div class="card">
     <form method="post">
       {% csrf_token %}
-      <p>Confermi di voler eliminare la voce <strong>{{ obj.word }}</strong>? L'azione è irreversibile.</p>
+      <p>Delete <strong>{{ obj.word }}</strong>?</p>
       <div class="toolbar">
         <a class="btn" href="{% url 'glossary_list' %}">Cancel</a>
         <button class="btn btn--bad">Delete</button>

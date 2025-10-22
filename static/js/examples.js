@@ -172,7 +172,7 @@
           <input name="newex_${qid}_${uid}_number" value="${numberValue}" readonly>
         </div>
         <div>
-          <label>Data</label>
+          <label>Example text</label>
           <input name="newex_${qid}_${uid}_textarea" value="">
         </div>
         <div>
