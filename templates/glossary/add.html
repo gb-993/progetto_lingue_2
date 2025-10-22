@@ -10,14 +10,14 @@
         <div>
           <label for="{{ form.word.id_for_label }}">Entry</label>
           {{ form.word }}
-          <div id="word-help" class="muted">Usa una forma unica (maiuscole/Minuscole considerate equivalenti).</div>
+          <div id="word-help" class="muted">Enter a unique key</div>
           {% if form.word.errors %}<div class="errorlist">{{ form.word.errors }}</div>{% endif %}
         </div>
 
         <div>
           <label for="{{ form.description.id_for_label }}">Definition</label>
           {{ form.description }}
-          <div id="desc-help" class="muted">Definizione chiara e concisa.</div>
+          <!-- <div id="desc-help" class="muted">Definizione chiara e concisa.</div> -->
           {% if form.description.errors %}<div class="errorlist">{{ form.description.errors }}</div>{% endif %}
         </div>
       </div>

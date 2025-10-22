@@ -35,7 +35,7 @@
                   {% csrf_token %}
                   <button class="btn btn--bad"
                           aria-label="Delete {{ obj.word }}"
-                          onclick="return confirm('Eliminare definitivamente &quot;{{ obj.word }}&quot;?')">
+                          onclick="return confirm('Delete &quot;{{ obj.word }}&quot;?')">
                     Delete
                   </button>
                 </form>

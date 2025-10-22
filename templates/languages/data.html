@@ -8,7 +8,7 @@
 <main class="{% with s=lang_status.overall %}{% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}is-readonly{% endif %}{% endwith %}">
   <div class="card">
     <h2>{{ language.name_full }} ({{ language.id }})</h2>
-    <p class="muted">Compila o modifica le risposte. Ogni pulsante “Save” salva solo il parametro aperto.</p>
+    <!-- <p class="muted">Compila o modifica le risposte. Ogni pulsante “Save” salva solo il parametro aperto.</p> -->
   </div>
 
   {# === Stato e azioni workflow === #}
@@ -84,7 +84,7 @@
                  title="Download .xlsx">
                 Download Excel
               </a>
-              <small class="muted">Download .xlsx</small>
+              <!-- <small class="muted">Download .xlsx</small> -->
             </div>
 
 
@@ -93,10 +93,10 @@
               <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
                 {% if not all_answered %}
                   <span class="hint-disabled" title="Cannot approve while there are missing answers" tabindex="0">
-                    <button type="submit" class="btn btn--primary" disabled aria-disabled="true">Approve &amp; Apply implications</button>
+                    <button type="submit" class="btn btn--primary" disabled aria-disabled="true">Approve &amp; apply implications</button>
                   </span>
                 {% else %}
-                  <button type="submit" class="btn btn--primary">Approve &amp; Apply implications</button>
+                  <button type="submit" class="btn btn--primary">Approve &amp; apply implications</button>
                 {% endif %}
               </div>
             </form>
@@ -167,8 +167,8 @@
       data-param="{{ p.id }}"
       data-lang="{{ language.id }}"
       aria-label="Mark {{ p.id }} as 'to review'">
-    <span class="pill pill--warn" aria-hidden="true">!</span>
-    <span class="muted small">To review</span>
+    <!-- <span class="pill pill--warn" aria-hidden="true">!</span> -->
+    <span class="muted small">Mark as needs review</span>
   </label>
 </h3>
     {% if p.short_description %}
