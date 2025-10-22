@@ -56,12 +56,12 @@
             {% if form.password.errors %}
               <div class="field-error" role="alert">{{ form.password.errors|striptags }}</div>
             {% endif %}
-            <p class="muted">La password è obbligatoria solo in creazione.</p>
+            <!-- <p class="muted">La password è obbligatoria solo in creazione.</p> -->
           </div>
         {% endif %}
 
         <div class="form-group" style="grid-column:1/-1">
-          <label id="lang-legend">Assigned languages (opzionale)</label>
+          <label id="lang-legend">Assigned languages (optional)</label>
           <div>
             <select name="lang_ids" multiple size="8" aria-labelledby="lang-legend">
               {% for lang in languages %}

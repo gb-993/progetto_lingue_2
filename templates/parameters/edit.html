@@ -113,7 +113,7 @@
         >
         <input type="hidden" name="{{ form.is_active.html_name }}" value="1">
         <p class="hint b-bad" role="note">
-          Cannot deactivate: other parameters reference this ID. See the list below and clean their conditions first.
+          This parameter cannot be deactivated because other parameters reference it. See the list below and clean their conditions first.
         </p>
       {% else %}
         {{ form.is_active }}
@@ -146,7 +146,7 @@
 
         <div class="grid grid--2">
           <div>
-            <h4 class="q-section-title">Normal questions</h4>
+            <h4 class="q-section-title">Questions</h4>
             {% if questions_normal and questions_normal|length > 0 %}
               <div class="q-list">
                 {% for q in questions_normal %}
@@ -163,7 +163,7 @@
                 {% endfor %}
               </div>
             {% else %}
-              <p class="muted">No normal questions.</p>
+              <p class="muted">No questions</p>
             {% endif %}
           </div>
 
@@ -185,7 +185,7 @@
                 {% endfor %}
               </div>
             {% else %}
-              <p class="muted">No stop questions.</p>
+              <p class="muted">No stop questions</p>
             {% endif %}
           </div>
         </div>
@@ -195,10 +195,10 @@
     {% if not is_create %}
       {# === Change recap AT THE BOTTOM === #}
       <fieldset class="form-row" aria-labelledby="change-note-heading">
-        <legend id="change-note-heading" class="sr-only">Change recap</legend>
+        <legend id="change-note-heading" class="sr-only">Recap of changes</legend>
         {{ form.change_note.label_tag }} {{ form.change_note }}
         {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
-        <p id="changeNoteHint" class="help">Required if you modified one or more fields of this parameter.</p>
+        <p id="changeNoteHint" class="help">This field is required if you modified one or more fields of this parameter</p>
       </fieldset>
     {% endif %}
 
@@ -212,7 +212,7 @@
 <section class="card" aria-labelledby="where-used-heading">
   <h3 id="where-used-heading">Who references this parameter</h3>
   {% if where_used and where_used|length > 0 %}
-    <p class="muted">The following parameters reference this ID in their implicational condition. Edit their conditions before deactivating this parameter.</p>
+    <p class="muted">The following parameters reference this ID in their implicational condition(s). Edit their implicational condition(s) before deactivating this parameter.</p>
     <ul class="list">
       {% for target, cond in where_used %}
         <li>

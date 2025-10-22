@@ -14,7 +14,7 @@ class ParamPickForm(forms.Form):
     parameter = forms.ModelChoiceField(
         queryset=ParameterDef.objects.order_by("position"),
         required=True,
-        label=_("Parametro"),
+        label=_("Parameter"),
         widget=forms.Select(attrs=_SELECT),
     )
 
@@ -23,13 +23,13 @@ class ParamNeutralizationForm(forms.Form):
     language = forms.ModelChoiceField(
         queryset=Language.objects.order_by("position"),
         required=True,
-        label=_("Lingua"),
+        label=_("Language"),
         widget=forms.Select(attrs=_SELECT),
     )
     parameter = forms.ModelChoiceField(
         queryset=ParameterDef.objects.order_by("position"),
         required=True,
-        label=_("Parametro"),
+        label=_("Parameter"),
         widget=forms.Select(attrs=_SELECT),
     )
 
@@ -38,7 +38,7 @@ class LangOnlyForm(forms.Form):
     language = forms.ModelChoiceField(
         queryset=Language.objects.order_by("position"),
         required=True,
-        label=_("Lingua"),
+        label=_("Language"),
         widget=forms.Select(attrs=_SELECT),
     )
 
@@ -47,13 +47,13 @@ class LangPairForm(forms.Form):
     language_a = forms.ModelChoiceField(
         queryset=Language.objects.order_by("position"),
         required=True,
-        label=_("Lingua A"),
+        label=_("First language"),
         widget=forms.Select(attrs=_SELECT),
     )
     language_b = forms.ModelChoiceField(
         queryset=Language.objects.order_by("position"),
         required=True,
-        label=_("Lingua B"),
+        label=_("Second language"),
         widget=forms.Select(attrs=_SELECT),
     )
 
@@ -62,5 +62,5 @@ class LangPairForm(forms.Form):
         a = data.get("language_a")
         b = data.get("language_b")
         if a and b and a.pk == b.pk:
-            self.add_error("language_b", _("Scegli due lingue diverse"))
+            self.add_error("language_b", _("Select two different languages"))
         return data

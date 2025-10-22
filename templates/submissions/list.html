@@ -15,9 +15,9 @@
     <table class="table table-sm align-middle">
       <thead>
         <tr>
-          <th>Data (UTC)</th>
-          <th>Lingua</th>
-          <th>Utente</th>
+          <th>Date (UTC)</th>
+          <th>Language</th>
+          <th>User</th>
           <th></th>
         </tr>
       </thead>
@@ -27,10 +27,10 @@
           <td><time datetime="{{ s.submitted_at|date:'c' }}">{{ s.submitted_at|date:"Y-m-d H:i:s" }}</time></td>
           <td>{{ s.language_id }}</td>
           <td>{{ s.submitted_by.email }}</td>
-          <td><a class="btn btn-sm btn-primary" href="{% url 'submission_detail' s.id %}">Apri</a></td>
+          <td><a class="btn btn-sm btn-primary" href="{% url 'submission_detail' s.id %}">Open</a></td>
         </tr>
       {% empty %}
-        <tr><td colspan="4">Nessuna submission.</td></tr>
+        <tr><td colspan="4">No submissions</td></tr>
       {% endfor %}
       </tbody>
     </table>
@@ -41,7 +41,7 @@
       {% if page.has_previous %}
       <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}&language={{ language_id }}">«</a></li>
       {% endif %}
-      <li class="page-item disabled"><span class="page-link">Pagina {{ page.number }} / {{ page.paginator.num_pages }}</span></li>
+      <li class="page-item disabled"><span class="page-link">Page {{ page.number }} / {{ page.paginator.num_pages }}</span></li>
       {% if page.has_next %}
       <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}&language={{ language_id }}">»</a></li>
       {% endif %}

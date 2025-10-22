@@ -60,13 +60,13 @@
 
         <div class="form-group" style="grid-column:1/-1">
           <fieldset>
-            <legend id="lang-legend">Assigned languages (opzionale)</legend>
+            <legend id="lang-legend">Assigned languages (optional)</legend>
 
             {# Se l'utente è admin, promemoria #}
             {% if form.role.value == "admin" %}
               <p class="muted" aria-live="polite">
-                Questo utente è <strong>admin</strong>: può accedere a <strong>tutte</strong> le lingue.
-                L’elenco sottostante mostra comunque l’assegnazione esplicita, se presente.
+                This user is an <strong>admin</strong> and can access <strong>all</strong> languages.
+                The list below still shows any explicit assignments
               </p>
             {% endif %}
 

@@ -180,12 +180,31 @@ a:hover{text-decoration:underline}
 .site-header .container{ max-width:1100px; margin:0 auto; padding:.75rem var(--sp-4) .75rem; }
 
 .site-title{ font-size:clamp(1.6rem,1.1rem + 2vw,2.4rem); margin:0; }
-.site-title .site-subtitle{ display:block; font-size:1rem; color:var(--text-muted); font-weight:500; margin-top:.25rem; }
+.site-title .site-subtitle{
+  display: block;
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: .25rem;
+  margin-bottom: 1rem; /* spazio maggiore tra subtitle e nav-list */
+}
 
-.nav{ margin-top:.5rem; }
+.nav{
+  margin-top: .5rem;
+  margin-bottom: 1.5rem; /* aumenta lo spazio verticale sotto il sottotitolo */
+}
 .nav-list{
   list-style:none; display:flex; align-items:center; gap:.5rem;
   margin:0; padding:0; flex-wrap:wrap; justify-content:flex-start;
+}
+
+.nav-list form[action*="logout"] {
+  margin-left: auto;
+}
+
+.nav-item-theme .btn.theme-toggle {
+  min-width: 5rem;
+  text-align: center;
 }
 .nav-list > li{ margin:0; padding:0; }
 .nav-list form{ display:inline; margin:0; }

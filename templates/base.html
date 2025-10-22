@@ -35,13 +35,6 @@
       <h1 class="site-title">
         Parametric Comparison Method (PCM)
         <span class="site-subtitle">Data collection and storage</span>
-        <button id="theme-toggle"
-                type="button"
-                class="btn theme-toggle"
-                aria-label="Toggle theme"
-                aria-live="polite"
-                aria-pressed="false">
-        </button>
       </h1>
 
       {% with urln=request.resolver_match.url_name|default:'' %}
@@ -132,6 +125,15 @@
               <button class="btn" type="submit">Logout</button>
             </form>
           </li>
+          <li class="nav-item-theme">
+            <button id="theme-toggle"
+                    type="button"
+                    class="btn theme-toggle"
+                    aria-label="Toggle theme"
+                    aria-live="polite"
+                    aria-pressed="false">
+            </button>
+          </li>
         </ul>
       </nav>
       {% endwith %}
@@ -182,11 +184,14 @@
         updateButton(next);
       }
       function updateButton(theme) {
-        var next = (theme === 'dark') ? 'Light' : 'Dark';
-        btn.textContent = next;
+        // Usa caratteri Unicode diretti
+        var icon = theme === 'dark'
+          ? '☀︎'  // Sole per passare al tema chiaro
+          : '☾︎'; // Luna per passare al tema scuro
+        btn.textContent = icon;
         btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
-        btn.setAttribute('aria-label', 'Activate ' + next + ' theme');
-        btn.title = next + ' theme';
+        btn.setAttribute('aria-label', 'Toggle theme');
+        btn.title = theme === 'dark' ? 'Light theme' : 'Dark theme';
       }
       updateButton(currentTheme());
       btn.addEventListener('click', function () {
