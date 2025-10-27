@@ -7,7 +7,6 @@ from core.models import Language
 class LanguageForm(forms.ModelForm):
     class Meta:
         model = Language
-        # NOTA: assigned_user NON è nel form (non modificabile qui)
         fields = ["id", 
                   "name_full", 
                   "position", 
