@@ -13,11 +13,11 @@
         {% endfor %}
       </select>
 
-      <label for="historical" class="visually-hidden">Historical language</label>
+      <label for="historical" class="visually-hidden">Historical</label>
       <select id="historical" name="historical">
         <option value="all" {% if selected_historical == "all" %}selected{% endif %}>All</option>
-        <option value="yes" {% if selected_historical == "yes" %}selected{% endif %}>Only historical</option>
-        <option value="no"  {% if selected_historical == "no"  %}selected{% endif %}>Only non-historical</option>
+        <option value="yes" {% if selected_historical == "yes" %}selected{% endif %}>Historical languages only</option>
+        <option value="no"  {% if selected_historical == "no"  %}selected{% endif %}>Non-historical languages only</option>
       </select>
 
       <button class="btn" type="submit">Apply</button>
@@ -43,9 +43,9 @@
             <col class="w-name" />
             <col /> <!-- Implication -->
           </colgroup>
-          <caption id="tablea-desc">
+          <!-- <caption id="tablea-desc">
             Valori per parametro (righe) e lingua (colonne).
-          </caption>
+          </caption> -->
 
           <thead>
             <tr>
