@@ -9,30 +9,30 @@ class LanguageForm(forms.ModelForm):
         model = Language
         fields = ["id", 
                   "name_full", 
-                  "position", 
+                  "position",
+                  "top_level_family",
+                  "family", 
                   "grp", 
                   "isocode", 
-                  "glottocode", 
+                  "glottocode",
+                  "supervisor", 
                   "informant", 
-                  "supervisor",
                   "source", 
-                  "historical_language", 
-                  "top_level_family", 
-                  "family",]
+                  "historical_language",  
+                  ]
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
             "name_full": forms.TextInput(attrs={"class": "form-control"}),
             "position": forms.NumberInput(attrs={"class": "form-control", "min": "1", "step": "1", "inputmode": "numeric"}),
+            "top_level_family": forms.TextInput(attrs={"class": "form-control"}),
+            "family": forms.TextInput(attrs={"class": "form-control"}),
             "grp": forms.TextInput(attrs={"class": "form-control"}),
             "isocode": forms.TextInput(attrs={"class": "form-control"}),
             "glottocode": forms.TextInput(attrs={"class": "form-control"}),
-            "informant": forms.TextInput(attrs={"class": "form-control"}),
-            "supervisor": forms.TextInput(attrs={"class": "form-control"}),           
+            "supervisor": forms.TextInput(attrs={"class": "form-control"}),  
+            "informant": forms.TextInput(attrs={"class": "form-control"}),         
             "source": forms.TextInput(attrs={"class": "form-control"}),
             "historical_language": forms.CheckboxInput(attrs={"class": ""}),
-            "top_level_family": forms.TextInput(attrs={"class": "form-control"}),
-            "family": forms.TextInput(attrs={"class": "form-control"}),
-
         }
 
     def clean_position(self):

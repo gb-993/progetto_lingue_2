@@ -17,14 +17,14 @@
   <table class="table">
     <thead>
       <tr>
-        <th scope="col">Label</th>
+        <th scope="col">Id</th>
         {# REMOVED: <th scope="col">Position</th> #}
         <th scope="col">Name</th>
         <th scope="col" class="nowrap w-10ch">Glottocode</th>
-        <th scope="col" class="nowrap w-10ch">ISO</th>
-        <th scope="col">Group</th>
+        <th scope="col" class="nowrap w-10ch">ISO code</th>
+        <th scope="col">Top-level family</th>
         <th scope="col">Family</th>
-        <th scope="col">Top-level</th>
+        <th scope="col">Group</th>
         <th scope="col">Historical</th>
         <th scope="col">Source</th>
         <th scope="col">Supervisor</th>
@@ -45,9 +45,9 @@
         <td data-label="Name">{{ l.name_full }}</td>
         <td data-label="Glottocode" class="nowrap w-10ch">{{ l.glottocode }}</td>
         <td data-label="ISO" class="nowrap w-10ch">{{ l.isocode }}</td>
-        <td data-label="Group">{{ l.grp }}</td>
-        <td data-label="Family">{{ l.family }}</td>
         <td data-label="Top-level">{{ l.top_level_family }}</td>
+        <td data-label="Family">{{ l.family }}</td>
+        <td data-label="Group">{{ l.grp }}</td>
         <td data-label="Historical">
           {% if l.historical_language %}
             <span class="badge b-warn" title="Historical language">Historical</span>
