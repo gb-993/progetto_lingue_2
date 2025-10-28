@@ -43,9 +43,12 @@
           "{{ form.schema.html_name|escapejs }}",
           "{{ form.param_type.html_name|escapejs }}"
         ]'
-        >   
-
+        data-external-dirty="{% if external_dirty %}true{% else %}false{% endif %}"
+        >
     {% csrf_token %}
+
+    {# hidden flag usato lato backend per capire se ci sono state modifiche esterne (domande/motivations) #}
+    <input type="hidden" name="had_external_changes" value="{% if external_dirty %}1{% else %}0{% endif %}">
 
     {% if is_create %}
       <div class="form-row">
@@ -57,7 +60,6 @@
         {{ form.id.label_tag }}
         <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
         {{ form.id.as_hidden }}
-        <!-- <p class="muted">ID is not editable.</p> -->
       </div>
     {% endif %}
 
@@ -70,15 +72,18 @@
       {{ form.short_description.label_tag }} {{ form.short_description }}
       {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
     </div>
+
     <!-- Pulsante gestione lookups SOPRA ai due campi -->
     <div class="actions" style="margin:.5rem 0 .25rem">
       <a class="btn" href="{% url 'param_lookups_manage' %}" target="_blank" rel="noopener"
          aria-label="Open Schema/Type manager in a new tab">
         Edit schema & type
       </a>
+      <a class="btn" href="{% url 'motivations_manage' %}" target="_blank" rel="noopener"
+         aria-label="Open Motivation manager in a new tab">
+        Edit motivations
+      </a>
     </div>
-
-
 
     <div class="form-row">
       {{ form.schema.label_tag }} {{ form.schema }}
@@ -90,13 +95,9 @@
       {% if form.param_type.errors %}<div class="form-error">{{ form.param_type.errors }}</div>{% endif %}
     </div>
 
-
-
-
     <div class="form-row">
       {{ form.implicational_condition.label_tag }} {{ form.implicational_condition }}
       {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
-      <!-- <p class="help">Use tokens like <code>+FGM</code>, <code>-SCO</code>, <code>0ABC</code>, without spaces between sign and ID.</p> -->
     </div>
 
     {# === Active with guard when deactivation is not allowed === #}
@@ -134,9 +135,9 @@
     </div>
 
     {% if not is_create %}
-      <!-- {# =========================
-         QUESTIONS (compact rows)
-         ========================= #} -->
+      <!-- =========================
+           QUESTIONS (compact rows)
+           ========================= -->
       <fieldset class="form-row" aria-labelledby="questions-heading">
         <legend id="questions-heading">Questions for this parameter</legend>
 

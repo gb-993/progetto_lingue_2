@@ -154,14 +154,14 @@ def parameter_add(request):
 
 
 
-
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def parameter_edit(request, param_id: str):
     """
     Edit a parameter + compact list of its questions.
-    - Richiede change_note SE ci sono modifiche (logica già in form.clean()).
+    - Richiede change_note SE ci sono modifiche al parametro (logica in form.clean())
+      O se ci sono state modifiche esterne (domande / motivations) nel flusso corrente.
     - Serializza i campi FK nel diff per il JSONField (id+label).
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
@@ -172,6 +172,10 @@ def parameter_edit(request, param_id: str):
 
     if request.method == "POST":
         form = ParameterForm(request.POST, instance=param, can_deactivate=can_deactivate)
+
+        # segnale nascosto dal template che dice "qualcosa (domande/motivazioni) è stato toccato"
+        had_external_changes = request.POST.get("had_external_changes") == "1"
+
         if form.is_valid():
             old_obj = ParameterDef.objects.get(pk=param.pk)
 
@@ -184,54 +188,116 @@ def parameter_edit(request, param_id: str):
                 if old_val != new_val:
                     diff[f] = {"old": _to_jsonable(old_val), "new": _to_jsonable(new_val)}
 
-            # Salvo il parametro
-            param = form.save()
-
-            # Log solo se c'è qualcosa di cambiato
-            if diff:
-                ParameterChangeLog.objects.create(
-                    parameter=param,
-                    recap=(form.cleaned_data.get("change_note") or "").strip(),
-                    diff=diff,
-                    changed_by=request.user,
+            # --- Enforce nota anche se non ci sono cambi interni ma c'erano modifiche esterne ---
+            note_val = (form.cleaned_data.get("change_note") or "").strip()
+            if had_external_changes and not note_val:
+                # forziamo errore in modo simile a form.clean()
+                form.add_error(
+                    "change_note",
+                    "Insert recap of changes made to this parameter, its questions, or motivations."
                 )
-                messages.success(request, "Parameter updated.")
+                messages.error(request, "Please add a recap of the external changes.")
             else:
-                messages.info(request, "No changes detected.")
-            return redirect("parameter_edit", param_id=param.id)
+                # Salvo il parametro
+                param = form.save()
+
+                # Log solo se c'è qualcosa di cambiato internamente
+                # (nota: modifiche esterne non generano diff nei campi del parametro;
+                # possiamo comunque NON loggare diff vuoto)
+                if diff:
+                    ParameterChangeLog.objects.create(
+                        parameter=param,
+                        recap=note_val,
+                        diff=diff,
+                        changed_by=request.user,
+                    )
+                    messages.success(request, "Parameter updated.")
+                else:
+                    # Nessun campo del parametro cambiato
+                    # Se had_external_changes e ho nota, potremmo opzionalmente loggare "external only"
+                    if had_external_changes and note_val:
+                        ParameterChangeLog.objects.create(
+                            parameter=param,
+                            recap=note_val,
+                            diff={"_external": "Questions/motivations changed"},
+                            changed_by=request.user,
+                        )
+                        messages.success(request, "Parameter notes saved.")
+                    else:
+                        messages.info(request, "No changes detected.")
+                return redirect("parameter_edit", param_id=param.id)
+
         else:
             messages.error(request, "Please fix the highlighted errors.")
+
+        # Se arrivo qui, form non valido → devo ricaricare pagina con gli altri dati per il template
+        questions = (
+            param.questions
+            .order_by("is_stop_question", "id")
+            .select_related("parameter")
+            .prefetch_related("allowed_motivations")
+        )
+        questions_normal = [q for q in questions if not q.is_stop_question]
+        questions_stop = [q for q in questions if q.is_stop_question]
+
+        deactivate_form = DeactivateParameterForm(request=None) if can_deactivate else None
+
+        # external_dirty per il template in questo caso è: se had_external_changes era 1
+        return render(
+            request,
+            "parameters/edit.html",
+            {
+                "form": form,
+                "is_create": False,
+                "parameter": param,
+                "can_deactivate": can_deactivate,
+                "where_used": where_used,
+                "deactivate_form": deactivate_form,
+                "questions": questions,
+                "questions_normal": questions_normal,
+                "questions_stop": questions_stop,
+                "external_dirty": had_external_changes,
+            },
+            status=400,
+        )
+
+    # GET
     else:
         form = ParameterForm(instance=param, can_deactivate=can_deactivate)
 
-    # Query domande (come prima)
-    questions = (
-        param.questions
-        .order_by("is_stop_question", "id")
-        .select_related("parameter")
-        .prefetch_related("allowed_motivations")
-    )
-    questions_normal = [q for q in questions if not q.is_stop_question]
-    questions_stop = [q for q in questions if q.is_stop_question]
+        # controlla se sono appena tornato da add/edit/delete question
+        # passando ?q_changed=1 nella redirect
+        q_changed_flag = request.GET.get("q_changed") == "1"
+        external_dirty = q_changed_flag
 
-    deactivate_form = DeactivateParameterForm(request=None) if can_deactivate else None
+        # Query domande (come prima)
+        questions = (
+            param.questions
+            .order_by("is_stop_question", "id")
+            .select_related("parameter")
+            .prefetch_related("allowed_motivations")
+        )
+        questions_normal = [q for q in questions if not q.is_stop_question]
+        questions_stop = [q for q in questions if q.is_stop_question]
 
-    return render(
-        request,
-        "parameters/edit.html",
-        {
-            "form": form,
-            "is_create": False,
-            "parameter": param,
-            "can_deactivate": can_deactivate,
-            "where_used": where_used,
-            "deactivate_form": deactivate_form,
-            "questions": questions,
-            "questions_normal": questions_normal,
-            "questions_stop": questions_stop,
+        deactivate_form = DeactivateParameterForm(request=None) if can_deactivate else None
 
-        },
-    )
+        return render(
+            request,
+            "parameters/edit.html",
+            {
+                "form": form,
+                "is_create": False,
+                "parameter": param,
+                "can_deactivate": can_deactivate,
+                "where_used": where_used,
+                "deactivate_form": deactivate_form,
+                "questions": questions,
+                "questions_normal": questions_normal,
+                "questions_stop": questions_stop,
+                "external_dirty": external_dirty,
+            },
+        )
 
 
 
@@ -321,8 +387,8 @@ def question_add(request, param_id: str):
                 obj.save()
                 q_form.save_m2m()
 
-            messages.success(request, "Domanda creata.")
-            return redirect("parameter_edit", param_id=param.id)
+            messages.success(request, "Question created.")
+            return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
             messages.error(request, "Correggi gli errori nella domanda.")
             return render(
@@ -368,8 +434,8 @@ def question_edit(request, param_id: str, question_id: str):
 
         if q_form.is_valid():
             q_form.save()  # salva e sincronizza allowed_motivations
-            messages.success(request, "Domanda aggiornata.")
-            return redirect("parameter_edit", param_id=param.id)
+            messages.success(request, "Question updated.")
+            return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
             messages.error(request, "Correggi gli errori nella domanda.")
             return render(
@@ -481,8 +547,8 @@ def question_delete(request, param_id: str, question_id: str):
         qam_qs.delete()
         question.delete()
 
-    messages.success(request, f"Domanda {question_id} eliminata.")
-    return redirect("parameter_edit", param.id)
+    messages.success(request, f"Question {question_id} deleted.")
+    return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
 
 
 @login_required
