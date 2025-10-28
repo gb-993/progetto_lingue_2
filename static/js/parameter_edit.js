@@ -1,9 +1,11 @@
 /* parameter_edit.js
-   - Change tracking dei campi chiave del form
-   - Blocca il tasto "Save" se:
-        a) ci sono modifiche ai campi tracciati, OPPURE
-        b) la pagina è marcata come "external dirty" (domande / motivations cambiate altrove),
-     E in entrambi i casi la change note è vuota.
+   Controllo del pulsante "Save":
+   - Se NON ci sono modifiche (né interne né esterne) -> il bottone resta abilitato sempre.
+     (Nessuna nota richiesta, perché non stai cambiando niente.)
+   - Se CI SONO modifiche (campi del parametro cambiati oppure externalDirty=true),
+     allora la nota di modifica (change_note) diventa obbligatoria:
+        - finché la nota è vuota -> bottone Save disabilitato
+        - quando la nota è compilata -> bottone Save abilitato
 */
 
 (function () {
@@ -19,12 +21,12 @@
   var noteEl = form.elements[changeNoteName] || $("#id_change_note");
   var hint = $("#changeNoteHint");
 
-  // elenco dei nomi campo da tracciare (array JSON in stringa)
+  // elenco campi tracciati dal parametro
   var trackedAttr = form.getAttribute("data-tracked") || "[]";
   var tracked;
   try { tracked = JSON.parse(trackedAttr); } catch (e) { tracked = []; }
 
-  // flag esterno (es. sei rientrato dopo aver aggiunto/modificato/eliminato domande/motivations)
+  // flag esterno (domande/motivations modificate)
   var externalDirty = form.getAttribute("data-external-dirty") === "true";
 
   function getValByName(name) {
@@ -48,10 +50,8 @@
     });
   }
 
+  // Pagina "dirty" = qualcosa è cambiato e quindi serve la nota prima di poter salvare
   function pageIsDirty() {
-    // sporca se:
-    // - hai cambiato i campi del parametro
-    // - OPPURE sei tornato con externalDirty=true (cioè hai toccato domande/motivations)
     return externalDirty || hasInternalChanges();
   }
 
@@ -59,26 +59,30 @@
     if (!saveBtn) return;
 
     var dirty = pageIsDirty();
-    var missingNote = requiresNote && dirty && (!noteEl || !noteEl.value || !noteEl.value.trim());
 
+    // nota mancante = devo bloccare il salvataggio
+    var noteText = (noteEl && noteEl.value) ? noteEl.value.trim() : "";
+    var missingNote = requiresNote && dirty && !noteText;
+
+    // stato aria / visivo / reale
     saveBtn.disabled = !!missingNote;
+    saveBtn.setAttribute("aria-disabled", missingNote ? "true" : "false");
+
     if (missingNote) {
-      saveBtn.classList.add("btn--disabled");
-      saveBtn.setAttribute("aria-disabled", "true");
-      saveBtn.title = "Impossibile salvare finché non inserisci le note delle modifiche.";
+      saveBtn.classList.add("btn--disabled", "btn--locked");
+      saveBtn.title = "You must describe your changes before saving.";
       if (hint) hint.classList.add("b-bad");
     } else {
-      saveBtn.classList.remove("btn--disabled");
-      saveBtn.setAttribute("aria-disabled", "false");
+      saveBtn.classList.remove("btn--disabled", "btn--locked");
       saveBtn.title = "";
       if (hint) hint.classList.remove("b-bad");
     }
   }
 
-  // Riascolta input e change sul form, così se scrivi la nota sblocca
+  // Ogni volta che cambia un campo tracciato, ricalcoliamo dirty e quindi se la nota diventa obbligatoria
   form.addEventListener("input", updateSaveState);
   form.addEventListener("change", updateSaveState);
 
-  // Init stato
+  // Init immediata: se arrivo da una modifica esterna (q_changed=1) il pulsante partirà già disabilitato
   updateSaveState();
 })();
