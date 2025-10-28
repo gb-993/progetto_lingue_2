@@ -90,10 +90,12 @@
     </div>
   </div>
 
-  {# === Stato e azioni workflow === #}
-  <div class="card" style="margin-top:.5rem">
-    <div class="grid grid-2">
-      <div>
+   {# === Stato e azioni workflow === #}
+  <div class="card workflow-card" style="margin-top:.5rem">
+
+    <!-- BLOCCO STATO / INFO RIFIUTO, LARGO 100% -->
+    <div class="workflow-status-block">
+      <div class="workflow-status-line">
         <strong>Status:</strong>
         {% with s=lang_status.overall %}
           {% if s == "approved" %}
@@ -106,115 +108,190 @@
             <span class="badge b-warn">Pending</span>
           {% endif %}
         {% endwith %}
-
-        {% if last_reject %}
-          {% with s=lang_status.overall %}
-            {% if is_admin or s != 'approved' %}
-              <div class="muted" style="margin-top:.25rem">
-                Ultimo rifiuto: {{ last_reject.created_at|date:"Y-m-d H:i" }} —
-                {% if last_reject.message %}“{{ last_reject.message }}”{% else %}<em>nessun messaggio</em>{% endif %}
-              </div>
-            {% endif %}
-          {% endwith %}
-        {% endif %}
       </div>
 
-      <div class="toolbar" style="justify-content:flex-end; gap:.5rem; flex-wrap:wrap">
-        {% if is_admin %}
-          <!-- === Toolbar ADMIN  === -->
-          <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
-
-            <form id="submission-create-form"
-                  method="post"
-                  action="{% url 'submission_create_for_language' language.id %}"
-                  {% if not all_answered %}data-confirm-missing="1"{% endif %}
-                  data-confirm-message="Warning: missing answers. Save anyway?">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.get_full_path }}">
-              <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-                <button type="submit" class="btn" data-once="true" title="Crea una nuova submission con lo stato attuale della lingua">Save language</button>
-                <details>
-                  <summary>Submission's note</summary>
-                  <div style="margin-top:.25rem; max-width:100%">
-                    <label for="note_{{ language.id }}" class="sr-only">Submission's note</label>
-                    <textarea id="note_{{ language.id }}" name="note" rows="2" style="min-width:18rem; max-width:100%"></textarea>
-                  </div>
-                </details>
+      {% if last_reject %}
+        {% with s=lang_status.overall %}
+          {% if is_admin or s != 'approved' %}
+            <div class="workflow-last-reject muted">
+              <div class="last-reject-label">Last rejection:</div>
+              <div class="last-reject-body">
+                <div class="last-reject-meta">
+                  {{ last_reject.created_at|date:"Y-m-d H:i" }}
+                </div>
+                <div class="last-reject-msg">
+                  {% if last_reject.message %}
+                    “{{ last_reject.message }}”
+                  {% else %}
+                    <em>no message provided</em>
+                  {% endif %}
+                </div>
               </div>
+            </div>
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+    </div>
+
+    {% if is_admin %}
+      {# === AZIONI ADMIN SU DUE COLONNE CENTRALI === #}
+      <div class="workflow-action-grid">
+
+        <!-- SAVE SUBMISSION + NOTE -->
+        <form id="submission-create-form"
+              class="workflow-form-block"
+              method="post"
+              action="{% url 'submission_create_for_language' language.id %}"
+              {% if not all_answered %}data-confirm-missing="1"{% endif %}
+              data-confirm-message="Warning: missing answers. Save anyway?">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+          <button type="submit"
+                  class="btn workflow-main-btn"
+                  data-once="true"
+                  title="Crea una nuova submission con lo stato attuale della lingua">
+            Save submission
+          </button>
+
+          <details class="note-details">
+            <summary class="details-toggle-btn" role="button" aria-expanded="false">
+              ➜ Add submission note
+            </summary>
+            <div class="details-panel">
+              <label for="note_{{ language.id }}" class="details-label">
+                Submission note (optional)
+              </label>
+              <textarea id="note_{{ language.id }}"
+                        name="note"
+                        rows="2"
+                        class="details-textarea"></textarea>
+            </div>
+          </details>
+        </form>
+
+        <!-- REJECT + NOTE -->
+        <form method="post"
+              class="workflow-form-block"
+              action="{% url 'language_reject' language.id %}">
+          {% csrf_token %}
+
+          <button type="submit"
+                  class="btn workflow-main-btn"
+                  title="Rifiuta la submission della lingua">
+            Reject
+          </button>
+
+          <details class="note-details reject-details">
+            <summary class="details-toggle-btn" role="button" aria-expanded="false">
+              ➜ Add rejection note
+            </summary>
+            <div class="details-panel">
+              <label for="reject_message_{{ language.id }}" class="details-label">
+                Rejection note (required to explain why)
+              </label>
+              <textarea id="reject_message_{{ language.id }}"
+                        name="message"
+                        rows="2"
+                        class="details-textarea"></textarea>
+            </div>
+          </details>
+        </form>
+
+        <!-- DOWNLOAD -->
+        <div class="workflow-form-block">
+          <a href="{% url 'language_export_xlsx' language.id %}"
+             class="btn workflow-secondary-btn"
+             title="Download .xlsx">
+            Download Excel
+          </a>
+        </div>
+
+        <!-- APPROVE -->
+        <form method="post"
+              class="workflow-form-block"
+              action="{% url 'language_approve' language.id %}">
+          {% csrf_token %}
+          {% if not all_answered %}
+            <span class="hint-disabled"
+                  title="Cannot approve while there are missing answers"
+                  tabindex="0">
+              <button type="submit"
+                      class="btn btn--primary workflow-main-btn"
+                      disabled
+                      aria-disabled="true">
+                Approve &amp; apply implications
+              </button>
+            </span>
+          {% else %}
+            <button type="submit"
+                    class="btn btn--primary workflow-main-btn">
+              Approve &amp; apply implications
+            </button>
+          {% endif %}
+        </form>
+
+      </div> <!-- /workflow-action-grid -->
+
+    {% else %}
+      {# === AZIONI USER (niente griglia complicata, ma usiamo lo stesso wrapper per coerenza) === #}
+      <div class="workflow-action-grid">
+
+        {% with s=lang_status.overall %}
+          {% if s == 'rejected' %}
+            <form method="post"
+                  class="workflow-form-block"
+                  action="{% url 'language_reopen' language.id %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn btn--primary workflow-main-btn">
+                Reopen
+              </button>
+              <span class="locked-hint">
+                Language was rejected. Press “Reopen” to continue editing.
+              </span>
             </form>
 
-            <form method="post" action="{% url 'language_reject' language.id %}">
+          {% elif s == 'pending' %}
+            <form method="post"
+                  class="workflow-form-block"
+                  action="{% url 'language_submit' language.id %}">
               {% csrf_token %}
-              <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-                <button type="submit" class="btn" title="Rifiuta la submission della lingua">Reject</button>
-                <details>
-                  <summary>Rejection's note</summary>
-                  <div style="margin-top:.25rem; max-width:100%">
-                    <label for="reject_message_{{ language.id }}" class="sr-only">Rejection's note</label>
-                    <textarea id="reject_message_{{ language.id }}" name="message" rows="2" style="min-width:18rem; max-width:100%"></textarea>
-                  </div>
-                </details>
-              </div>
+              <button type="submit"
+                      class="btn btn--primary workflow-main-btn">
+                Submit for review
+              </button>
             </form>
 
-            <!-- Download Excel (Examples per tutti; Answers solo per admin) -->
-            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-              <a href="{% url 'language_export_xlsx' language.id %}"
-                 class="btn"
-                 title="Download .xlsx">
-                Download Excel
-              </a>
+          {% else %}
+            <div class="workflow-form-block">
+              <span class="hint-disabled"
+                    title="{% if s == 'waiting_for_approval' or s == 'waiting' %}In attesa di revisione dell'admin{% else %}Già approvata dall'admin{% endif %}"
+                    tabindex="0">
+                <button type="button"
+                        class="btn workflow-main-btn"
+                        disabled
+                        aria-disabled="true">
+                  Submit for review
+                </button>
+              </span>
             </div>
 
-            <form method="post" action="{% url 'language_approve' language.id %}">
-              {% csrf_token %}
-              <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
-                {% if not all_answered %}
-                  <span class="hint-disabled" title="Cannot approve while there are missing answers" tabindex="0">
-                    <button type="submit" class="btn btn--primary" disabled aria-disabled="true">Approve &amp; apply implications</button>
-                  </span>
-                {% else %}
-                  <button type="submit" class="btn btn--primary">Approve &amp; apply implications</button>
-                {% endif %}
-              </div>
-            </form>
-
-          </div>
-        {% else %}
-          <!-- === Toolbar USER  === -->
-          {% with s=lang_status.overall %}
-            {% if s == 'rejected' %}
-              <!-- Quando c'è stato un reject dell'admin: mostra SOLO REOPEN -->
-              <form method="post" action="{% url 'language_reopen' language.id %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--primary">Reopen</button>
-                <span class="locked-hint">La lingua è stata rifiutata: premi “Reopen” per riaprire la modifica.</span>
-              </form>
-            {% elif s == 'pending' %}
-              <!-- Stato normale di compilazione: mostra SUBMIT -->
-              <form method="post" action="{% url 'language_submit' language.id %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn--primary">Submit for review</button>
-              </form>
-            {% else %}
-              <!-- waiting_for_approval / approved: nessuna azione, bottone disabilitato -->
-              <span class="hint-disabled" title="{% if s == 'waiting_for_approval' or s == 'waiting' %}In attesa di revisione dell'admin{% else %}Già approvata dall'admin{% endif %}" tabindex="0">
-                <button type="button" class="btn" disabled aria-disabled="true">Submit for review</button>
-              </span>
-
-              <!-- Download Excel  -->
+            <div class="workflow-form-block">
               <a href="{% url 'language_export_xlsx' language.id %}"
-                 class="btn"
+                 class="btn workflow-secondary-btn"
                  title="Download .xlsx">
                 Download .xlsx
               </a>
-            {% endif %}
-          {% endwith %}
-        {% endif %}
-      </div>
+            </div>
+          {% endif %}
+        {% endwith %}
 
-    </div> 
-  </div>    
+      </div> <!-- /workflow-action-grid -->
+    {% endif %}
+  </div><!-- /card workflow-card -->
+
+    
 
   <!-- Barra di navigazione parametri -->
   <div class="param-nav" id="paramNav">
@@ -538,6 +615,296 @@
     .badge-review[hidden] { 
       display: none !important;
     }
+
+    /* === Workflow header (status + azioni) ================================== */
+
+.workflow-card {
+  /* niente qui per ora, usa .card base */
+}
+
+/* griglia: su mobile va in colonna, su desktop 2 colonne */
+.workflow-grid {
+  row-gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .workflow-grid {
+    align-items: flex-start;
+  }
+}
+
+.workflow-status-block {
+  min-width: 12rem;
+  font-size: .9rem;
+  line-height: 1.4;
+}
+
+.workflow-status-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.workflow-last-reject {
+  margin-top: .5rem;
+  padding: .5rem .75rem;
+  border-left: 3px solid var(--bad, #b00020);
+  background: var(--surface-2, rgba(0,0,0,0.03));
+  border-radius: 4px;
+}
+:root[data-theme="dark"] .workflow-last-reject {
+  background: rgba(255,255,255,0.05);
+}
+
+.workflow-last-reject .last-reject-label {
+  font-weight: 600;
+  margin-bottom: .25rem;
+  color: var(--fg, #222);
+}
+:root[data-theme="dark"] .workflow-last-reject .last-reject-label {
+  color: var(--fg, #fff);
+}
+
+.workflow-last-reject .last-reject-meta {
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--muted-fg, #666);
+  margin-bottom: .25rem;
+}
+
+.workflow-last-reject .last-reject-msg {
+  font-size: .9rem;
+  line-height: 1.4;
+}
+
+/* COLONNA DESTRA: blocchi azione */
+.workflow-actions-block {
+  font-size: .9rem;
+  line-height: 1.4;
+}
+
+.workflow-action-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: 1rem 1.5rem;
+  align-items: start;
+  width: 100%;
+}
+
+/* Ogni "blocco azione" (form o div) è verticale */
+.workflow-form-block {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .5rem;
+  min-width: 0;          /* evita overflow */
+}
+
+/* Pulsante principale e secondario riempiono larghezza blocco */
+.workflow-main-btn,
+.workflow-secondary-btn {
+  width: 100%;
+  text-align: center;
+  min-height: 2.4rem;
+  min-width: 10rem;
+  justify-content: center;
+}
+
+/* === Dettagli note (Submission/Rejection) ============================== */
+
+.note-details {
+  width: 100%;
+}
+
+
+/* il <summary> viene stilizzato come bottone cliccabile */
+.details-toggle-btn {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  background: var(--surface-2, #f1f3f5);
+  color: var(--fg, #222);
+  border: 1px solid var(--border, #d0d7de);
+  border-radius: 4px;
+  padding: .4rem .5rem;
+  user-select: none;
+}
+
+.details-toggle-btn:focus {
+  outline: 2px solid var(--focus, #2266ff);
+  outline-offset: 2px;
+}
+
+:root[data-theme="dark"] .details-toggle-btn {
+  background: var(--surface-2, #2a2d31);
+  color: var(--fg, #fff);
+  border-color: var(--border, #555);
+}
+
+/* pannello espanso con textarea */
+.details-panel {
+  margin-top: .5rem;
+  width: 100%;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #d0d7de);
+  border-radius: 4px;
+  padding: .5rem .75rem .75rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+
+:root[data-theme="dark"] .details-panel {
+  background: var(--surface, #1e1f22);
+  border-color: var(--border, #555);
+  box-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+
+.details-label {
+  font-size: .8rem;
+  font-weight: 500;
+  display: block;
+  margin-bottom: .25rem;
+  color: var(--fg, #222);
+}
+:root[data-theme="dark"] .details-label {
+  color: var(--fg, #fff);
+}
+
+.details-textarea {
+  width: 100%;
+  min-width: 100%;
+  min-height: 3rem;
+  max-height: 30vh;
+  resize: vertical;
+  line-height: 1.4;
+  font-size: .9rem;
+  padding: .4rem .5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border, #d0d7de);
+  background: var(--surface, #fff);
+  color: var(--fg, #222);
+}
+
+:root[data-theme="dark"] .details-textarea {
+  background: var(--surface-2, #2a2d31);
+  color: var(--fg, #fff);
+  border-color: var(--border, #555);
+}
+
+/* per differenziare visivamente la rejection note se vuoi più enfasi */
+.reject-details .details-panel {
+  border-left: 3px solid var(--bad, #b00020);
+}
+
+/* responsive: su schermi stretti mettiamo i blocchi azione uno sotto l'altro */
+@media (max-width: 600px) {
+  .workflow-actions-block {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .workflow-action-group {
+    grid-template-columns: 1fr;
+  }
+  .workflow-form-block {
+    width: 100%;
+    max-width: 100%;
+  }
+  .workflow-main-btn,
+  .workflow-secondary-btn {
+    width: 100%;
+  }
+}
+
+/* === Workflow card layout v2 ========================================= */
+
+/* la card già usa .card dal css globale */
+.workflow-card {
+  display: block;
+}
+
+/* blocco stato in alto */
+.workflow-status-block {
+  margin-bottom: 1rem;
+  font-size: .9rem;
+  line-height: 1.4;
+}
+
+.workflow-status-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* messaggio ultimo rifiuto già definito prima, lo teniamo identico */
+
+/* griglia delle azioni:
+   - 2 colonne su desktop/tablet
+   - 1 colonna su mobile
+   - max-width centrale per non andare troppo ai bordi
+*/
+.workflow-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem,100%), 1fr));
+  gap: 1rem 1.5rem;
+  align-items: start;
+
+  max-width: 60rem;         /* limita la larghezza per evitare "tutto schiacciato ai lati" */
+  margin: 0 auto;           /* CENTRA la griglia dentro la card */
+  width: 100%;
+}
+
+/* ogni blocco (save+note, reject+note, download, approve) */
+.workflow-form-block {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .5rem;
+  min-width: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .75rem 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+:root[data-theme="dark"] .workflow-form-block {
+  background: var(--surface-2);
+  box-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+
+/* pulsanti dentro i blocchi: full width */
+.workflow-main-btn,
+.workflow-secondary-btn {
+  width: 100%;
+  text-align: center;
+  min-height: 2.4rem;
+  min-width: 10rem;
+  justify-content: center;
+}
+
+/* la sezione note rimane subito sotto */
+.note-details {
+  width: 100%;
+}
+
+/* mobile force 1 colonna */
+@media (max-width: 600px) {
+  .workflow-action-grid {
+    grid-template-columns: 1fr;
+    max-width: 28rem;
+  }
+}
+
+
   </style>
 {% endblock %}
 

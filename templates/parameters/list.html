@@ -6,7 +6,6 @@
 
 {% include "_toolbar_search.html" with q=request.GET.q placeholder="Search a parameter…" add_url="parameter_add" add_label="Add a new parameter" %}
 
-<section class="card" aria-labelledby="table-heading">
   <h2 id="table-heading" class="sr-only">Parameter list</h2>
 
   <table class="table" role="table" aria-describedby="table-caption">
@@ -61,5 +60,4 @@
       {% endfor %}
     </tbody>
   </table>
-</section>
 {% endblock %}
