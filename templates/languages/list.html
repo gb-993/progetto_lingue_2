@@ -18,81 +18,46 @@
     <thead>
       <tr>
         <th scope="col">Id</th>
-        {# REMOVED: <th scope="col">Position</th> #}
         <th scope="col">Name</th>
-        <th scope="col" class="nowrap w-10ch">Glottocode</th>
-        <th scope="col" class="nowrap w-10ch">ISO code</th>
         <th scope="col">Top-level family</th>
-        <th scope="col">Family</th>
         <th scope="col">Group</th>
-        <th scope="col">Historical</th>
-        <th scope="col">Source</th>
-        <th scope="col">Supervisor</th>
-        <th scope="col">Informant</th>
-        {% if is_admin %}
-          <th scope="col">Assigned to</th>
-        {% endif %}
         <th scope="col">Last modified</th>
         <th scope="col" class="sr-only">Actions</th>
       </tr>
     </thead>
 
+
     <tbody>
       {% for l in languages %}
-      <tr>
-        <td data-label="Label">{{ l.id }}</td>
-        {# REMOVED: <td data-label="Position">{{ l.position }}</td> #}
-        <td data-label="Name">{{ l.name_full }}</td>
-        <td data-label="Glottocode" class="nowrap w-10ch">{{ l.glottocode }}</td>
-        <td data-label="ISO" class="nowrap w-10ch">{{ l.isocode }}</td>
-        <td data-label="Top-level">{{ l.top_level_family }}</td>
-        <td data-label="Family">{{ l.family }}</td>
-        <td data-label="Group">{{ l.grp }}</td>
-        <td data-label="Historical">
-          {% if l.historical_language %}
-            <span class="badge b-warn" title="Historical language">Historical</span>
-          {% else %}
-            <span class="muted">—</span>
-          {% endif %}
-        </td>
-        <td data-label="Source">
-          {% if l.source %}
-            {{ l.source }}
-          {% else %}
-            <span class="muted">—</span>
-          {% endif %}
-        </td>
+        <tr>
+          <td data-label="Id">{{ l.id }}</td>
 
-        <td data-label="Supervisor">{{ l.supervisor }}</td>
-        <td data-label="Informant">{{ l.informant }}</td>
+          <td data-label="Name">{{ l.name_full }}</td>
 
-        {% if is_admin %}
-          <td data-label="Assigned to">
-            {% if l.assigned_user %}
-              {{ l.assigned_user.name }} {{ l.assigned_user.surname }}
+          <td data-label="Top-level">{{ l.top_level_family }}</td>
+
+          <td data-label="Group">{{ l.grp }}</td>
+
+          <td data-label="Last modified">
+            {% if l.last_change %}
+              {{ l.last_change|date:"Y-m-d H:i" }}
             {% else %}
               <span class="muted">—</span>
             {% endif %}
           </td>
-        {% endif %}
 
-        <td data-label="Last modified">
-          {% if l.last_change %}
-            {{ l.last_change|date:"Y-m-d H:i" }}
-          {% else %}
-            <span class="muted">—</span>
-          {% endif %}
-        </td>
-
-        <td class="row-actions" data-label="Actions">
-          <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
-          {% if is_admin %}
-            <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
-            <a class="btn" href="{% url 'language_debug' l.id %}">Debug</a>
-          {% endif %}
-        </td>
-      </tr>
+          <td class="row-actions" data-label="Actions">
+            <div class="row-actions-buttons" style="display:flex; flex-wrap:wrap; gap:.5rem;">
+              <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
+              {% if is_admin %}
+                <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
+                <a class="btn" href="{% url 'language_debug' l.id %}">Debug</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
       {% endfor %}
+
     </tbody>
   </table>
 </div>

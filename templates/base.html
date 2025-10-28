@@ -40,7 +40,8 @@
       {% with urln=request.resolver_match.url_name|default:'' %}
       <nav class="nav" aria-label="Main">
         <ul class="nav-list">
-          {# Sempre visibili a tutti #}
+
+          {# Link principali #}
           <li>
             {% if urln == 'dashboard' %}
               <span class="btn is-current" aria-current="page" aria-disabled="true">Dashboard</span>
@@ -65,7 +66,6 @@
             {% endif %}
           </li>
 
-          {# Solo USER (non admin/staff/superuser) → My Account #}
           {% if not request.user.is_staff and not request.user.is_superuser and request.user.role != 'admin' %}
             <li>
               {% if urln == 'my_account' %}
@@ -76,7 +76,6 @@
             </li>
           {% endif %}
 
-          {# Solo ADMIN/STAFF/SUPERUSER → voci admin #}
           {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
             <li>
               {% if urln == 'parameter_list' or urln == 'parameter_edit' or urln == 'parameter_add' %}
@@ -119,22 +118,25 @@
             </li>
           {% endif %}
 
-          {# Logout sempre #}
-          <li>
+          {# Spaziatore elastico che crea buco e spinge Logout/Theme a destra #}
+          <li class="nav-spacer" aria-hidden="true"></li>
+
+          {# Gruppo sessione (logout + tema), visivamente separato #}
+          <li class="nav-session">
             <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
               <button class="btn" type="submit">Logout</button>
             </form>
-          </li>
-          <li class="nav-item-theme">
+
             <button id="theme-toggle"
                     type="button"
                     class="btn theme-toggle"
                     aria-label="Toggle theme"
                     aria-live="polite"
-                    aria-pressed="false">
-            </button>
+                    aria-pressed="false"></button>
           </li>
+
         </ul>
+
       </nav>
       {% endwith %}
 
@@ -186,8 +188,8 @@
       function updateButton(theme) {
         // Usa caratteri Unicode diretti
         var icon = theme === 'dark'
-          ? '☀︎'  // Sole per passare al tema chiaro
-          : '☾︎'; // Luna per passare al tema scuro
+          ? 'Light'  
+          : 'Dark'; 
         btn.textContent = icon;
         btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
         btn.setAttribute('aria-label', 'Toggle theme');

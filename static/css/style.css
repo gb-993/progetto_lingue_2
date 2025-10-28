@@ -189,33 +189,77 @@ a:hover{text-decoration:underline}
   margin-bottom: 1rem; /* spazio maggiore tra subtitle e nav-list */
 }
 
-.nav{
+
+
+
+
+
+.nav {
   margin-top: .5rem;
-  margin-bottom: 1.5rem; /* aumenta lo spazio verticale sotto il sottotitolo */
-}
-.nav-list{
-  list-style:none; display:flex; align-items:center; gap:.5rem;
-  margin:0; padding:0; flex-wrap:wrap; justify-content:flex-start;
+  margin-bottom: 1.5rem; /* spazio sotto il sottotitolo */
 }
 
-.nav-list form[action*="logout"] {
-  margin-left: auto;
+/* barra di navigazione */
+.nav-list {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  justify-content: flex-start;
 }
 
-.nav-item-theme .btn.theme-toggle {
+/* crea vuoto espandibile tra i tab "normali" e il gruppo sessione */
+.nav-list .nav-spacer {
+  flex: 1 1 auto;                 /* prende tutto lo spazio disponibile */
+  min-width: 2rem;                /* garantisce spaziatura anche se va a capo */
+  height: 1.5rem;
+  margin-left: .75rem;
+  padding-left: .75rem;
+  border-left: 1px solid var(--border);  /* linea di separazione visiva */
+}
+
+/* gruppo Logout + Theme tenuti insieme dopo lo spacer */
+.nav-list .nav-session {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+/* larghezza minima coerente dei due bottoni finali */
+.nav-list .nav-session .btn {
   min-width: 5rem;
   text-align: center;
 }
-.nav-list > li{ margin:0; padding:0; }
-.nav-list form{ display:inline; margin:0; }
-.nav-list .btn{
-  padding:.45rem .7rem; border-radius:10px; background:var(--surface-2);
-  border:1px solid var(--border); font-weight:600; text-decoration:none;
+
+/* stile generale bottoni nella nav */
+.nav-list > li { margin: 0; padding: 0; }
+.nav-list form { display: inline; margin: 0; }
+.nav-list .btn {
+  padding: .45rem .7rem;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  text-decoration: none;
 }
-.nav-list .btn:hover{ text-decoration:none; transform:translateY(-1px); }
-.nav-list [aria-current="page"]{
-  background:var(--brand); border-color:color-mix(in oklab, var(--brand) 75%, black); color:#fff;
+.nav-list .btn:hover {
+  text-decoration: none;
+  transform: translateY(-1px);
 }
+.nav-list [aria-current="page"] {
+  background: var(--brand);
+  border-color: color-mix(in oklab, var(--brand) 75%, black);
+  color: #fff;
+}
+
+
+
+
+
+
 
 .breadcrumb{ margin-top:.5rem; color:var(--text-muted); }
 .breadcrumb a{ color:inherit; text-decoration:underline; }
@@ -494,6 +538,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   margin-bottom: 1.75rem;   /* un filo più distanziata dal contenuto sotto */
   flex-wrap: wrap;
 }
+/* === Toolbar buttons – dark mode fix === */
+:root[data-theme="dark"] .toolbar .btn--search,
+:root[data-theme="dark"] .toolbar .btn--primary {
+  color: #fff !important;
+}
+
 .toolbar__form{
   display:flex; align-items:center;
   gap: 0.65rem;             /* più spazio tra input e bottone Search */
@@ -709,14 +759,6 @@ details.help-info { margin: .35rem 0 .5rem; }
 details.help-info > summary { cursor: pointer; gap: .35rem; }
 details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--border); }
 
-/* === Languages list: usa tutta la larghezza e centra il contenuto === */
-body.languages-list main > .container {
-  max-width: 80% !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
 /* === QUERIES NAVIGATION (vertical menu version) === */
 .queries-page .queries-nav {
   width: 100%;
