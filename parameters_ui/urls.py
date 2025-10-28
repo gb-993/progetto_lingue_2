@@ -11,5 +11,7 @@ urlpatterns = [
     path("languages/<str:lang_id>/review-flags/", views.review_flags_list, name="review_flags_list"),
     path("languages/<str:lang_id>/parameters/<str:param_id>/review-flag/", views.toggle_review_flag, name="toggle_review_flag"),
     path("lookups/", views.lookups_manage, name="param_lookups_manage"),
+    path("parameters/motivations/", views.motivations_manage, name="motivations_manage"),
+
 
 ]

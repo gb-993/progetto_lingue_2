@@ -7,10 +7,7 @@
 <div class="card">
   <h2>{% if is_create %}Add question{% else %}Edit question{% endif %} — {{ parameter.id }}</h2>
 
-
-
   <form method="post" novalidate>
-
     {% csrf_token %}
 
     {% if form.non_field_errors %}
@@ -23,7 +20,6 @@
         <input class="form-control" value="{{ form.instance.id }}" readonly>
         {{ form.id.as_hidden }}
       </div>
-
 
       <div class="form-row">
         {{ form.template_type.label_tag }} {{ form.template_type }}
@@ -71,41 +67,14 @@
         <div class="muted" style="margin-top:.5rem;">
           Select which motivations will be available to users when they answer "NO" to this question.
         </div>
+
+        <div class="actions" style="margin-top:.75rem;">
+          <a class="btn" href="{% url 'motivations_manage' %}" target="_blank" rel="noopener"
+             aria-label="Open motivation manager in a new tab">
+            Manage motivations
+          </a>
+        </div>
       </div>
-
-      <fieldset class="form-row card" style="grid-column: 1 / -1; margin-top:1rem;">
-        <legend class="h4" style="font-size:1rem; font-weight:600; margin-bottom:.5rem;">
-          Add a new motivation
-        </legend>
-
-        <div class="muted" style="margin-bottom:.5rem;">
-          Create a new motivation and it will immediately become available in the list above.
-        </div>
-
-        {% if motivation_form.non_field_errors %}
-          <div class="field-error">{{ motivation_form.non_field_errors }}</div>
-        {% endif %}
-
-        <div class="grid grid-2" style="gap:1rem;">
-          <div class="form-row">
-            {{ motivation_form.code.label_tag }} {{ motivation_form.code }}
-            {% if motivation_form.code.errors %}
-              <div class="field-error">{{ motivation_form.code.errors }}</div>
-            {% endif %}
-          </div>
-
-          <div class="form-row" style="grid-column: 1 / -1;">
-            {{ motivation_form.label.label_tag }} {{ motivation_form.label }}
-            {% if motivation_form.label.errors %}
-              <div class="field-error">{{ motivation_form.label.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="muted" style="margin-top:.5rem;">
-          Leave this section empty if you don't want to add a new motivation.
-        </div>
-      </fieldset>
 
     </div>
 

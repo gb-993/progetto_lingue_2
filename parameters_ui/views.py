@@ -8,14 +8,30 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
-from core.models import ParameterDef, Question , ParameterChangeLog 
-from .forms import ParameterForm, QuestionForm, DeactivateParameterForm, MotivationCreateForm
-from django.db.models import Q, Count, Sum, Case, When, IntegerField
-from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponseBadRequest
-from core.models import ParameterDef, Question, ParameterChangeLog, Language, ParameterReviewFlag
-from django.views.decorators.http import require_http_methods, require_POST
-from core.models import ParamSchema, ParamType
+from django.db.models import Q, Count, Sum, Case, When, IntegerField
+
+from core.models import (
+    ParameterDef,
+    Question,
+    ParameterChangeLog,
+    Language,
+    ParameterReviewFlag,
+    Answer,
+    Example,
+    AnswerMotivation,
+    QuestionAllowedMotivation,
+    Motivation,
+    ParamSchema,
+    ParamType,
+)
+
+from .forms import (
+    ParameterForm,
+    QuestionForm,
+    DeactivateParameterForm,
+)
+
 
 # -------------------------------
 # Utilità / Policy
@@ -279,44 +295,23 @@ def parameter_deactivate(request, param_id: str):
     )
     return redirect("parameter_edit", param_id=param.id)
 
+
+
+
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def question_add(request, param_id: str):
     """
     Crea una nuova domanda per il parametro.
-    Ora permette anche di creare una nuova Motivation nello stesso submit.
+    NON crea più motivazioni inline: ora le motivazioni si gestiscono
+    nella pagina dedicata ('motivations_manage').
     - La checkbox 'is_stop_question' è visibile solo qui (gestito in QuestionForm.__init__).
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
     instance = Question(parameter=param)
 
     if request.method == "POST":
-        # 1. Bind del form per la nuova motivation
-        mot_form = MotivationCreateForm(request.POST)
-
-        # Se l'admin ha provato a creare una nuova motivation, validiamo e salviamo subito
-        if mot_form.has_meaningful_input():
-            if mot_form.is_valid():
-                mot_form.save()  # crea la nuova Motivation globale
-            else:
-                # Motivation non valida → NON procediamo oltre, mostriamo errori
-                q_form = QuestionForm(request.POST, instance=instance)
-                messages.error(request, "Please fix the errors below.")
-                return render(
-                    request,
-                    "parameters/question_form.html",
-                    {
-                        "form": q_form,
-                        "motivation_form": mot_form,
-                        "parameter": param,
-                        "is_create": True,
-                    },
-                )
-
-        # 2. A questo punto la Motivation nuova (se valida) è a db.
-        #    Ricreiamo il QuestionForm DOPO, così la sua queryset di motivations
-        #    include anche quella appena creata.
         q_form = QuestionForm(request.POST, instance=instance)
 
         if q_form.is_valid():
@@ -324,7 +319,6 @@ def question_add(request, param_id: str):
                 obj = q_form.save(commit=False)
                 obj.parameter = param
                 obj.save()
-                # salva le M2M/motivations (tramite save_m2m del form)
                 q_form.save_m2m()
 
             messages.success(request, "Domanda creata.")
@@ -336,60 +330,40 @@ def question_add(request, param_id: str):
                 "parameters/question_form.html",
                 {
                     "form": q_form,
-                    "motivation_form": mot_form,
                     "parameter": param,
                     "is_create": True,
                 },
             )
 
     else:
-        # GET iniziale
         q_form = QuestionForm(instance=instance)
-        mot_form = MotivationCreateForm()  # vuoto
         return render(
             request,
             "parameters/question_form.html",
             {
                 "form": q_form,
-                "motivation_form": mot_form,
                 "parameter": param,
                 "is_create": True,
             },
         )
+
+
+
+
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def question_edit(request, param_id: str, question_id: str):
     """
     Modifica una domanda esistente.
-    Ora permette anche di creare una nuova Motivation nello stesso submit.
+    NON crea più motivazioni inline: ora le motivazioni si gestiscono
+    nella pagina dedicata ('motivations_manage').
     - In edit la checkbox 'is_stop_question' NON è mostrata (gestito in QuestionForm.__init__).
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
     question = get_object_or_404(Question, pk=question_id, parameter=param)
 
     if request.method == "POST":
-        mot_form = MotivationCreateForm(request.POST)
-
-        if mot_form.has_meaningful_input():
-            if mot_form.is_valid():
-                mot_form.save()
-            else:
-                q_form = QuestionForm(request.POST, instance=question)
-                messages.error(request, "Please fix the errors below.")
-                return render(
-                    request,
-                    "parameters/question_form.html",
-                    {
-                        "form": q_form,
-                        "motivation_form": mot_form,
-                        "parameter": param,
-                        "is_create": False,
-                        "question": question,
-                    },
-                )
-
-        # ricreiamo dopo aver salvato l'eventuale nuova motivation
         q_form = QuestionForm(request.POST, instance=question)
 
         if q_form.is_valid():
@@ -403,7 +377,6 @@ def question_edit(request, param_id: str, question_id: str):
                 "parameters/question_form.html",
                 {
                     "form": q_form,
-                    "motivation_form": mot_form,
                     "parameter": param,
                     "is_create": False,
                     "question": question,
@@ -412,18 +385,19 @@ def question_edit(request, param_id: str, question_id: str):
 
     else:
         q_form = QuestionForm(instance=question)
-        mot_form = MotivationCreateForm()
         return render(
             request,
             "parameters/question_form.html",
             {
                 "form": q_form,
-                "motivation_form": mot_form,
                 "parameter": param,
                 "is_create": False,
                 "question": question,
             },
         )
+
+
+
 
 
 from django.db import transaction
@@ -591,3 +565,45 @@ def lookups_manage(request):
     schemas = ParamSchema.objects.order_by("label")
     types = ParamType.objects.order_by("label")
     return render(request, "parameters/lookups.html", {"schemas": schemas, "types": types})
+
+
+
+@login_required
+@user_passes_test(_is_admin)
+@require_http_methods(["GET", "POST"])
+def motivations_manage(request):
+    """
+    Gestione minimale per Motivation (code + label).
+    Azioni:
+      - POST add_motivation: code, label
+      - POST del_motivation: id
+    """
+    if request.method == "POST":
+        action = request.POST.get("action")
+        try:
+            if action == "add_motivation":
+                Motivation.objects.create(
+                    code=(request.POST.get("code") or "").strip(),
+                    label=(request.POST.get("label") or "").strip(),
+                )
+                messages.success(request, "Motivation added.")
+                return redirect("motivations_manage")
+
+            if action == "del_motivation":
+                pk = request.POST.get("id")
+                # NB: on_delete=RESTRICT su AnswerMotivation / QuestionAllowedMotivation
+                # significa che se è ancora referenziata potresti avere eccezioni DB.
+                # Per ora tentiamo e se fallisce mostriamo errore.
+                try:
+                    Motivation.objects.filter(pk=pk).delete()
+                    messages.success(request, "Motivation deleted.")
+                except Exception as e:
+                    messages.error(request, f"Cannot delete motivation: {e}")
+                return redirect("motivations_manage")
+
+            messages.error(request, "Unknown action.")
+        except Exception as e:
+            messages.error(request, f"Operation failed: {e}")
+
+    motivations = Motivation.objects.order_by("code")
+    return render(request, "parameters/motivations.html", {"motivations": motivations})

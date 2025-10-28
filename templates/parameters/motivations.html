@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Motivations{% endblock %}
+{% block breadcrumb %}Parameters / Motivations{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Motivations</h2>
+  <p class="muted">
+    Add or remove motivations. These values feed the checkboxes in the Question form.
+  </p>
+
+  <form method="post" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:1rem; align-items:end; margin-bottom:1rem;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add_motivation">
+
+    <div class="form-row">
+      <label for="mot-new-code">New code</label>
+      <input id="mot-new-code" class="form-control" name="code" required placeholder="e.g. MOT1">
+    </div>
+
+    <div class="form-row" style="grid-column:1 / -1;">
+      <label for="mot-new-label">Label / description</label>
+      <textarea id="mot-new-label" class="form-control" name="label" rows="2" required placeholder="Describe this motivation..."></textarea>
+    </div>
+
+    <div class="actions" style="grid-column:1 / -1;">
+      <button class="btn btn--primary" type="submit">Add motivation</button>
+    </div>
+  </form>
+
+  <table class="table" style="margin-top:.75rem;">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Label</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in motivations %}
+      <tr>
+        <td>{{ m.code }}</td>
+        <td>{{ m.label }}</td>
+        <td>
+          <form method="post" style="display:inline" onsubmit="return confirm('Delete this motivation?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="del_motivation">
+            <input type="hidden" name="id" value="{{ m.id }}">
+            <button class="btn btn--danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3">
+          <p class="muted">No motivations yet.</p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="muted" style="margin-top:.75rem;">
+    Removing a motivation that is already in use may fail if it is referenced by existing answers.
+  </p>
+</section>
+{% endblock %}

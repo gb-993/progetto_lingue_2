@@ -2,23 +2,23 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
 from django.contrib.auth import authenticate
+
 from core.models import (
     ParameterDef,
     Question,
     Motivation,
     QuestionAllowedMotivation,
+    ParamSchema,
+    ParamType,
 )
+from core.services.logic_parser import validate_expression, ParseException
 
 
 # =========================
 # PARAMETER FORM (ModelForm)
 # =========================
-from django import forms
-from core.services.logic_parser import validate_expression, ParseException
-from core.models import ParameterDef, ParamSchema, ParamType
-
 class ParameterForm(forms.ModelForm):
-    # menu a tendina 
+    # menu a tendina
     schema = forms.ChoiceField(
         required=False,
         choices=[],
@@ -41,8 +41,8 @@ class ParameterForm(forms.ModelForm):
             "short_description",
             "implicational_condition",
             "is_active",
-            "schema",       
-            "param_type",   
+            "schema",
+            "param_type",
         ]
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
@@ -57,7 +57,7 @@ class ParameterForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.can_deactivate = can_deactivate
 
-        # Popola le scelte dai lookup 
+        # Popola le scelte dai lookup
         schema_labels = list(ParamSchema.objects.order_by("label").values_list("label", flat=True))
         type_labels   = list(ParamType.objects.order_by("label").values_list("label", flat=True))
 
@@ -75,7 +75,7 @@ class ParameterForm(forms.ModelForm):
         self.fields["schema"].choices = schema_choices
         self.fields["param_type"].choices = type_choices
 
-        # Campo "change_note" lo lascio intatto se già presente altrove; se manca, lo aggiungo
+        # Campo "change_note" se non già presente
         if "change_note" not in self.fields:
             self.fields["change_note"] = forms.CharField(
                 label="Recap modifiche",
@@ -88,14 +88,12 @@ class ParameterForm(forms.ModelForm):
                 help_text="Mandatory if you changed any field.",
             )
 
-
     def clean(self):
         cleaned = super().clean()
         instance = getattr(self, "instance", None)
         has_pk = bool(instance and instance.pk)
 
         # Se NON posso disattivare e l'istanza è attiva, forza comunque is_active=True
-        # per evitare flip a False quando il checkbox è disabled (e quindi non postato).
         if has_pk and getattr(self, "can_deactivate", True) is False and instance.is_active:
             cleaned["is_active"] = True
 
@@ -133,7 +131,6 @@ class ParameterForm(forms.ModelForm):
         return raw
 
 
-
 # =========================
 # QUESTION FORM (ModelForm)
 # =========================
@@ -147,7 +144,7 @@ class QuestionForm(forms.ModelForm):
     ]
     template_type = forms.ChoiceField(choices=TEMPLATE_CHOICES, required=False)
 
-    # Campo “virtuale” per selezionare le motivazioni consentite (gestito a mano)
+    # Campo virtuale per le motivazioni disponibili per questa domanda
     motivations = forms.ModelMultipleChoiceField(
         queryset=Motivation.objects.all(),
         required=False,
@@ -179,7 +176,7 @@ class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # === Gestione 'id'
+        # Gestione 'id'
         if "id" in self.fields:
             if self.instance and self.instance.pk:
                 # EDIT: id non modificabile ma deve rientrare nel POST (hidden)
@@ -196,38 +193,21 @@ class QuestionForm(forms.ModelForm):
                 self.instance.allowed_motivations.values_list("pk", flat=True)
             )
 
-        # >>> Checkbox 'is_stop_question' SOLO in creazione
+        # in edit nascondiamo la checkbox stop_question (solo creazione)
         if self.instance and self.instance.pk:
-            # in edit la rimuoviamo del tutto
             self.fields.pop("is_stop_question", None)
 
-    # --- Salvataggio & sincronizzazione ---
-
+    # Salvataggio + sync delle motivazioni
     def save(self, commit=True):
-        """
-        Salva la Question. Se commit=True, sincronizza subito le motivazioni
-        tramite save_m2m(). Se commit=False, la sincronizzazione andrà fatta
-        dopo che l'istanza è stata salvata, chiamando form.save_m2m().
-        """
         instance = super().save(commit=commit)
-        # Se abbiamo già il PK (commit=True oppure l'istanza era già salvata),
-        # possiamo sincronizzare immediatamente; altrimenti si farà nel save_m2m().
         if instance.pk and commit:
             self.save_m2m()
         return instance
 
     def save_m2m(self):
-        """
-        Override del hook chiamato da ModelForm quando si usa save(commit=False).
-        Qui sincronizziamo la tabella ponte QuestionAllowedMotivation in base a
-        'motivations' del form.
-        """
         instance = getattr(self, "instance", None)
         if not instance or not instance.pk:
-            # Nulla da fare se non abbiamo ancora un PK
             return
-
-        # Se il campo non è nel cleaned_data (ad esempio form non valido), esci
         if "motivations" not in self.cleaned_data:
             return
 
@@ -237,7 +217,7 @@ class QuestionForm(forms.ModelForm):
             .values_list("motivation_id", flat=True)
         )
 
-        # Aggiunte
+        # aggiunte
         to_add = selected - existing
         if to_add:
             QuestionAllowedMotivation.objects.bulk_create(
@@ -248,59 +228,12 @@ class QuestionForm(forms.ModelForm):
                 ignore_conflicts=True,
             )
 
-        # Rimozioni
+        # rimozioni
         to_del = existing - selected
         if to_del:
             QuestionAllowedMotivation.objects.filter(
                 question=instance, motivation_id__in=to_del
             ).delete()
-
-
-# =========================
-# MOTIVATION FORM (ModelForm)
-# =========================
-
-class MotivationCreateForm(forms.ModelForm):
-    """
-    Form semplice per creare una nuova Motivation mentre si sta creando/modificando una Question.
-    Lo usiamo nella stessa pagina di question_add / question_edit.
-    """
-
-    class Meta:
-        model = Motivation
-        fields = ["code", "label"]
-        widgets = {
-            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. MOT1"}),
-            "label": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Describe this motivation..."}),
-        }
-
-    def has_meaningful_input(self):
-        """
-        Ritorna True se l'admin ha effettivamente provato a inserire una nuova motivation.
-        Questo ci serve per distinguere:
-        - caso in cui il form è tutto vuoto (non vuole creare niente) -> non validiamo
-        - caso in cui c'è qualcosa -> allora validiamo e salviamo
-        """
-        code = (self.data.get(self.add_prefix("code")) or "").strip()
-        label = (self.data.get(self.add_prefix("label")) or "").strip()
-        return bool(code or label)
-
-    def clean(self):
-        cleaned = super().clean()
-        # Se l'utente non ha provato a inserire niente, saltiamo la validazione obbligatoria.
-        if not self.has_meaningful_input():
-            return cleaned
-
-        # Se vuole creare, allora entrambi i campi devono esserci
-        code = (cleaned.get("code") or "").strip()
-        label = (cleaned.get("label") or "").strip()
-
-        if not code:
-            self.add_error("code", "Required if you want to add a new motivation.")
-        if not label:
-            self.add_error("label", "Required if you want to add a new motivation.")
-        return cleaned
-
 
 
 # =========================
@@ -321,7 +254,6 @@ QuestionFormSet = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
-
 
 
 class DeactivateParameterForm(forms.Form):
@@ -353,7 +285,6 @@ class DeactivateParameterForm(forms.Form):
         user = getattr(self.request, "user", None)
         if not user or not user.is_authenticated:
             raise forms.ValidationError("Utente non autenticato.")
-        # Re-auth semplice: verifica la password dell'utente corrente
         if not user.check_password(pwd):
             raise forms.ValidationError("Password non corretta.")
         return cleaned
