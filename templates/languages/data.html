@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %} 
 {% load static %}
 
 {% block title %}Language data{% endblock %}
@@ -7,91 +7,88 @@
 {% block content %}
 <main class="{% with s=lang_status.overall %}{% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}is-readonly{% endif %}{% endwith %}">
   <div class="card" style="display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:flex-start;">
-  <!-- Blocco titolo lingua -->
-  <div style="min-width:12rem; flex:1 1 auto;">
-    <h2 style="margin-top:0;">{{ language.name_full }} ({{ language.id }})</h2>
-  </div>
+    <!-- Blocco titolo lingua -->
+    <div style="min-width:12rem; flex:1 1 auto;">
+      <h2 style="margin-top:0;">{{ language.name_full }} ({{ language.id }})</h2>
+    </div>
 
-  <!-- Blocco metadati lingua -->
-  <div style="flex:1 1 16rem; max-width:32rem; font-size:.9rem; line-height:1.4;">
-    <dl class="language-meta-grid" style="display:grid; grid-template-columns:auto 1fr; column-gap:.5rem; row-gap:.25rem; margin:0;">
+    <!-- Blocco metadati lingua -->
+    <div style="flex:1 1 16rem; max-width:32rem; font-size:.9rem; line-height:1.4;">
+      <dl class="language-meta-grid" style="display:grid; grid-template-columns:auto 1fr; column-gap:.5rem; row-gap:.25rem; margin:0;">
 
-      {# Glottocode #}
-      <dt style="font-weight:600;">Glottocode</dt>
-      <dd>
-        {% if language.glottocode %}
-          {{ language.glottocode }}
-        {% else %}
-          <span class="muted">—</span>
-        {% endif %}
-      </dd>
-
-      {# ISO code #}
-      <dt style="font-weight:600;">ISO code</dt>
-      <dd>
-        {% if language.isocode %}
-          {{ language.isocode }}
-        {% else %}
-          <span class="muted">—</span>
-        {% endif %}
-      </dd>
-
-      {# Family (non top-level: quella resta nella lista) #}
-      {% if language.family %}
-        <dt style="font-weight:600;">Family</dt>
-        <dd>{{ language.family }}</dd>
-      {% endif %}
-
-      {# Historical #}
-      <dt style="font-weight:600;">Historical</dt>
-      <dd>
-        {% if language.historical_language %}
-          <span  title="Historical language">Yes</span>
-        {% else %}
-          <span class="muted">—</span>
-        {% endif %}
-      </dd>
-
-      {# Source #}
-      <dt style="font-weight:600;">Source</dt>
-      <dd>
-        {% if language.source %}
-          {{ language.source }}
-        {% else %}
-          <span class="muted">—</span>
-        {% endif %}
-      </dd>
-
-      {# Supervisor #}
-      {% if language.supervisor %}
-        <dt style="font-weight:600;">Supervisor</dt>
-        <dd>{{ language.supervisor }}</dd>
-      {% endif %}
-
-      {# Informant #}
-      {% if language.informant %}
-        <dt style="font-weight:600;">Informant</dt>
-        <dd>{{ language.informant }}</dd>
-      {% endif %}
-
-      {# Assigned user: solo admin #}
-      {% if is_admin %}
-        <dt style="font-weight:600;">Assigned to</dt>
+        {# Glottocode #}
+        <dt style="font-weight:600;">Glottocode</dt>
         <dd>
-          {% if language.assigned_user %}
-            {{ language.assigned_user.name }} {{ language.assigned_user.surname }}
+          {% if language.glottocode %}
+            {{ language.glottocode }}
           {% else %}
             <span class="muted">—</span>
           {% endif %}
         </dd>
-      {% endif %}
 
+        {# ISO code #}
+        <dt style="font-weight:600;">ISO code</dt>
+        <dd>
+          {% if language.isocode %}
+            {{ language.isocode }}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </dd>
 
-    </dl>
+        {# Family (non top-level: quella resta nella lista) #}
+        {% if language.family %}
+          <dt style="font-weight:600;">Family</dt>
+          <dd>{{ language.family }}</dd>
+        {% endif %}
+
+        {# Historical #}
+        <dt style="font-weight:600;">Historical</dt>
+        <dd>
+          {% if language.historical_language %}
+            <span title="Historical language">Yes</span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </dd>
+
+        {# Source #}
+        <dt style="font-weight:600;">Source</dt>
+        <dd>
+          {% if language.source %}
+            {{ language.source }}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </dd>
+
+        {# Supervisor #}
+        {% if language.supervisor %}
+          <dt style="font-weight:600;">Supervisor</dt>
+          <dd>{{ language.supervisor }}</dd>
+        {% endif %}
+
+        {# Informant #}
+        {% if language.informant %}
+          <dt style="font-weight:600;">Informant</dt>
+          <dd>{{ language.informant }}</dd>
+        {% endif %}
+
+        {# Assigned user: solo admin #}
+        {% if is_admin %}
+          <dt style="font-weight:600;">Assigned to</dt>
+          <dd>
+            {% if language.assigned_user %}
+              {{ language.assigned_user.name }} {{ language.assigned_user.surname }}
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </dd>
+        {% endif %}
+
+      </dl>
+    </div>
   </div>
-</div>
-
-
 
   {# === Stato e azioni workflow === #}
   <div class="card" style="margin-top:.5rem">
@@ -123,9 +120,10 @@
       </div>
 
       <div class="toolbar" style="justify-content:flex-end; gap:.5rem; flex-wrap:wrap">
-  {% if is_admin %}
+        {% if is_admin %}
           <!-- === Toolbar ADMIN  === -->
           <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+
             <form id="submission-create-form"
                   method="post"
                   action="{% url 'submission_create_for_language' language.id %}"
@@ -158,7 +156,7 @@
                 </details>
               </div>
             </form>
-            
+
             <!-- Download Excel (Examples per tutti; Answers solo per admin) -->
             <div style="display:flex; flex-direction:column; align-items:flex-start; gap:.3rem;">
               <a href="{% url 'language_export_xlsx' language.id %}"
@@ -166,9 +164,7 @@
                  title="Download .xlsx">
                 Download Excel
               </a>
-              <!-- <small class="muted">Download .xlsx</small> -->
             </div>
-
 
             <form method="post" action="{% url 'language_approve' language.id %}">
               {% csrf_token %}
@@ -182,6 +178,7 @@
                 {% endif %}
               </div>
             </form>
+
           </div>
         {% else %}
           <!-- === Toolbar USER  === -->
@@ -206,11 +203,11 @@
               </span>
 
               <!-- Download Excel  -->
-            <a href="{% url 'language_export_xlsx' language.id %}"
-               class="btn"
-               title="Download .xlsx">
-              Download .xlsx
-            </a>
+              <a href="{% url 'language_export_xlsx' language.id %}"
+                 class="btn"
+                 title="Download .xlsx">
+                Download .xlsx
+              </a>
             {% endif %}
           {% endwith %}
         {% endif %}
@@ -234,135 +231,72 @@
         <span class="badge-review" aria-hidden="true" hidden>!</span> 
         {{ p.id }} 
       </div>
-
     {% endfor %}
   </div>
 
   {% for p in parameters %}
-  <section id="p-{{ p.id }}" class="param-section card">
-    <h3 class="param-title">
-  {{ p.id }} — {{ p.name }}
-  <label class="review-flag">
-    <input
-      type="checkbox"
-      class="review-flag-input"
-      data-param="{{ p.id }}"
-      data-lang="{{ language.id }}"
-      aria-label="Mark {{ p.id }} as 'to review'">
-    <!-- <span class="pill pill--warn" aria-hidden="true">!</span> -->
-    <span class="muted small">Mark as needs review</span>
-  </label>
-</h3>
-    {% if p.short_description %}
-      <p class="muted">{{ p.short_description }}</p>
-    {% endif %}
+    <section id="p-{{ p.id }}" class="param-section card">
+      <h3 class="param-title">
+        {{ p.id }} — {{ p.name }}
+        <label class="review-flag">
+          <input
+            type="checkbox"
+            class="review-flag-input"
+            data-param="{{ p.id }}"
+            data-lang="{{ language.id }}"
+            aria-label="Mark {{ p.id }} as 'to review'">
+          <span class="muted small">Mark as needs review</span>
+        </label>
+      </h3>
 
-    <form method="post" action="{% url 'parameter_save' language.id p.id %}">
-      {% csrf_token %}
-      {% for q in p.questions.all %}
-        <div class="card" style="margin-bottom:.5rem">
-          <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
+      {% if p.short_description %}
+        <p class="muted">{{ p.short_description }}</p>
+      {% endif %}
 
-          {% if q.example_yes %}
-            <div class="muted" style="margin:.25rem 0 .5rem;">
-              <strong>Example YES:</strong> {{ q.example_yes|linebreaksbr }}
-            </div>
-          {% endif %}
+      <form method="post" action="{% url 'parameter_save' language.id p.id %}">
+        {% csrf_token %}
+        {% for q in p.questions.all %}
+          <div class="card" style="margin-bottom:.5rem">
 
-          {% if q.instruction %}
-            <div class="muted" style="margin:.25rem 0 .5rem;">
-              <strong>Instructions:</strong> {{ q.instruction|linebreaksbr }}
-            </div>
-          {% endif %}
+            {# --- Testo domanda + help --- #}
+            <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
 
-
-          {% if q.help_info %}
-          <details class="help-info">
-            <summary><span aria-hidden="true">❓</span> More info</summary>
-            <div class="muted">{{ q.help_info|linebreaksbr }}</div>
-          </details>
-        {% endif %}
-
-
-          <div class="qa-fields">
-            <div>
-              <label for="resp_{{ q.id }}">Answer</label>
-              <select id="resp_{{ q.id }}" name="resp_{{ q.id }}" class="resp-select" data-qid="{{ q.id }}">
-                <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
-                <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
-                <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="com_{{ q.id }}">Comments</label>
-              <textarea id="com_{{ q.id }}" name="com_{{ q.id }}" rows="2"
-                        class="auto-grow"
-                        data-autosize="1">{{ q.ans.comments }}</textarea>
-            </div>
-
-            
-
-          </div>
-
-
-          <div class="examples-block" data-qid="{{ q.id }}"
-              data-template="{{ q.template_type|default:'linear' }}"
-              {% if q.ans.response_text == "" %}style="display:none"{% endif %}>
-
-            <div class="toolbar" style="margin:.5rem 0">
-              <strong>Examples</strong>
-            </div>
-            <p class="muted" style="margin:.25rem 0 .5rem;">
-              Please provide the ungrammatical example. If the example cannot be provided, select the appropriate motivation(s) below.
-            </p>
-
-            <div class="examples-list" data-qid="{{ q.id }}">
-              {% for ex in q.ans.examples %}
-              <div class="card example-row" style="margin-bottom:.5rem">
-                <div class="grid">
-                  <div><label>Number</label><input name="ex_{{ ex.id }}_number" value="{{ ex.number }}"></div>
-                  <div><label>Example text</label><input name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"></div>
-                  <div><label>Transliteration</label><input name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"></div>
-                  <div><label>Gloss</label><input name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"></div>
-                  <div><label>English Translation</label><input name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"></div>
-                  <div><label>Reference</label><input name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"></div>
-                </div>
-                <div class="toolbar" style="margin-top:.25rem">
-                  <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
-                  <button class="btn btn-ex-toggle-delete"
-                          type="button"
-                          data-qid="{{ q.id }}"
-                          data-exid="{{ ex.id }}"
-                          {% with s=lang_status.overall %}
-                            {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                              disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
-                            {% endif %}
-                          {% endwith %}
-                  >Delete</button>
-
-                </div>
+            {% if q.example_yes %}
+              <div class="muted" style="margin:.25rem 0 .5rem;">
+                <strong>Example YES:</strong> {{ q.example_yes|linebreaksbr }}
               </div>
-              {% empty %}
-              <div class="muted">No examples yet</div>
-              {% endfor %}
+            {% endif %}
+
+            {% if q.instruction %}
+              <div class="muted" style="margin:.25rem 0 .5rem;">
+                <strong>Instructions:</strong> {{ q.instruction|linebreaksbr }}
+              </div>
+            {% endif %}
+
+            {% if q.help_info %}
+              <details class="help-info">
+                <summary><span aria-hidden="true">❓</span> More info</summary>
+                <div class="muted">{{ q.help_info|linebreaksbr }}</div>
+              </details>
+            {% endif %}
+
+            {# --- Answer select (YES/NO) --- #}
+            <div class="qa-fields">
+              <div>
+                <label for="resp_{{ q.id }}">Answer</label>
+                <select id="resp_{{ q.id }}" name="resp_{{ q.id }}" class="resp-select" data-qid="{{ q.id }}">
+                  <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
+                  <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
+                  <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
+                </select>
+              </div>
             </div>
 
-            <div>
-              <button class="btn add-example-btn" type="button" data-qid="{{ q.id }}"
-                {% with s=lang_status.overall %}
-                  {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                    disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
-                  {% endif %}
-                {% endwith %}
-              >Add example</button>
-            </div>
-
-          </div>
-
-          {# --- MOTIVATIONS (solo quando risposta == NO) --- #}
-            <div class="mot-block" data-qid="{{ q.id }}" {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
-              <div class="muted" style="margin-bottom:.25rem">
+            {# --- MOTIVATIONS (solo se risposta == NO) --- #}
+            <div class="mot-block"
+                 data-qid="{{ q.id }}"
+                 {% if q.ans.response_text != "no" %}style="display:none"{% endif %}>
+              <div class="muted" style="margin:.5rem 0 .25rem;">
                 Select one or more motivations (if applicable).
               </div>
 
@@ -382,12 +316,8 @@
                       {% endwith %}
                     >
                     <span>
-                      <span>
-                        <strong>{{ m.label|default:m.code }}</strong>
-                      </span>
-
+                      <span><strong>{{ m.label|default:m.code }}</strong></span>
                     </span>
-
                   </label>
                 {% empty %}
                   <div class="muted">No motivations configured for this question.</div>
@@ -395,20 +325,88 @@
               </fieldset>
             </div>
 
-        </div>
-      {% endfor %}
+            {# --- EXAMPLES BLOCK (visibile se c'è risposta yes/no) --- #}
+            <div class="examples-block"
+                 data-qid="{{ q.id }}"
+                 data-template="{{ q.template_type|default:'linear' }}"
+                 {% if q.ans.response_text == "" %}style="display:none"{% endif %}>
 
-      <div class="toolbar" style="margin-top:.5rem">
-        <button type="submit" class="btn btn--primary"
-          {% with s=lang_status.overall %}
-            {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-              disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
-            {% endif %}
-          {% endwith %}
-        >Save {{ p.id }}</button>
-      </div>
-    </form>
-  </section>
+              <div class="toolbar" style="margin:.5rem 0">
+                <strong>Examples</strong>
+              </div>
+
+              <p class="muted" style="margin:.25rem 0 .5rem;">
+                Please provide the ungrammatical example. If the example cannot be provided, select the appropriate motivation(s) above.
+              </p>
+
+              <div class="examples-list" data-qid="{{ q.id }}">
+                {% for ex in q.ans.examples %}
+                  <div class="card example-row" style="margin-bottom:.5rem">
+                    <div class="grid">
+                      <div><label>Number</label><input name="ex_{{ ex.id }}_number" value="{{ ex.number }}"></div>
+                      <div><label>Example text</label><input name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"></div>
+                      <div><label>Transliteration</label><input name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"></div>
+                      <div><label>Gloss</label><input name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"></div>
+                      <div><label>English Translation</label><input name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"></div>
+                      <div><label>Reference</label><input name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"></div>
+                    </div>
+                    <div class="toolbar" style="margin-top:.25rem">
+                      <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
+                      <button class="btn btn-ex-toggle-delete"
+                              type="button"
+                              data-qid="{{ q.id }}"
+                              data-exid="{{ ex.id }}"
+                              {% with s=lang_status.overall %}
+                                {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                                  disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
+                                {% endif %}
+                              {% endwith %}>Delete</button>
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="muted">No examples yet</div>
+                {% endfor %}
+              </div>
+
+              <div>
+                <button class="btn add-example-btn"
+                        type="button"
+                        data-qid="{{ q.id }}"
+                        {% with s=lang_status.overall %}
+                          {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                            disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
+                          {% endif %}
+                        {% endwith %}>Add example</button>
+              </div>
+            </div>
+
+            {# --- COMMENTS (sempre alla fine, SEMPRE visibile) --- #}
+            <div class="qa-fields" style="margin-top:1rem;">
+              <div>
+                <label for="com_{{ q.id }}">Comments</label>
+                <textarea id="com_{{ q.id }}"
+                          name="com_{{ q.id }}"
+                          rows="2"
+                          class="auto-grow"
+                          data-autosize="1">{{ q.ans.comments }}</textarea>
+              </div>
+            </div>
+
+          </div> {# fine .card della singola domanda #}
+        {% endfor %}
+
+        <div class="toolbar" style="margin-top:.5rem">
+          <button type="submit" class="btn btn--primary"
+            {% with s=lang_status.overall %}
+              {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
+              {% endif %}
+            {% endwith %}>
+            Save {{ p.id }}
+          </button>
+        </div>
+      </form>
+    </section>
   {% endfor %}
 </main>
 {% endblock %}
@@ -451,98 +449,98 @@
     .locked-hint { font-size: .9rem; color: #666; margin-left: .5rem; }
     .hint-disabled[title] { cursor: help; display: inline-block; }
     .is-readonly form[action$="reopen/"] .btn { opacity: 1; pointer-events: auto; cursor: pointer; }
-/* --------- Accessibilità stati parametri --------- */
 
-/* Colore bordo */
-.param-nav .param-btn {
-  --edge: color-mix(in srgb, currentColor 55%, black);
-}
+    /* --------- Accessibilità stati parametri --------- */
 
-/* PARZIALE (gialli) -> view usa 'warn' : bordo tratteggiato */
-.param-nav .param-btn[data-status="warn"] {
-  border: 2px dashed var(--edge);
-  border-radius: 4px;
-  position: relative;      
-}
+    /* Colore bordo */
+    .param-nav .param-btn {
+      --edge: color-mix(in srgb, currentColor 55%, black);
+    }
 
-/* MANCANTI (rossi):  */
-.param-nav .param-btn[data-status="missing"] {
-  border: 2px solid var(--edge);
-  border-radius: 4px;
-  position: relative;
-  overflow: visible;  
-}
+    /* PARZIALE (gialli) -> view usa 'warn' : bordo tratteggiato */
+    .param-nav .param-btn[data-status="warn"] {
+      border: 2px dashed var(--edge);
+      border-radius: 4px;
+      position: relative;      
+    }
 
+    /* MANCANTI (rossi):  */
+    .param-nav .param-btn[data-status="missing"] {
+      border: 2px solid var(--edge);
+      border-radius: 4px;
+      position: relative;
+      overflow: visible;  
+    }
 
-/* === PARAMETRI OK (verdi) — forma circolare === */
-.param-nav .param-btn[data-status="ok"],
-.param-nav .param-btn:not([data-status]) {
-  border: 2px solid var(--edge);
-  border-radius: 50%;     
-  position: relative;
-  overflow: visible;    
-}
+    /* === PARAMETRI OK (verdi) — forma circolare === */
+    .param-nav .param-btn[data-status="ok"],
+    .param-nav .param-btn:not([data-status]) {
+      border: 2px solid var(--edge);
+      border-radius: 50%;     
+      position: relative;
+      overflow: visible;    
+    }
 
+    /* Preferenze utente alta visibilità */
+    @media (prefers-contrast: more) {
+      .param-nav .param-btn[data-status="warn"] { border-width: 3px; }
+      .param-nav .param-btn[data-status="missing"] { border-color: #000; }
+      .param-nav .param-btn[data-status="ok"] { border-color: #000; }
+    }
 
-/* Preferenze utente alta visibilità */
-@media (prefers-contrast: more) {
-  .param-nav .param-btn[data-status="warn"] { border-width: 3px; }
-  .param-nav .param-btn[data-status="missing"] { border-color: #000; }
-  .param-nav .param-btn[data-status="ok"] { border-color: #000; }
-}
+    /* Stacking verticale dei tre campi */
+    .qa-fields {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
 
-/* Stacking verticale dei tre campi */
-  .qa-fields {
-    display: flex;
-    flex-direction: column;
-    gap: .75rem;
-  }
+    /* Textarea auto-espandibile, con limiti ragionevoli per mobile */
+    textarea.auto-grow {
+      width: 100%;
+      min-height: 2.5rem;
+      max-height: 40vh;
+      overflow: hidden;
+      resize: vertical;
+    }
 
-  /* Textarea auto-espandibile, con limiti ragionevoli per mobile */
-  textarea.auto-grow {
-    width: 100%;
-    min-height: 2.5rem;   /* parte piccola */
-    max-height: 40vh;     /* non far esplodere la pagina */
-    overflow: hidden;     /* niente scrollbar mentre cresce */
-    resize: vertical;     /* l'utente può comunque allungarla se vuole */
-  }
+    /* Accessibilità: focus ben visibile */
+    textarea.auto-grow:focus {
+      outline: 2px solid var(--focus, #2266ff);
+      outline-offset: 2px;
+    }
 
-  /* Accessibilità: focus ben visibile */
-  textarea.auto-grow:focus {
-    outline: 2px solid var(--focus, #2266ff);
-    outline-offset: 2px;
-  }
-/* === Badge "to review" — pallino rosso a SINISTRA === */
-.param-btn { position: relative; }
+    /* === Badge "to review" — pallino rosso a SINISTRA === */
+    .param-btn { position: relative; }
 
-.param-btn .badge-review {
-  position: absolute;
-  top: -6px;
-  left: -6px;          /* ← spostato a sinistra */
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--bad, #b00020);  /* rosso */
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.15);
-  z-index: 2;
-}
+    .param-btn .badge-review {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--bad, #b00020);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.15);
+      z-index: 2;
+    }
 
-:root[data-theme="dark"] .param-btn .badge-review {
-  border-color: var(--surface, #1e1f22);
-}
+    :root[data-theme="dark"] .param-btn .badge-review {
+      border-color: var(--surface, #1e1f22);
+    }
 
-@media (min-width: 1200px) {
-  .param-btn .badge-review { width: 16px; height: 16px; top: -7px; left: -7px; }
-}
-/* forza il nascondimento quando c'è l'attributo hidden */
-.badge-review[hidden] { 
-  display: none !important;
-}
+    @media (min-width: 1200px) {
+      .param-btn .badge-review { width: 16px; height: 16px; top: -7px; left: -7px; }
+    }
 
-
-</style>
+    /* forza il nascondimento quando c'è l'attributo hidden */
+    .badge-review[hidden] { 
+      display: none !important;
+    }
+  </style>
 {% endblock %}
+
 {% block extra_js %}
 <script>
 // CSRF
