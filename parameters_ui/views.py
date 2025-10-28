@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 from core.models import ParameterDef, Question , ParameterChangeLog 
-from .forms import ParameterForm, QuestionForm, DeactivateParameterForm
+from .forms import ParameterForm, QuestionForm, DeactivateParameterForm, MotivationCreateForm
 from django.db.models import Q, Count, Sum, Case, When, IntegerField
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -285,64 +285,146 @@ def parameter_deactivate(request, param_id: str):
 def question_add(request, param_id: str):
     """
     Crea una nuova domanda per il parametro.
-    - Mostra la checkbox 'is_stop_question' SOLO qui (in creazione).
+    Ora permette anche di creare una nuova Motivation nello stesso submit.
+    - La checkbox 'is_stop_question' è visibile solo qui (gestito in QuestionForm.__init__).
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
     instance = Question(parameter=param)
 
     if request.method == "POST":
-        form = QuestionForm(request.POST, instance=instance)
-        # In creazione, la checkbox 'is_stop_question' è presente (vedi forms.__init__)
-        if form.is_valid():
+        # 1. Bind del form per la nuova motivation
+        mot_form = MotivationCreateForm(request.POST)
+
+        # Se l'admin ha provato a creare una nuova motivation, validiamo e salviamo subito
+        if mot_form.has_meaningful_input():
+            if mot_form.is_valid():
+                mot_form.save()  # crea la nuova Motivation globale
+            else:
+                # Motivation non valida → NON procediamo oltre, mostriamo errori
+                q_form = QuestionForm(request.POST, instance=instance)
+                messages.error(request, "Please fix the errors below.")
+                return render(
+                    request,
+                    "parameters/question_form.html",
+                    {
+                        "form": q_form,
+                        "motivation_form": mot_form,
+                        "parameter": param,
+                        "is_create": True,
+                    },
+                )
+
+        # 2. A questo punto la Motivation nuova (se valida) è a db.
+        #    Ricreiamo il QuestionForm DOPO, così la sua queryset di motivations
+        #    include anche quella appena creata.
+        q_form = QuestionForm(request.POST, instance=instance)
+
+        if q_form.is_valid():
             with transaction.atomic():
-                obj = form.save(commit=False)
+                obj = q_form.save(commit=False)
                 obj.parameter = param
                 obj.save()
-                # salva anche M2M/motivations (la save del form già gestisce la tabella ponte)
-                form.save_m2m()
+                # salva le M2M/motivations (tramite save_m2m del form)
+                q_form.save_m2m()
+
             messages.success(request, "Domanda creata.")
             return redirect("parameter_edit", param_id=param.id)
         else:
             messages.error(request, "Correggi gli errori nella domanda.")
+            return render(
+                request,
+                "parameters/question_form.html",
+                {
+                    "form": q_form,
+                    "motivation_form": mot_form,
+                    "parameter": param,
+                    "is_create": True,
+                },
+            )
+
     else:
-        form = QuestionForm(instance=instance)  # crea con checkbox visibile
-
-    return render(
-        request,
-        "parameters/question_form.html",
-        {"form": form, "parameter": param, "is_create": True},
-    )
-
-
+        # GET iniziale
+        q_form = QuestionForm(instance=instance)
+        mot_form = MotivationCreateForm()  # vuoto
+        return render(
+            request,
+            "parameters/question_form.html",
+            {
+                "form": q_form,
+                "motivation_form": mot_form,
+                "parameter": param,
+                "is_create": True,
+            },
+        )
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def question_edit(request, param_id: str, question_id: str):
     """
     Modifica una domanda esistente.
-    - La checkbox 'is_stop_question' NON è mostrata (nascosta/poppata in forms.__init__).
+    Ora permette anche di creare una nuova Motivation nello stesso submit.
+    - In edit la checkbox 'is_stop_question' NON è mostrata (gestito in QuestionForm.__init__).
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
     question = get_object_or_404(Question, pk=question_id, parameter=param)
 
     if request.method == "POST":
-        form = QuestionForm(request.POST, instance=question)
-        if form.is_valid():
-            form.save()
+        mot_form = MotivationCreateForm(request.POST)
+
+        if mot_form.has_meaningful_input():
+            if mot_form.is_valid():
+                mot_form.save()
+            else:
+                q_form = QuestionForm(request.POST, instance=question)
+                messages.error(request, "Please fix the errors below.")
+                return render(
+                    request,
+                    "parameters/question_form.html",
+                    {
+                        "form": q_form,
+                        "motivation_form": mot_form,
+                        "parameter": param,
+                        "is_create": False,
+                        "question": question,
+                    },
+                )
+
+        # ricreiamo dopo aver salvato l'eventuale nuova motivation
+        q_form = QuestionForm(request.POST, instance=question)
+
+        if q_form.is_valid():
+            q_form.save()  # salva e sincronizza allowed_motivations
             messages.success(request, "Domanda aggiornata.")
             return redirect("parameter_edit", param_id=param.id)
         else:
             messages.error(request, "Correggi gli errori nella domanda.")
+            return render(
+                request,
+                "parameters/question_form.html",
+                {
+                    "form": q_form,
+                    "motivation_form": mot_form,
+                    "parameter": param,
+                    "is_create": False,
+                    "question": question,
+                },
+            )
+
     else:
-        form = QuestionForm(instance=question)
+        q_form = QuestionForm(instance=question)
+        mot_form = MotivationCreateForm()
+        return render(
+            request,
+            "parameters/question_form.html",
+            {
+                "form": q_form,
+                "motivation_form": mot_form,
+                "parameter": param,
+                "is_create": False,
+                "question": question,
+            },
+        )
 
-    return render(
-        request,
-        "parameters/question_form.html",
-        {"form": form, "parameter": param, "is_create": False, "question": question},
-    )
-
-# parameters_ui/views.py — SOSTITUISCI l'intera funzione question_delete
 
 from django.db import transaction
 from django.contrib import messages

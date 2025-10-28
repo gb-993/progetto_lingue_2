@@ -62,9 +62,51 @@
 
       <div class="form-row" style="grid-column: 1 / -1;">
         <label>Allowed motivations</label>
+
         {{ form.motivations }}
-        {% if form.motivations.errors %}<div class="field-error">{{ form.motivations.errors }}</div>{% endif %}
+        {% if form.motivations.errors %}
+          <div class="field-error">{{ form.motivations.errors }}</div>
+        {% endif %}
+
+        <div class="muted" style="margin-top:.5rem;">
+          Select which motivations will be available to users when they answer "NO" to this question.
+        </div>
       </div>
+
+      <fieldset class="form-row card" style="grid-column: 1 / -1; margin-top:1rem;">
+        <legend class="h4" style="font-size:1rem; font-weight:600; margin-bottom:.5rem;">
+          Add a new motivation
+        </legend>
+
+        <div class="muted" style="margin-bottom:.5rem;">
+          Create a new motivation and it will immediately become available in the list above.
+        </div>
+
+        {% if motivation_form.non_field_errors %}
+          <div class="field-error">{{ motivation_form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="grid grid-2" style="gap:1rem;">
+          <div class="form-row">
+            {{ motivation_form.code.label_tag }} {{ motivation_form.code }}
+            {% if motivation_form.code.errors %}
+              <div class="field-error">{{ motivation_form.code.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-row" style="grid-column: 1 / -1;">
+            {{ motivation_form.label.label_tag }} {{ motivation_form.label }}
+            {% if motivation_form.label.errors %}
+              <div class="field-error">{{ motivation_form.label.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:.5rem;">
+          Leave this section empty if you don't want to add a new motivation.
+        </div>
+      </fieldset>
+
     </div>
 
     <div class="actions" style="margin-top:.75rem;">

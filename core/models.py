@@ -527,6 +527,12 @@ class Motivation(models.Model):
     code = models.CharField(max_length=50, unique=True)  # es. 'MOT1'
     label = models.CharField(max_length=255)
 
+    def __str__(self):
+        # Esempio: "MOT1 — No morphological marking"
+        if self.code:
+            return f"{self.code} — {self.label}"
+        return self.label
+
 class QuestionAllowedMotivation(models.Model):
     id = models.BigAutoField(primary_key=True)
 

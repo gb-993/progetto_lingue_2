@@ -257,6 +257,53 @@ class QuestionForm(forms.ModelForm):
 
 
 # =========================
+# MOTIVATION FORM (ModelForm)
+# =========================
+
+class MotivationCreateForm(forms.ModelForm):
+    """
+    Form semplice per creare una nuova Motivation mentre si sta creando/modificando una Question.
+    Lo usiamo nella stessa pagina di question_add / question_edit.
+    """
+
+    class Meta:
+        model = Motivation
+        fields = ["code", "label"]
+        widgets = {
+            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. MOT1"}),
+            "label": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Describe this motivation..."}),
+        }
+
+    def has_meaningful_input(self):
+        """
+        Ritorna True se l'admin ha effettivamente provato a inserire una nuova motivation.
+        Questo ci serve per distinguere:
+        - caso in cui il form è tutto vuoto (non vuole creare niente) -> non validiamo
+        - caso in cui c'è qualcosa -> allora validiamo e salviamo
+        """
+        code = (self.data.get(self.add_prefix("code")) or "").strip()
+        label = (self.data.get(self.add_prefix("label")) or "").strip()
+        return bool(code or label)
+
+    def clean(self):
+        cleaned = super().clean()
+        # Se l'utente non ha provato a inserire niente, saltiamo la validazione obbligatoria.
+        if not self.has_meaningful_input():
+            return cleaned
+
+        # Se vuole creare, allora entrambi i campi devono esserci
+        code = (cleaned.get("code") or "").strip()
+        label = (cleaned.get("label") or "").strip()
+
+        if not code:
+            self.add_error("code", "Required if you want to add a new motivation.")
+        if not label:
+            self.add_error("label", "Required if you want to add a new motivation.")
+        return cleaned
+
+
+
+# =========================
 # INLINE FORMSET Question <- ParameterDef
 # =========================
 QuestionFormSet = inlineformset_factory(
