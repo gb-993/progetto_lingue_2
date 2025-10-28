@@ -52,26 +52,32 @@
 
     {% if is_create %}
       <div class="form-row">
-        {{ form.id.label_tag }} {{ form.id }}
+        <label for="{{ form.id.id_for_label }}">{{ form.id.label }}</label>
+        {{ form.id }}
         {% if form.id.errors %}<div class="form-error">{{ form.id.errors }}</div>{% endif %}
       </div>
     {% else %}
       <div class="form-row">
-        {{ form.id.label_tag }}
+        <label for="{{ form.id.id_for_label }}">{{ form.id.label }}</label>
         <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
         {{ form.id.as_hidden }}
       </div>
     {% endif %}
 
+
     <div class="form-row">
-      {{ form.name.label_tag }} {{ form.name }}
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
       {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
     </div>
 
+
     <div class="form-row">
-      {{ form.short_description.label_tag }} {{ form.short_description }}
+      <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
+      {{ form.short_description }}
       {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
     </div>
+
 
     <!-- Pulsante gestione lookups SOPRA ai due campi -->
     <div class="actions" style="margin:.5rem 0 .25rem">
@@ -86,19 +92,25 @@
     </div>
 
     <div class="form-row">
-      {{ form.schema.label_tag }} {{ form.schema }}
+      <label for="{{ form.schema.id_for_label }}">{{ form.schema.label }}</label>
+      {{ form.schema }}
       {% if form.schema.errors %}<div class="form-error">{{ form.schema.errors }}</div>{% endif %}
     </div>
 
+
     <div class="form-row">
-      {{ form.param_type.label_tag }} {{ form.param_type }}
+      <label for="{{ form.param_type.id_for_label }}">{{ form.param_type.label }}</label>
+      {{ form.param_type }}
       {% if form.param_type.errors %}<div class="form-error">{{ form.param_type.errors }}</div>{% endif %}
     </div>
 
+
     <div class="form-row">
-      {{ form.implicational_condition.label_tag }} {{ form.implicational_condition }}
+      <label for="{{ form.implicational_condition.id_for_label }}">{{ form.implicational_condition.label }}</label>
+      {{ form.implicational_condition }}
       {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
     </div>
+
 
     {# === Active with guard when deactivation is not allowed === #}
     <div class="form-row">
@@ -124,9 +136,11 @@
     </div>
 
     <div class="form-row">
-      {{ form.position.label_tag }} {{ form.position }}
+      <label for="{{ form.position.id_for_label }}">{{ form.position.label }}</label>
+      {{ form.position }}
       {% if form.position.errors %}<div class="form-error">{{ form.position.errors }}</div>{% endif %}
     </div>
+
 
     <div class="form-row">
       <label class="sr-only" for="{{ form.warning_default.id_for_label }}">Warning default</label>
@@ -194,13 +208,14 @@
     {% endif %}
 
     {% if not is_create %}
-      {# === Change recap AT THE BOTTOM === #}
-      <fieldset class="form-row" aria-labelledby="change-note-heading">
-        <legend id="change-note-heading" class="sr-only">Recap of changes</legend>
-        {{ form.change_note.label_tag }} {{ form.change_note }}
-        {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
-        <p id="changeNoteHint" class="help">This field is required if you modified one or more fields of this parameter</p>
-      </fieldset>
+        <fieldset class="form-row" aria-labelledby="change-note-heading">
+          <legend id="change-note-heading" class="sr-only">Recap of changes</legend>
+          <label for="{{ form.change_note.id_for_label }}">{{ form.change_note.label }}</label>
+          {{ form.change_note }}
+          {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
+          <p id="changeNoteHint" class="help">This field is required if you modified one or more fields of this parameter</p>
+        </fieldset>
+
     {% endif %}
 
     <div class="actions">

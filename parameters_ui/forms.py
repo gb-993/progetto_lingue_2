@@ -44,6 +44,17 @@ class ParameterForm(forms.ModelForm):
             "schema",
             "param_type",
         ]
+        labels = {
+        "id": "Code",   
+        "position": "Position",
+        "name": "Name",
+        "short_description": "Short description",
+        "implicational_condition": "Implicational condition",
+        "is_active": "Active",
+        "schema": "Schema",
+        "param_type": "Type",
+        }
+
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
             "position": forms.NumberInput(attrs={"class": "form-control", "min": "1", "step": "1", "inputmode": "numeric"}),
