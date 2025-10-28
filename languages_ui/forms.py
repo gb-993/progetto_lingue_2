@@ -7,32 +7,91 @@ from core.models import Language
 class LanguageForm(forms.ModelForm):
     class Meta:
         model = Language
-        fields = ["id", 
-                  "name_full", 
-                  "position",
-                  "top_level_family",
-                  "family", 
-                  "grp", 
-                  "isocode", 
-                  "glottocode",
-                  "supervisor", 
-                  "informant", 
-                  "source", 
-                  "historical_language",  
-                  ]
+        fields = [
+            "id",
+            "name_full",
+            "position",
+            "top_level_family",
+            "family",
+            "grp",
+            "isocode",
+            "glottocode",
+            "supervisor",
+            "informant",
+            "source",
+            "historical_language",
+        ]
+
+        # 1. Etichette leggibili e coerenti con list.html / data.html
+        labels = {
+            "id": "Id",  # come in Language list
+            "name_full": "Name",
+            "position": "Position",
+            "top_level_family": "Top-level family",
+            "family": "Family",
+            "grp": "Group",
+            "isocode": "ISO code",
+            "glottocode": "Glottocode",
+            "supervisor": "Supervisor",
+            "informant": "Informant",
+            "source": "Source",
+            "historical_language": "Historical language",
+        }
+
+        # 2. Widget + placeholder coerente con cosa vedono negli altri template
         widgets = {
-            "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
-            "name_full": forms.TextInput(attrs={"class": "form-control"}),
-            "position": forms.NumberInput(attrs={"class": "form-control", "min": "1", "step": "1", "inputmode": "numeric"}),
-            "top_level_family": forms.TextInput(attrs={"class": "form-control"}),
-            "family": forms.TextInput(attrs={"class": "form-control"}),
-            "grp": forms.TextInput(attrs={"class": "form-control"}),
-            "isocode": forms.TextInput(attrs={"class": "form-control"}),
-            "glottocode": forms.TextInput(attrs={"class": "form-control"}),
-            "supervisor": forms.TextInput(attrs={"class": "form-control"}),  
-            "informant": forms.TextInput(attrs={"class": "form-control"}),         
-            "source": forms.TextInput(attrs={"class": "form-control"}),
-            "historical_language": forms.CheckboxInput(attrs={"class": ""}),
+            "id": forms.TextInput(attrs={
+                "class": "form-control",
+                "autocomplete": "off",
+                "placeholder": "Language ID",
+            }),
+            "name_full": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Full language name",
+            }),
+            "position": forms.NumberInput(attrs={
+                "class": "form-control",
+                "min": "1",
+                "step": "1",
+                "inputmode": "numeric",
+                "placeholder": "Order / position",
+            }),
+            "top_level_family": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Top-level family",
+            }),
+            "family": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Family (more specific)",
+            }),
+            "grp": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Group",
+            }),
+            "isocode": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "ISO code",
+            }),
+            "glottocode": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Glottocode",
+            }),
+            "supervisor": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Supervisor",
+            }),
+            "informant": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Informant",
+            }),
+            "source": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Source / reference",
+            }),
+            "historical_language": forms.CheckboxInput(attrs={
+                "class": "",
+                # niente placeholder per checkbox, inutile/accessibilità
+            }),
         }
 
     def clean_position(self):
@@ -40,6 +99,7 @@ class LanguageForm(forms.ModelForm):
         if pos is None or pos < 1:
             raise forms.ValidationError("Position deve essere un intero positivo (>= 1).")
         return pos
+
 
 
 
