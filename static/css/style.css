@@ -816,3 +816,17 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
 .queries-page .card-header {
   margin-bottom: 1rem;  /* adds space below the "Queries" title */
 }
+
+/* === Table A filters layout === */
+.filters-form {
+  display: flex;
+  flex-direction: column;      /* mettiamo gli elementi in colonna */
+  align-items: flex-start;     /* allinea tutto a sinistra */
+  gap: .75rem;                 /* spazio verticale tra blocchi */
+}
+
+.filters-form label {
+  font-weight: 600;
+  text-align: left;
+  width: 100%;
+}
