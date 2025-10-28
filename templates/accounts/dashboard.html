@@ -8,74 +8,81 @@
 <div class="container dashboard" role="main">
   <header class="dashboard-hero">
     <h1>Dashboard</h1>
-    <!-- <p class="muted">Data collection and storage</p> -->
   </header>
 
   <div class="dashboard-flex">
-  <nav class="nav-tiles" role="navigation" aria-label="Dashboard shortcuts">
-    {# Sempre visibili a tutti #}
-    <a class="card btn tile" href="{% url 'language_list' %}" aria-label="Open languages">
-      <strong>Languages</strong>
-      <!-- <span class="tile-sub">Gestisci/visualizza lingue e dati</span> -->
-    </a>
-
-    <a class="card btn tile" href="{% url 'glossary_list' %}" aria-label="Open glossary">
-      <strong>Glossary</strong>
-      <!-- <span class="tile-sub">Termini e definizioni</span> -->
-    </a>
-
-    {% if not is_admin %}
-      <a class="card btn tile" href="{% url 'my_account' %}" aria-label="Open my account">
-        <strong>My Account</strong>
-        <!-- <span class="tile-sub">Dati e preferenze profilo</span> -->
+    {# --- COLONNA SINISTRA: link rapidi --- #}
+    <nav class="dashboard-links-grid" role="navigation" aria-label="Dashboard shortcuts">
+      {# sempre visibili #}
+      <a class="dash-tile" href="{% url 'language_list' %}" aria-label="Open languages">
+        <span class="dash-tile-label">Languages</span>
       </a>
-    {% endif %}
 
+      <a class="dash-tile" href="{% url 'glossary_list' %}" aria-label="Open glossary">
+        <span class="dash-tile-label">Glossary</span>
+      </a>
+
+      {% if not is_admin %}
+        <a class="dash-tile" href="{% url 'my_account' %}" aria-label="Open my account">
+          <span class="dash-tile-label">My Account</span>
+        </a>
+      {% endif %}
+
+      {% if is_admin %}
+        <a class="dash-tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
+          <span class="dash-tile-label">Parameters</span>
+        </a>
+
+        <a class="dash-tile" href="{% url 'tablea_index' %}" aria-label="Open Table A">
+          <span class="dash-tile-label">Table A</span>
+        </a>
+
+        <a class="dash-tile" href="{% url 'accounts_list' %}" aria-label="Open accounts">
+          <span class="dash-tile-label">Accounts</span>
+        </a>
+
+        <a class="dash-tile" href="{% url 'queries:home' %}" aria-label="Open queries">
+          <span class="dash-tile-label">Queries</span>
+        </a>
+
+        <a class="dash-tile" href="{% url 'submissions_list' %}" aria-label="Open submissions">
+          <span class="dash-tile-label">Submissions</span>
+        </a>
+      {% endif %}
+    </nav>
+
+    {# --- COLONNA DESTRA: latest changes --- #}
     {% if is_admin %}
-      <a class="card btn tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
-        <strong>Parameters</strong>
-        <!-- <span class="tile-sub">Definizioni e domande</span> -->
-      </a>
+      <aside class="card news-box collapsed" aria-labelledby="last-changes-heading">
+        <h3 id="last-changes-heading">Latest changes</h3>
 
-      <a class="card btn tile" href="{% url 'tablea_index' %}" aria-label="Open Table A">
-        <strong>Table A</strong>
-        <!-- <span class="tile-sub">Riepilogo parametri × lingue</span> -->
-      </a>
+        <ul class="list news-list">
+          {% for log in recent_param_changes %}
+            <li class="news-item">
+              <strong>{{ log.parameter_id }}</strong>
+              <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span><br>
+              <span class="muted small">by {{ log.changed_by.name }} {{ log.changed_by.surname|default:"" }}</span>
+              {% if log.recap %}
+                <p class="mt-1 small">{{ log.recap }}</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
 
-      <a class="card btn tile" href="{% url 'accounts_list' %}" aria-label="Open accounts">
-        <strong>Accounts</strong>
-        <!-- <span class="tile-sub">Admin &amp; Users</span> -->
-      </a>
-
-      <a class="card btn tile" href="{% url 'queries:home' %}" aria-label="Open queries">
-        <strong>Queries</strong>
-        <!-- <span class="tile-sub">Interrogazioni al database</span> -->
-      </a>
-
-      <a class="card btn tile" href="{% url 'submissions_list' %}" aria-label="Open submissions">
-        <strong>Submissions</strong>
-        <!-- <span class="tile-sub">Gestisci/visualizza submissions</span> -->
-      </a>
+        <div class="news-toggle-row">
+          <button
+            class="news-toggle-btn"
+            type="button"
+            aria-expanded="false"
+            aria-controls="last-changes-heading"
+          >
+            Show more
+          </button>
+        </div>
+      </aside>
     {% endif %}
-  </nav>
-<!-- finetsra ultime modifiche admin-->
-  {% if is_admin %}
-    <aside class="card news-box" aria-labelledby="last-changes-heading">
-      <h3 id="last-changes-heading">Latest changes</h3>
-      <ul class="list">
-        {% for log in recent_param_changes %}
-          <li>
-            <strong>{{ log.parameter_id }}</strong>
-            <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span><br>
-            <span class="muted small">by {{ log.changed_by.name }} {{ log.changed_by.surname|default:"" }}</span>
-            {% if log.recap %}
-              <p class="mt-1 small">{{ log.recap|truncatechars:80 }}</p>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    </aside>
-  {% endif %}
-</div>
+
+  </div>
 </div>
 {% endblock %}
+

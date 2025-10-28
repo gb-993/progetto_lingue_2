@@ -631,58 +631,187 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 1rem;
+  justify-content: flex-start;
+  gap: 1.5rem;
 }
 
-.dashboard-flex .nav-tiles {
-  flex: 3 1 500px;
+/* colonna sinistra = griglia pulsanti admin/user */
+.dashboard-links-grid {
+  flex: 0 1 480px;           /* prende ~480px di larghezza se c'è spazio */
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 colonne */
+  gap: 1rem 1rem;
+  align-content: flex-start;
 }
+
+/* singolo riquadro cliccabile */
+.dash-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  min-height: 4rem;          /* più "grosso" / tappabile */
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+
+  background: var(--brand);
+  color: #fff;
+  border:1px solid color-mix(in oklab, var(--brand) 75%, black);
+  box-shadow: 0 6px 18px rgba(209,65,36,.18);
+  padding: .75rem 1rem;
+  text-decoration: none;
+  transition: transform .05s ease, background .15s ease;
+}
+.dash-tile:hover {
+  text-decoration: none;
+  background: var(--brand-700);
+  border-color: color-mix(in oklab, var(--brand-700) 75%, black);
+  transform: translateY(-1px);
+}
+
+/* label interna (utile se un domani vuoi mettere anche una sublabel più piccola) */
+.dash-tile-label {
+  display: block;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: .02em;
+}
+/* ===== Latest changes (dashboard right column) ===== */
 
 .news-box {
   flex: 1 1 260px;
-  max-height: 65vh;
-  overflow-y: auto;
-  font-size: 0.9rem;
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--sp-5);
+
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
 }
+
+
 
 .news-box h3 {
   font-size: 1rem;
-  margin-bottom: 0.5rem;
+  margin-top: 0;
+  margin-bottom: .5rem;
+  font-weight: 600;
+  flex: 0 0 auto;
 }
 
-.news-box ul {
+/* la lista delle modifiche */
+.news-list {
   list-style: none;
   margin: 0;
   padding: 0;
+
+  flex: 1 1 auto;
+  /* di base nessun limite, ma verrà sovrascritto dagli stati */
 }
 
-.news-box li {
+.news-item {
   border-bottom: 1px solid var(--border);
-  padding: 0.4rem 0;
+  padding: 0.6rem 0;
 }
-
-.news-box li:last-child {
+.news-item:last-child {
   border-bottom: none;
 }
 
-.news-box p.small {
+.news-item p.small {
   font-size: 0.85rem;
-  margin: 0.2rem 0 0;
-  color: var(--muted);
+  margin: 0.4rem 0 0;
+  color: var(--text);
+}
+.news-item .small {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
-.news-box .small {
-  font-size: 0.85rem;
+/* Stato COMPATTO:
+   - limitiamo l'altezza visibile SOLO della lista
+   - niente scrollbar
+   - il bottone rimane comunque sotto, visibile
+*/
+.news-box.collapsed .news-list {
+  max-height: 180px;       /* puoi alzare/abbassare questo valore */
+  overflow-y: hidden;
 }
 
-/* Mobile layout */
+/* Stato ESPANSO:
+   - la lista si può espandere molto di più
+   - scrollbar interna SOLO nella lista
+*/
+.news-box.expanded .news-list {
+  max-height: 50vh;        /* simile al tuo 65vh precedente ma riferito alla lista */
+  overflow-y: auto;
+}
+
+/* riga del bottone Show more / Show less */
+.news-toggle-row {
+  flex: 0 0 auto;
+  padding-top: .75rem;
+  margin-top: .5rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+}
+
+.news-toggle-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-alt, var(--surface));
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: var(--radius);
+  padding: .5rem .75rem;
+  cursor: pointer;
+  min-width: 7rem;
+  transition: background .15s ease, border-color .15s ease, transform .05s ease;
+}
+.news-toggle-btn:hover {
+  background: var(--brand-50, rgba(209,65,36,.07));
+  border-color: var(--brand);
+  transform: translateY(-1px);
+}
+.news-toggle-btn:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ===== Dashboard responsive ===== */
+
 @media (max-width: 768px) {
   .dashboard-flex {
     flex-direction: column;
   }
+
+  .dashboard-links-grid {
+    width: 100%;
+    flex: 1 1 auto;
+    grid-template-columns: 1fr;  /* i pulsanti diventano una colonna */
+  }
+
   .news-box {
-    order: -1;
+    order: 2;
+    max-width: 100%;
+  }
+
+  /* Su mobile, quando è espanso preferiamo NON avere scrollbar interna nella lista,
+     ma lasciare scrollare tutta la pagina normalmente.
+     Quindi togliamo il max-height/overflow nella versione expanded mobile.
+  */
+  .news-box.expanded .news-list {
     max-height: none;
+    overflow-y: visible;
   }
 }
 
