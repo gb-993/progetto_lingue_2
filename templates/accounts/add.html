@@ -1,6 +1,13 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Account{% endblock %}
 {% block breadcrumb %}Accounts / {{ page_title }}{% endblock %}
+
+{# carico lo stesso JS usato in edit per filtrare / sincronizzare le lingue #}
+{% block extra_head %}
+  <script defer src="{% static 'js/account_languages.js' %}"></script>
+{% endblock %}
 
 {% block content %}
   <div class="card">
@@ -49,6 +56,7 @@
           {% endif %}
         </div>
 
+        {# In ADD mostriamo la password obbligatoria #}
         {% if show_password %}
           <div class="form-group" style="grid-column:1/-1">
             <label for="{{ form.password.id_for_label }}">Password</label>
@@ -56,24 +64,69 @@
             {% if form.password.errors %}
               <div class="field-error" role="alert">{{ form.password.errors|striptags }}</div>
             {% endif %}
-            <!-- <p class="muted">La password è obbligatoria solo in creazione.</p> -->
+            {# puoi riattivare questo se vuoi spiegare la policy
+            <p class="muted">La password è obbligatoria solo in creazione.</p>
+            #}
           </div>
         {% endif %}
 
+        {# === LINGUE: stessa struttura di edit === #}
         <div class="form-group" style="grid-column:1/-1">
-          <label id="lang-legend">Assigned languages (optional)</label>
-          <div>
-            <select name="lang_ids" multiple size="8" aria-labelledby="lang-legend">
+          <fieldset>
+            <legend id="lang-legend">Assigned languages (optional)</legend>
+
+            {# Nota admin: in add l'utente ancora non esiste.
+               Però possiamo già avvisare se stiamo creando direttamente un admin #}
+            {% if form.role.value == "admin" %}
+              <p class="muted" aria-live="polite">
+                This user is an <strong>admin</strong> and can access <strong>all</strong> languages.
+                The list below still shows any explicit assignments
+              </p>
+            {% endif %}
+
+            {# Barra di ricerca #}
+            <div class="form-row" style="margin-bottom:.5rem;">
+              <label for="lang-search" class="sr-only">Cerca lingue</label>
+              <input id="lang-search" type="search" class="form-control"
+                     placeholder="Cerca lingue… (codice o nome)" aria-describedby="lang-help">
+              <small id="lang-help" class="muted">
+                Filtra per codice (es. <code>ita</code>) o nome (es. <code>Italian</code>).
+              </small>
+            </div>
+
+            {# Lista checkbox lingua: codice — nome completo #}
+            <div id="lang-list" class="checkbox-list" role="group" aria-labelledby="lang-legend"
+                 style="max-height:16rem; overflow:auto; border:1px solid var(--border); border-radius:6px; padding:.5rem;">
               {% for lang in languages %}
-                <option value="{{ lang.id }}"
-                        {% if lang.id in selected_lang_ids %}selected{% endif %}>
-                  {{ lang }}
-                </option>
+                <label class="checkbox-item"
+                       data-search="{{ lang.id|lower }} {{ lang.name_full|lower }}"
+                       style="display:flex; align-items:center; gap:.5rem; padding:.25rem .25rem;">
+                  <input type="checkbox" name="lang_ids" value="{{ lang.id }}"
+                         {% if lang.id in selected_lang_ids %}checked{% endif %}>
+                  <span><strong>{{ lang.id }}</strong> — {{ lang.name_full }}</span>
+                </label>
+              {% empty %}
+                <p class="muted">Nessuna lingua disponibile.</p>
               {% endfor %}
-            </select>
-          </div>
+            </div>
+
+            {# Riepilogo selezionate (vuoto inizialmente, popolato da JS) #}
+            <div class="muted" aria-live="polite" style="margin-top:.5rem;">
+              <strong>Selezionate:</strong>
+              <ul id="lang-selected" style="margin:.25rem 0 0 .75rem;">
+                {% for lang in languages %}
+                  {% if lang.id in selected_lang_ids %}
+                    <li data-id="{{ lang.id }}"><strong>{{ lang.id }}</strong> — {{ lang.name_full }}</li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+              {% if not selected_lang_ids %}Nessuna lingua selezionata.{% endif %}
+            </div>
+          </fieldset>
         </div>
-      </div>
+        {# === /LINGUE === #}
+
+      </div> {# /.grid grid-2 #}
 
       <div class="toolbar">
         <a class="btn" href="{% url 'accounts_list' %}">Cancel</a>

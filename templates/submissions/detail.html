@@ -12,16 +12,15 @@
   <h2>Parameters values</h2>
   <div class="table-responsive">
     <table class="table table-sm">
-      <thead><tr><th>Label</th><th>Initial value</th><th>Warn (init)</th><th>Final value</th><th>Warn (final)</th><th>Evaluated at</th></tr></thead>
+      <thead><tr><th>Label</th><th>Initial value</th><th>Warn (init)</th><th>Final value</th><th>Warn (final)</th></tr></thead>
       <tbody>
         {% for p in sub_params %}
           <tr>
             <td>{{ p.parameter_id }}</td>
             <td>{{ p.value_orig|default:"" }}</td>
-            <td>{{ p.warning_orig|yesno:"✔,–" }}</td>
-            <td>{{ p.value_eval }}</td>
-            <td>{{ p.warning_eval|yesno:"✔,–" }}</td>
-            <td><time datetime="{{ p.evaluated_at|date:'c' }}">{{ p.evaluated_at|date:"Y-m-d H:i:s" }}</time></td>
+            <td>{{ p.warning_orig|yesno:"✔," }}</td>
+            <td>{{ p.value_eval|default:""  }}</td>
+            <td>{{ p.warning_eval|yesno:"✔," }}</td>
           </tr>
         {% empty %}<tr><td colspan="6">No parameters</td></tr>{% endfor %}
       </tbody>

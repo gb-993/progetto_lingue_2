@@ -248,10 +248,14 @@ class ParameterDef(models.Model):
     is_active = models.BooleanField(default=True)
     position = models.PositiveIntegerField()
     warning_default = models.BooleanField(default=False)
-
-    # 🔹 SEMPLIFICATI: ora sono stringhe (niente FK)
     schema = models.CharField(max_length=100, blank=True, default="")
     param_type = models.CharField(max_length=100, blank=True, default="")
+
+    def __str__(self):
+        """
+        Usato da Django per mostrare questo parametro nelle <option> dei form
+        """
+        return self.id
 
     class Meta:
         ordering = ["position"]
