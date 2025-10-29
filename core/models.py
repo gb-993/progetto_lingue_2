@@ -388,6 +388,7 @@ class Question(models.Model):
     )
     text = models.TextField()
     example_yes = models.TextField(null=True, blank=True)
+    instruction_yes = models.TextField(blank=True, null=True)
     instruction = models.TextField(null=True, blank=True)
     template_type = models.CharField(max_length=50, null=True, blank=True)
     is_stop_question = models.BooleanField(default=False)

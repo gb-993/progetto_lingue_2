@@ -357,6 +357,8 @@
               </details>
             {% endif %}
 
+
+
             {# --- Answer select (YES/NO) --- #}
             <div class="qa-fields">
               <div>
@@ -367,7 +369,25 @@
                   <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
                 </select>
               </div>
+
+              {# BLOCCO NUOVO: istruzioni per YES #}
+              <div class="yes-instruction-block"
+                   data-qid="{{ q.id }}"
+                   {% if q.ans.response_text != "yes" %}style="display:none"{% endif %}>
+                <div class="muted" style="margin:.25rem 0 .5rem;">
+                  <strong>Instruction yes:</strong>
+                  {% if q.instruction_yes %}
+                    {{ q.instruction_yes|linebreaksbr }}
+                  {% else %}
+                    non fornita
+                  {% endif %}
+                </div>
+              </div>
             </div>
+
+
+
+
 
             {# --- MOTIVATIONS (solo se risposta == NO) --- #}
             <div class="mot-block"
@@ -415,6 +435,16 @@
               <p class="muted" style="margin:.25rem 0 .5rem;">
                 Please provide the ungrammatical example. If the example cannot be provided, select the appropriate motivation(s) above.
               </p>
+              {% if q.instruction_yes %}
+                <div class="muted" style="margin:.25rem 0 .5rem;">
+                  <strong>Instruction yes:</strong> {{ q.instruction_yes|linebreaksbr }}
+                </div>
+              {% else %}
+                <div class="muted" style="margin:.25rem 0 .5rem;">
+                  <strong>Instruction yes:</strong> non fornita
+                </div>
+              {% endif %}
+
 
               <div class="examples-list" data-qid="{{ q.id }}">
                 {% for ex in q.ans.examples %}

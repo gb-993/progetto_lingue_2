@@ -37,6 +37,12 @@
       </div>
 
       <div class="form-row" style="grid-column: 1 / -1;">
+        {{ form.instruction_yes.label_tag }} {{ form.instruction_yes }}
+        <div class="muted">Shown to the user only if the answer is YES.</div>
+        {% if form.instruction_yes.errors %}<div class="field-error">{{ form.instruction_yes.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="grid-column: 1 / -1;">
         {{ form.help_info.label_tag }} {{ form.help_info }}
         <div class="muted">Short extra context shown to users via a little “More info” popover.</div>
         {% if form.help_info.errors %}<div class="field-error">{{ form.help_info.errors }}</div>{% endif %}
@@ -46,6 +52,7 @@
         {{ form.example_yes.label_tag }} {{ form.example_yes }}
         {% if form.example_yes.errors %}<div class="field-error">{{ form.example_yes.errors }}</div>{% endif %}
       </div>
+
 
       {% if form.is_stop_question and not form.is_stop_question.is_hidden %}
       <div class="form-row">
