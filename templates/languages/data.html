@@ -373,7 +373,7 @@
               {# BLOCCO NUOVO: istruzioni per YES #}
               <div class="yes-instruction-block"
                    data-qid="{{ q.id }}"
-                   {% if q.ans.response_text != "yes" %}style="display:none"{% endif %}>
+                   {% if q.ans.response_text|lower != "yes" %}style="display:none"{% endif %}>
                 <div class="muted" style="margin:.25rem 0 .5rem;">
                   <strong>Instruction yes:</strong>
                   {% if q.instruction_yes %}
@@ -384,9 +384,6 @@
                 </div>
               </div>
             </div>
-
-
-
 
 
             {# --- MOTIVATIONS (solo se risposta == NO) --- #}
@@ -435,15 +432,7 @@
               <p class="muted" style="margin:.25rem 0 .5rem;">
                 Please provide the ungrammatical example. If the example cannot be provided, select the appropriate motivation(s) above.
               </p>
-              {% if q.instruction_yes %}
-                <div class="muted" style="margin:.25rem 0 .5rem;">
-                  <strong>Instruction yes:</strong> {{ q.instruction_yes|linebreaksbr }}
-                </div>
-              {% else %}
-                <div class="muted" style="margin:.25rem 0 .5rem;">
-                  <strong>Instruction yes:</strong> non fornita
-                </div>
-              {% endif %}
+
 
 
               <div class="examples-list" data-qid="{{ q.id }}">
@@ -518,11 +507,14 @@
 </main>
 {% endblock %}
 
+
 {% block extra_head %}
   <script src="{% static 'js/param_organize.js' %}"></script>
   <script src="{% static 'js/examples.js' %}"></script>
   <script src="{% static 'js/submission_create.js' %}"></script>
   <script src="{% static 'js/autosize_textarea.js' %}"></script>
+  <script src="{% static 'js/instruction_yes.js' %}"></script>
+
 
   <style>
     .param-nav {display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem;}
