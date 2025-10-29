@@ -314,6 +314,22 @@ aside.card.sidebar a:hover{ text-decoration:underline }
   transition:transform .04s ease, background .15s ease, border-color .15s ease;
   line-height:1.1; text-decoration:none;
 }
+
+/* Uniforma <button> e <a class="btn"> */
+button.btn {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.1;         /* stesso della .btn */
+  padding: .55rem .9rem;    /* identico */
+  border: 1px solid var(--btn-bd);
+  border-radius: 10px;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  cursor: pointer;
+  appearance: none;         /* rimuove padding/ombre nativi */
+}
+
+
 .btn:hover{ transform:translateY(-1px) }
 .btn:active{ transform:translateY(0) }
 .btn[disabled], .btn[aria-disabled="true"]{ opacity:.6; pointer-events:none }
