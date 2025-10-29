@@ -57,7 +57,7 @@ def glossary_view(request, word):
     Vista di dettaglio in sola lettura per gli user.
     Gli admin vedono anche il pulsante 'Modifica'.
     """
-    obj = get_object_or_404(Glossary, pk=word)
+    obj = get_object_or_404(Glossary, word=word)
     return render(request, "glossary/view.html", {"obj": obj, "is_admin": _is_admin(request.user)})
 
 @login_required
@@ -66,7 +66,7 @@ def glossary_edit(request, word):
     """
     Solo admin: modifica voce esistente.
     """
-    obj = get_object_or_404(Glossary, pk=word)
+    obj = get_object_or_404(Glossary, word=word)
     if request.method == "POST":
         form = GlossaryForm(request.POST, instance=obj)
         if form.is_valid():
@@ -85,7 +85,7 @@ def glossary_delete(request, word):
     """
     Solo admin: elimina (POST).
     """
-    obj = get_object_or_404(Glossary, pk=word)
+    obj = get_object_or_404(Glossary, word=word)
     if request.method == "POST":
         obj.delete()
         messages.success(request, "Entry deleted")
