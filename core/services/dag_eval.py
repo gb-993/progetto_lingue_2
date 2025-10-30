@@ -121,14 +121,15 @@ def _refs_for_target(target: str) -> Set[str]:
             .get(pk=target).implicational_condition or "")
     return _extract_refs(cond)
 
-
 @transaction.atomic
 def run_dag_for_language(language_id: str) -> DagReport:
     """
     Regole:
     - '0' SOLO se:
         (a) condizione implicazionale è FALSA, oppure
-        (b) almeno una ref ha value_eval == '0' (short-circuit per derivazione da zero).
+        (b) almeno una ref ha value_eval == '0' (short-circuit per derivazione da zero),
+            ECCEZIONE: se l'intera condizione è un NOT semplice su un singolo token (+P o -P),
+            in tal caso NON si applica il bypass dello '0' (es. 'not +FGM' con FGM=0 -> VERO).  # CHANGED
     - In TUTTI gli altri casi indeterminati (mancanti/parse error/non valutabile):
         value_eval = NULL (mostra vuoto).
     - Se condizione è VERA:
@@ -180,6 +181,9 @@ def run_dag_for_language(language_id: str) -> DagReport:
         for p in ParameterDef.objects.filter(id__in=active_ids)
     }
 
+    # Regex locale per riconoscere NOT semplice su un singolo token (+P | -P)  # CHANGED
+    _SIMPLE_NOT_RE = re.compile(r"^\s*\(*\s*not\s*[+\-][A-Za-z0-9_]+\s*\)*\s*$", re.IGNORECASE)  # CHANGED
+
     for target in order:
         lp_id, v_orig = lp_map[target]
         lpe = _ensure_eval_row(lang, target, lp_id)
@@ -210,19 +214,21 @@ def run_dag_for_language(language_id: str) -> DagReport:
         # valutazione
         refs = _extract_refs(cond)
 
-        # 1) Short-circuit: se QUALSIASI ref è già '0' -> condizione FALSA
+        # 1) Short-circuit: se QUALSIASI ref è già '0' -> condizione FALSA,
+        #    MA non applicare il bypass se la condizione è un NOT semplice su +P/-P  # CHANGED
         has_zero_ref = any(cond_values.get(r) == "0" for r in refs)
-        if has_zero_ref:
+        simple_not = bool(_SIMPLE_NOT_RE.match(cond))  # CHANGED
+        if has_zero_ref and not simple_not:  # CHANGED
             cond_ok = False
             parse_error = None
         else:
             # 2) Se esistono ref sconosciute (non '+'/'-' e non '0'), la condizione è indeterminata
             has_unknown_ref = any(cond_values.get(r) not in ("+", "-") for r in refs)
-            if has_unknown_ref:
+            if has_unknown_ref and not simple_not:  # CHANGED: per NOT semplice lasciamo valutare il parser
                 cond_ok = None  # indeterminata
                 parse_error = None
             else:
-                # 3) Tutte le ref sono note come '+' o '-': possiamo valutare
+                # 3) Valutazione via parser (tutte note come '+'/'-' oppure caso NOT semplice che può valutare con '0')  # CHANGED
                 try:
                     cond_ok = evaluate_with_parser(cond, cond_values)
                     parse_error = None

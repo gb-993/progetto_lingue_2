@@ -456,7 +456,7 @@ def parameter_save(request, lang_id, param_id):
         # --- ESEMPI: raccolta mutazioni + VALIDAZIONE + applicazione ---
         FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
 
-        # 1) Raccolta delete esistenti: del_ex_<id> = "1" (NON eseguire ancora)
+        # 1) Raccolta delete esistenti: del_ex_<id> = "1" 
         del_ids = []
         for key, val in request.POST.items():
             if not key.startswith("del_ex_"):
