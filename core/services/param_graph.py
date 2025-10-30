@@ -126,52 +126,60 @@ def get_param_graph_payload() -> dict:
 
 VALUE_COLOR = {"+": "#2e7d32", "-": "#c62828", "0": "#6c757d"}
 
+from core.models import LanguageParameter, LanguageParameterEval  
+# core/services/param_graph.py  (NUOVA)
+from typing import Dict
+
 def get_param_graph_payload_for_language(lang_id: str) -> Dict:
     """
-    Costruisce lo stesso grafo ma arricchito con:
-      - data.value in {"+", "-", "0"}
-      - data.color coerente con value
-      - data.cond e data.cond_human (riusati per tooltip e legenda)
-    I valori sono presi da LanguageParameterEval (db) se presenti; in alternativa
-    puoi collegare qui un ricalcolo on-the-fly via DAG se assente.
+    Nodo = {data:{ id,label,name,position,value,color,cond,cond_human }}
+    value/color basati su LanguageParameterEval.value_eval della lingua indicata.
     """
     language = Language.objects.get(id=lang_id)
 
-    # prelevo tutti i parametri attivi per preservare il layout/ordine
+    # Parametri attivi (ordine stabile per UI)
     params = list(
         ParameterDef.objects.filter(is_active=True)
         .only("id", "name", "position", "implicational_condition")
         .order_by("position")
     )
 
-    # mappa valori finali dal db
-    evals = LanguageParameterEval.objects.filter(language=language).select_related("parameter")
-    final_map: Dict[str, str] = {e.parameter_id: (e.final_value or "") for e in evals}
+    # FIX: interroga LPE tramite la FK 'language_parameter' e usa 'value_eval'
+    evals = (
+        LanguageParameterEval.objects
+        .select_related("language_parameter", "language_parameter__parameter")
+        .filter(language_parameter__language_id=language.id)
+    )
 
-    # nodi con arricchimento
+    # Mappa corretta: param_id -> value_eval ('+','-','0' oppure None)
+    final_map: Dict[str, str] = {
+        e.language_parameter.parameter_id: (e.value_eval or "")
+        for e in evals
+    }
+
     nodes = []
     for p in params:
         val = final_map.get(p.id, "")
-        color = VALUE_COLOR.get(val, "#9e9e9e")  # default grigio se assente
+        color = VALUE_COLOR.get(val, "#9e9e9e")
         cond = p.implicational_condition or ""
+        try:
+            cond_h = pretty_print_expression(cond) if cond else ""
+        except Exception:
+            cond_h = cond
         nodes.append({
             "data": {
                 "id": p.id,
                 "label": f"{p.id}",
                 "name": p.name,
                 "position": p.position,
-                "value": val,          # "+", "-", "0" oppure ""
-                "color": color,        # deciso dal backend
+                "value": val,
+                "color": color,
                 "cond": cond,
-                "cond_human": pretty_print_expression(cond) if cond else "",
+                "cond_human": cond_h,
             }
         })
 
-    # archi come già fai ora (riusa la tua logica esistente)
-    # ATTENZIONE: qui presumo tu abbia già un costruttore di edges dagli id referenziati in cond.
-    # Se hai già una funzione privata che usi in get_param_graph_payload(), riutilizzala qui.
-    # Per chiarezza, chiamo la stessa pipeline che già usi:
-    base = get_param_graph_payload()  # struttura corrente con edges
+    base = get_param_graph_payload()
     edges = base.get("edges", [])
 
     meta = {

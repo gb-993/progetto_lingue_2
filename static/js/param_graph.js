@@ -1,7 +1,9 @@
 // static/js/param_graph.js
 (function () {
   const CY_ID = "cy";
-  // endpoint nuovo: /api/param-graph/<lang_id>/
+
+  // Endpoint base (grafo generico attivi) e per lingua (valori + / - / 0)
+  const API_BASE = `/api/param-graph/`;
   const API_LANG = (lang) => `/api/param-graph/${encodeURIComponent(lang)}/`;
 
   const btnReload = document.getElementById("btn-reload");
@@ -13,23 +15,26 @@
     container: document.getElementById(CY_ID),
     elements: [],
     style: [
+      // NODI: ripristina forma “round-rectangle” e dimensioni maggiori
       {
         selector: "node",
         style: {
-          "background-color": "data(color)", // [NUOVO] colore deciso dal backend
+          "shape": "round-rectangle",
+          "background-color": "data(color)",   // lingua: dal backend; generico: calcolato client
           "label": "data(label)",
           "text-wrap": "wrap",
-          "text-max-width": 80,
-          "font-size": 10,
+          "text-max-width": 96,
+          "font-size": 11,
           "color": "#fff",
           "text-valign": "center",
           "text-halign": "center",
-          "width": 36,
-          "height": 24,
+          "width": 72,
+          "height": 36,
           "border-width": 1,
           "border-color": "#444"
         }
       },
+      // ARCHI
       {
         selector: "edge",
         style: {
@@ -40,23 +45,16 @@
           "curve-style": "bezier"
         }
       },
+      // Selezione
       {
         selector: "node:selected",
         style: { "border-width": 2, "border-color": "#000" }
       }
     ],
+    wheelSensitivity: 0.2
   });
 
-  function toElements(payload) {
-    const nodes = payload.nodes.map((n) => ({
-      data: n.data
-    }));
-    const edges = payload.edges.map((e) => ({
-      data: { id: e.data ? e.data.id : `${e.source}->${e.target}`, source: e.data ? e.data.source : e.source, target: e.data ? e.data.target : e.target }
-    }));
-    return { nodes, edges };
-  }
-
+  // Layout
   function layoutFor(layered) {
     if (!layered) return cy.layout({ name: "cose", animate: true, fit: true });
     return cy.layout({
@@ -68,56 +66,128 @@
     });
   }
 
+  // Util: costruisce elementi Cytoscape dal payload LINGUA (nodi già con data.*)
+  function toElementsLang(payload) {
+    const nodes = payload.nodes.map((n) => ({ data: n.data }));
+    const edges = payload.edges.map((e) => ({
+      data: {
+        id: e.data ? e.data.id : `${e.source}->${e.target}`,
+        source: e.data ? e.data.source : e.source,
+        target: e.data ? e.data.target : e.target
+      }
+    }));
+    return { nodes, edges };
+  }
+
+  // Util: costruisce elementi Cytoscape dal payload GENERICO (nodi flat)
+  // Colori: arancione = sorgenti (solo uscenti), blu = dipendenti (hanno entranti), grigio = isolati
+  function toElementsGeneric(payload) {
+    const nodesFlat = payload.nodes || [];
+    const edgesFlat = payload.edges || [];
+
+    // calcola in/out-degree
+    const outDeg = Object.create(null);
+    const inDeg = Object.create(null);
+    for (const n of nodesFlat) { outDeg[n.id] = 0; inDeg[n.id] = 0; }
+    for (const e of edgesFlat) {
+      outDeg[e.source] = (outDeg[e.source] || 0) + 1;
+      inDeg[e.target] = (inDeg[e.target] || 0) + 1;
+      if (!(e.source in inDeg)) inDeg[e.source] = inDeg[e.source] || 0;
+      if (!(e.target in outDeg)) outDeg[e.target] = outDeg[e.target] || 0;
+    }
+
+    // palette
+    const ORANGE = "#ef6c00";
+    const BLUE   = "#1565c0";
+    const GREY   = "#6c757d";
+
+    const nodes = nodesFlat.map((n) => {
+      const color = (outDeg[n.id] > 0 && inDeg[n.id] === 0) ? ORANGE
+                   : (inDeg[n.id] > 0) ? BLUE
+                   : GREY;
+      return {
+        data: {
+          id: n.id,
+          label: n.label || n.id,
+          color,
+          cond: n.cond || "",
+          cond_human: n.cond_human || ""
+        }
+      };
+    });
+
+    const edges = edgesFlat.map((e) => ({
+      data: { id: `${e.source}->${e.target}`, source: e.source, target: e.target }
+    }));
+
+    return { nodes, edges };
+  }
+
   function renderMeta(meta) {
     if (!meta) { metaBox.textContent = ""; return; }
     const parts = [];
     if (meta.language) parts.push(`${meta.language.id} — ${meta.language.name}`);
     if (meta.counts) {
-      parts.push(`+: ${meta.counts["+"]}`);
-      parts.push(`–: ${meta.counts["-"]}`);
-      parts.push(`0: ${meta.counts["0"]}`);
-      if (meta.counts.unset) parts.push(`unset: ${meta.counts.unset}`);
+      parts.push(`+ ${meta.counts["+"]}  – ${meta.counts["-"]}  0 ${meta.counts["0"]}  unset ${meta.counts.unset}`);
+    } else if (meta.active_count != null) {
+      parts.push(`active: ${meta.active_count}`);
     }
-    metaBox.textContent = parts.join(" · ");
+    metaBox.textContent = parts.join(" | ");
   }
 
-  async function loadForLanguage(lang) {
-    if (!lang) {
-      cy.elements().remove();
-      renderMeta(null);
-      return;
-    }
-    const res = await fetch(API_LANG(lang), { headers: { "Accept": "application/json" } });
-    if (!res.ok) throw new Error("Failed to load graph");
+  // Carica grafo GENERICO (nessuna lingua selezionata)
+  async function loadGeneric() {
+    const res = await fetch(API_BASE, { headers: { "Accept": "application/json" } });
+    if (!res.ok) throw new Error("Failed to load generic graph");
     const payload = await res.json();
 
-    const { nodes, edges } = toElements(payload);
+    const { nodes, edges } = toElementsGeneric(payload);
 
     cy.elements().remove();
     cy.add(nodes);
     cy.add(edges);
 
-    // layout
-    layoutFor(toggleRank.checked).run();
+    layoutFor(toggleRank?.checked ?? true).run();
 
-    // tooltips semplici via title (accessibile)
+    // Tooltip base
     cy.nodes().forEach((n) => {
       const d = n.data();
-      const parts = [];
-      parts.push(`${d.id} — ${d.name || ""}`);
-      if (d.value) parts.push(`value: ${d.value}`);
-      if (d.cond_human) parts.push(`cond: ${d.cond_human}`);
-      n.qtip && n.qtip.destroy && n.qtip.destroy(); // no-op se non presente
-      n.data("title", parts.join("\n"));
+      const t = [d.label, d.cond_human].filter(Boolean).join("\n");
+      n.data("title", t);
     });
 
     renderMeta(payload.meta);
   }
 
-  // eventi UI
+  // Carica grafo per LINGUA (colori + / - / 0 dal backend)
+  async function loadForLanguage(lang) {
+    if (!lang) { return loadGeneric(); }
+    const res = await fetch(API_LANG(lang), { headers: { "Accept": "application/json" } });
+    if (!res.ok) throw new Error("Failed to load graph");
+    const payload = await res.json();
+
+    const { nodes, edges } = toElementsLang(payload);
+
+    cy.elements().remove();
+    cy.add(nodes);
+    cy.add(edges);
+
+    layoutFor(toggleRank?.checked ?? true).run();
+
+    // Tooltip base
+    cy.nodes().forEach((n) => {
+      const d = n.data();
+      const t = [d.label, d.cond_human, d.value ? `value: ${d.value}` : ""].filter(Boolean).join("\n");
+      n.data("title", t);
+    });
+
+    renderMeta(payload.meta);
+  }
+
+  // Eventi UI
   btnReload?.addEventListener("click", () => {
     const lang = langSelect?.value || "";
-    loadForLanguage(lang).catch(console.error);
+    (lang ? loadForLanguage(lang) : loadGeneric()).catch(console.error);
   });
 
   toggleRank?.addEventListener("change", () => {
@@ -125,11 +195,11 @@
   });
 
   langSelect?.addEventListener("change", () => {
-    loadForLanguage(langSelect.value).catch(console.error);
+    const lang = langSelect.value || "";
+    (lang ? loadForLanguage(lang) : loadGeneric()).catch(console.error);
   });
 
-  // init: se c'è una lingua preselezionata
-  if (langSelect && langSelect.value) {
-    loadForLanguage(langSelect.value).catch(console.error);
-  }
+  // Init: se c'è una lingua usa lingua, altrimenti grafo generico
+  const initialLang = (langSelect && langSelect.value) ? langSelect.value : "";
+  (initialLang ? loadForLanguage(initialLang) : loadGeneric()).catch(console.error);
 })();
