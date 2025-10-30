@@ -1,154 +1,135 @@
 // static/js/param_graph.js
-(function(){
+(function () {
   const CY_ID = "cy";
-  const API = "/api/param-graph/";
+  // endpoint nuovo: /api/param-graph/<lang_id>/
+  const API_LANG = (lang) => `/api/param-graph/${encodeURIComponent(lang)}/`;
+
   const btnReload = document.getElementById("btn-reload");
   const toggleRank = document.getElementById("toggle-rank");
   const metaBox = document.getElementById("meta");
+  const langSelect = document.getElementById("lang-select");
+
+  let cy = cytoscape({
+    container: document.getElementById(CY_ID),
+    elements: [],
+    style: [
+      {
+        selector: "node",
+        style: {
+          "background-color": "data(color)", // [NUOVO] colore deciso dal backend
+          "label": "data(label)",
+          "text-wrap": "wrap",
+          "text-max-width": 80,
+          "font-size": 10,
+          "color": "#fff",
+          "text-valign": "center",
+          "text-halign": "center",
+          "width": 36,
+          "height": 24,
+          "border-width": 1,
+          "border-color": "#444"
+        }
+      },
+      {
+        selector: "edge",
+        style: {
+          "width": 1.5,
+          "line-color": "#888",
+          "target-arrow-color": "#888",
+          "target-arrow-shape": "triangle",
+          "curve-style": "bezier"
+        }
+      },
+      {
+        selector: "node:selected",
+        style: { "border-width": 2, "border-color": "#000" }
+      }
+    ],
+  });
 
   function toElements(payload) {
-    const nodes = payload.nodes.map(n => ({
-      data: { id: n.id, label: n.label, rank: n.rank, cond: n.cond, cond_human: n.cond_human }
+    const nodes = payload.nodes.map((n) => ({
+      data: n.data
     }));
-    const edges = payload.edges.map(e => ({
-      data: { id: e.source + "->" + e.target, source: e.source, target: e.target }
+    const edges = payload.edges.map((e) => ({
+      data: { id: e.data ? e.data.id : `${e.source}->${e.target}`, source: e.data ? e.data.source : e.source, target: e.data ? e.data.target : e.target }
     }));
     return { nodes, edges };
   }
 
-  function layoutFor(cy, layered) {
+  function layoutFor(layered) {
     if (!layered) return cy.layout({ name: "cose", animate: true, fit: true });
     return cy.layout({
       name: "breadthfirst",
       directed: true,
       padding: 30,
       avoidOverlap: true,
-      spacingFactor: 1.2,
-      animate: true,
-      roots: cy.nodes().filter(n => n.indegree() === 0).map(n => n.id()),
+      fit: true
     });
   }
 
-  async function render() {
-    metaBox.textContent = "Loading…";
-    const resp = await fetch(API, { headers: { "Accept": "application/json" } });
-    if (!resp.ok) { metaBox.textContent = "Errore nel caricamento del grafo."; return; }
-    const payload = await resp.json();
-    metaBox.textContent = `${payload.meta.active_count} parametri attivi • ${payload.meta.has_edges ? 'con' : 'senza'} relazioni`;
+  function renderMeta(meta) {
+    if (!meta) { metaBox.textContent = ""; return; }
+    const parts = [];
+    if (meta.language) parts.push(`${meta.language.id} — ${meta.language.name}`);
+    if (meta.counts) {
+      parts.push(`+: ${meta.counts["+"]}`);
+      parts.push(`–: ${meta.counts["-"]}`);
+      parts.push(`0: ${meta.counts["0"]}`);
+      if (meta.counts.unset) parts.push(`unset: ${meta.counts.unset}`);
+    }
+    metaBox.textContent = parts.join(" · ");
+  }
 
-    const container = document.getElementById(CY_ID);
-    container.innerHTML = "";
+  async function loadForLanguage(lang) {
+    if (!lang) {
+      cy.elements().remove();
+      renderMeta(null);
+      return;
+    }
+    const res = await fetch(API_LANG(lang), { headers: { "Accept": "application/json" } });
+    if (!res.ok) throw new Error("Failed to load graph");
+    const payload = await res.json();
 
     const { nodes, edges } = toElements(payload);
 
-    const cy = cytoscape({
-      container,
-      elements: { nodes, edges },
-      wheelSensitivity: 0.2,
-      style: [
-        // base node
-        {
-          selector: "node",
-          style: {
-            "label": "data(label)",
-            "text-valign": "center",
-            "color": "var(--text)",
-            "background-color": "var(--surface-strong, #556)",
-            "border-color": "var(--border, #999)",
-            "border-width": 1,
-            "width": "label",
-            "height": "label",
-            "padding": "6px",
-            "shape": "round-rectangle",
-            "font-size": 12
-          }
-        },
-        // base edge
-        {
-          selector: "edge",
-          style: {
-            "curve-style": "bezier",
-            "target-arrow-shape": "triangle",
-            "target-arrow-color": "var(--border, #999)",
-            "line-color": "var(--border, #999)",
-            "width": 1.2
-          }
-        },
-        // selezione generica (nodo) — arancione
-        {
-          selector: "node.highlight", 
-          style: {
-            "background-color": "#f39c12"
-          }
-        },
-        // entranti (colora sia edge che node)
-        {
-          selector: "edge.highlight-in", 
-          style: {
-            "line-color": "#3498db",
-            "target-arrow-color": "#3498db",
-            "width": 1.6  
-          }
-        },
-        {
-          selector: "node.highlight-in", 
-          style: {
-            "background-color": "#3498db"
-          }
-        },
-        // uscenti (colora sia edge che node)
-        {
-          selector: "edge.highlight-out", 
-          style: {
-            "line-color": "#e67e22",
-            "target-arrow-color": "#e67e22",
-            "width": 1.6 
-          }
-        },
-        {
-          selector: "node.highlight-out",
-          style: {
-            "background-color": "#e67e22"
-          }
-        }
-      ]
+    cy.elements().remove();
+    cy.add(nodes);
+    cy.add(edges);
+
+    // layout
+    layoutFor(toggleRank.checked).run();
+
+    // tooltips semplici via title (accessibile)
+    cy.nodes().forEach((n) => {
+      const d = n.data();
+      const parts = [];
+      parts.push(`${d.id} — ${d.name || ""}`);
+      if (d.value) parts.push(`value: ${d.value}`);
+      if (d.cond_human) parts.push(`cond: ${d.cond_human}`);
+      n.qtip && n.qtip.destroy && n.qtip.destroy(); // no-op se non presente
+      n.data("title", parts.join("\n"));
     });
 
-    layoutFor(cy, toggleRank.checked).run();
-
-    // Interazioni
-    cy.on("tap", "node", (evt) => {
-      const n = evt.target;
-      const cond = n.data("cond") || n.data("cond") || "(no condition)";
-
-      // reset completo 
-      cy.elements().removeClass("highlight highlight-in highlight-out");
-
-      // nodo selezionato
-      n.addClass("highlight");
-
-      // uscenti (questo -> targets)
-      n.outgoers("edge").addClass("highlight-out");
-      n.outgoers("node").addClass("highlight-out");
-
-      // entranti (sources -> questo)
-      n.incomers("edge").addClass("highlight-in");
-      n.incomers("node").addClass("highlight-in");
-
-      metaBox.textContent = `${n.id()} : ${cond}`;
-    });
-
-    cy.on("dbltap", "node", (evt) => {
-      const n = evt.target;
-      // reset completo 
-      cy.elements().removeClass("highlight highlight-in highlight-out");
-      n.closedNeighborhood().addClass("highlight"); 
-    });
-
-    // Controls
-    btnReload.onclick = () => render();
-    toggleRank.onchange = () => layoutFor(cy, toggleRank.checked).run();
+    renderMeta(payload.meta);
   }
 
-  document.addEventListener("DOMContentLoaded", render);
+  // eventi UI
+  btnReload?.addEventListener("click", () => {
+    const lang = langSelect?.value || "";
+    loadForLanguage(lang).catch(console.error);
+  });
+
+  toggleRank?.addEventListener("change", () => {
+    layoutFor(toggleRank.checked).run();
+  });
+
+  langSelect?.addEventListener("change", () => {
+    loadForLanguage(langSelect.value).catch(console.error);
+  });
+
+  // init: se c'è una lingua preselezionata
+  if (langSelect && langSelect.value) {
+    loadForLanguage(langSelect.value).catch(console.error);
+  }
 })();

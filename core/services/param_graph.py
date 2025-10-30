@@ -7,8 +7,10 @@ from typing import Dict, List, Set, Tuple
 from django.db.models import QuerySet
 
 from core.models import ParameterDef
-from core.services.logic_parser import pretty_print_expression  # per tooltip "umano"
-
+from core.services.logic_parser import pretty_print_expression 
+from typing import Dict
+from django.db.models import Prefetch
+from core.models import ParameterDef, Language, LanguageParameterEval
 # Stessa logica di riconoscimento token del DAG (senza importare internals)
 TOKEN_RE = re.compile(r"[+\-0]([A-Za-z0-9_]+)")
 
@@ -121,3 +123,66 @@ def get_param_graph_payload() -> dict:
             "has_edges": any(edges),
         }
     }
+
+VALUE_COLOR = {"+": "#2e7d32", "-": "#c62828", "0": "#6c757d"}
+
+def get_param_graph_payload_for_language(lang_id: str) -> Dict:
+    """
+    Costruisce lo stesso grafo ma arricchito con:
+      - data.value in {"+", "-", "0"}
+      - data.color coerente con value
+      - data.cond e data.cond_human (riusati per tooltip e legenda)
+    I valori sono presi da LanguageParameterEval (db) se presenti; in alternativa
+    puoi collegare qui un ricalcolo on-the-fly via DAG se assente.
+    """
+    language = Language.objects.get(id=lang_id)
+
+    # prelevo tutti i parametri attivi per preservare il layout/ordine
+    params = list(
+        ParameterDef.objects.filter(is_active=True)
+        .only("id", "name", "position", "implicational_condition")
+        .order_by("position")
+    )
+
+    # mappa valori finali dal db
+    evals = LanguageParameterEval.objects.filter(language=language).select_related("parameter")
+    final_map: Dict[str, str] = {e.parameter_id: (e.final_value or "") for e in evals}
+
+    # nodi con arricchimento
+    nodes = []
+    for p in params:
+        val = final_map.get(p.id, "")
+        color = VALUE_COLOR.get(val, "#9e9e9e")  # default grigio se assente
+        cond = p.implicational_condition or ""
+        nodes.append({
+            "data": {
+                "id": p.id,
+                "label": f"{p.id}",
+                "name": p.name,
+                "position": p.position,
+                "value": val,          # "+", "-", "0" oppure ""
+                "color": color,        # deciso dal backend
+                "cond": cond,
+                "cond_human": pretty_print_expression(cond) if cond else "",
+            }
+        })
+
+    # archi come già fai ora (riusa la tua logica esistente)
+    # ATTENZIONE: qui presumo tu abbia già un costruttore di edges dagli id referenziati in cond.
+    # Se hai già una funzione privata che usi in get_param_graph_payload(), riutilizzala qui.
+    # Per chiarezza, chiamo la stessa pipeline che già usi:
+    base = get_param_graph_payload()  # struttura corrente con edges
+    edges = base.get("edges", [])
+
+    meta = {
+        "language": {"id": language.id, "name": language.name_full},
+        "counts": {
+            "params": len(nodes),
+            "+": sum(1 for n in nodes if n["data"]["value"] == "+"),
+            "-": sum(1 for n in nodes if n["data"]["value"] == "-"),
+            "0": sum(1 for n in nodes if n["data"]["value"] == "0"),
+            "unset": sum(1 for n in nodes if n["data"]["value"] == ""),
+        }
+    }
+
+    return {"nodes": nodes, "edges": edges, "meta": meta}
