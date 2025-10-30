@@ -305,7 +305,7 @@
         tabindex="0"
         title="Parameter {{ p.id }} — ..."
         aria-label="Parameter {{ p.id }}, ...">
-        <span class="badge-review" aria-hidden="true" hidden>!</span> 
+        <!-- <span class="badge-review" aria-hidden="true" hidden>!</span> -->
         {{ p.id }} 
       </div>
     {% endfor %}
@@ -315,15 +315,7 @@
     <section id="p-{{ p.id }}" class="param-section card">
       <h3 class="param-title">
         {{ p.id }} — {{ p.name }}
-        <label class="review-flag">
-          <input
-            type="checkbox"
-            class="review-flag-input"
-            data-param="{{ p.id }}"
-            data-lang="{{ language.id }}"
-            aria-label="Mark {{ p.id }} as 'to review'">
-          <span class="muted small">Mark as needs review</span>
-        </label>
+
       </h3>
 
       {% if p.short_description %}
