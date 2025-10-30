@@ -10,7 +10,7 @@ from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _t
 from django.views.decorators.http import require_http_methods, require_POST
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.utils.timezone import now
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -22,13 +22,15 @@ from django.urls import reverse
 from core.models import (
     Language,
     ParameterDef,
+    ParameterReviewFlag,
     Question,
     Answer,
     Example,
     Motivation,
     AnswerMotivation,
     QuestionAllowedMotivation,
-    LanguageParameter,          
+    LanguageParameter,  
+    ParameterReviewFlag,        
 )
 try:
     from core.models import LanguageParameterEval  
@@ -247,39 +249,15 @@ def language_edit(request, lang_id):
 # -----------------------
 @login_required
 def language_data(request, lang_id):
-    """
-    Pagina di compilazione dati per una lingua.
-
-    - Accesso: admin sempre; altrimenti la lingua deve essere assegnata all'utente (FK o M2M).
-    - Prefetch:
-        * Parametri attivi (ordinati per position)
-        * Domande per parametro
-        * Through "allowed_motivation_links" (ordinato per position, con motivation prefetchata)
-    - Per ogni domanda costruiamo:
-        * q.allowed_motivations_list -> lista di Motivation ordinate per position
-        * q.ans -> SimpleNamespace con risposta, commenti, motivazioni, esempi, id answer
-    - Calcoliamo un "semaforo" per parametro (ok/warn/missing) in base alle risposte yes/no.
-    - Esplicitamente **NON** limitiamo più gli esempi a YES: il template/JS li mostra per YES e NO;
-      il backend già salva/elimina esempi indipendentemente dal valore della risposta.
-    """
     user = request.user
-    is_admin = _is_admin(user)  # definita altrove nel file
-
+    is_admin = _is_admin(user)
     lang = get_object_or_404(Language, pk=lang_id)
-    if not _check_language_access(user, lang):  # definita altrove nel file
+    if not _check_language_access(user, lang):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
-    # === Prefetch ===
-    # - Domande per parametro
-    # - Through allowed_motivation_links con motivation in select_related e ordinati per position
     questions_qs = Question.objects.order_by("id")
-    through_qs = (
-        QuestionAllowedMotivation.objects
-        .select_related("motivation")
-        .order_by("position", "id")
-    )
-
+    through_qs = QuestionAllowedMotivation.objects.select_related("motivation").order_by("position", "id")
     parameters = (
         ParameterDef.objects.filter(is_active=True)
         .order_by("position")
@@ -289,28 +267,28 @@ def language_data(request, lang_id):
         )
     )
 
-    # === Risposte ed esempi per questa lingua ===
     answers_qs = (
-        Answer.objects
-        .filter(language=lang)
+        Answer.objects.filter(language=lang)
         .select_related("question")
         .prefetch_related("answer_motivations__motivation", "examples")
     )
     answers_by_qid = {a.question_id: a for a in answers_qs}
 
-    # === Arricchisci le domande con motivazioni ordinate e stato per parametro ===
+    flagged_pids = set(
+        ParameterReviewFlag.objects.filter(language=lang, user=user, flag=True).values_list("parameter_id", flat=True)
+    )
+
+    active_q_total = 0
+    active_q_answered = 0
+
     for p in parameters:
         total = 0
         answered = 0
-
         for q in p.questions.all():
             total += 1
-
-            # 1) Motivazioni per la domanda (ordinate per position)
-            links = getattr(q, "pref_links", [])  # creato da Prefetch(to_attr="pref_links")
+            active_q_total += 1
+            links = getattr(q, "pref_links", [])
             q.allowed_motivations_list = [l.motivation for l in links] if links else []
-
-            # 2) Risposta/Commenti/Motivazioni/Esempi (se presenti)
             a = answers_by_qid.get(q.id)
             if a:
                 q.ans = SimpleNamespace(
@@ -322,52 +300,31 @@ def language_data(request, lang_id):
                 )
                 if a.response_text in ("yes", "no"):
                     answered += 1
+                    active_q_answered += 1
             else:
-                q.ans = SimpleNamespace(
-                    response_text="",
-                    comments="",
-                    motivation_ids=[],
-                    examples=[],
-                    answer_id=None,
-                )
+                q.ans = SimpleNamespace(response_text="", comments="", motivation_ids=[], examples=[], answer_id=None)
 
-        # 3) Stato sintetico per parametro (per colorare i "quadratini" wizard)
-        if total == 0:
+        is_touched = answered > 0
+        is_complete = (total > 0 and answered == total)
+        is_flagged = p.id in flagged_pids
+
+        if not is_touched:
+            p.status = "untouched"
+            p.bg_color = "transparent"
+            p.fg_color = "inherit"
+        elif is_complete and not is_flagged:
             p.status = "ok"
-        elif answered == 0:
-            p.status = "missing"
-        elif answered < total:
-            p.status = "warn"
+            p.bg_color = "#e6f7e9"
+            p.fg_color = "#0f5132"
         else:
-            p.status = "ok"
+            p.status = "red"
+            p.bg_color = "#ffe8e8"
+            p.fg_color = "#842029"
 
-        # palette (se già usata dal template)
-        if p.status == "ok":
-            p.bg_color = "#d4edda"
-            p.fg_color = "#155724"
-        elif p.status == "warn":
-            p.bg_color = "#fff3cd"
-            p.fg_color = "#856404"
-        else:
-            p.bg_color = "#f8d7da"
-            p.fg_color = "#721c24"
-
-    # === Verifica completezza (tutte le domande attive hanno YES/NO) ===
-    active_q_total = 0
-    active_q_answered = 0
-    for p in parameters:
-        for q in p.questions.all():
-            active_q_total += 1
-            if getattr(q, "ans", None) and q.ans.response_text in ("yes", "no"):
-                active_q_answered += 1
     all_answered = (active_q_total > 0 and active_q_answered == active_q_total)
-
-    # === Stato complessivo e ultimo reject ===
-    lang_status = _language_overall_status(lang)  # definita altrove
+    lang_status = _language_overall_status(lang)
     last_reject = (
-        LanguageReview.objects.filter(language=lang, decision="reject")
-        .order_by("-created_at")
-        .first()
+        LanguageReview.objects.filter(language=lang, decision="reject").order_by("-created_at").first()
     )
 
     ctx = {
@@ -381,18 +338,15 @@ def language_data(request, lang_id):
     return render(request, "languages/data.html", ctx)
 
 
-# -----------------------
-# Salvataggio risposte
-# -----------------------
 @login_required
 @require_http_methods(["POST"])
 @transaction.atomic
 def parameter_save(request, lang_id, param_id):
     """
-    Salvataggio in bulk di tutte le risposte del parametro selezionato.
-    Vincoli:
-      - Se response_text == "yes" => deve esistere almeno un Example con textarea non vuota
-        nello stato finale (esistenti non cancellati/aggiornati + nuovi).
+    Salvataggio bulk per un parametro.
+    - YES richiede almeno un Example con 'textarea' non vuota (in stato finale).
+    - 'action' ∈ {'save','next'}: 'next' marca il parametro come 'torno dopo' (rosso anche se completo).
+    - NOVITÀ: non creare/salvare Answer con response_text vuoto → se tutto è vuoto resta 'untouched' (trasparente).
     """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -403,72 +357,31 @@ def parameter_save(request, lang_id, param_id):
     questions = list(param.questions.all())
 
     saved_count = 0
-    for q in questions:
-        # --- Answer: value + comments ---
-        resp_key = f"resp_{q.id}"
-        response_text = (request.POST.get(resp_key) or "").strip().lower()
-        if response_text not in ("yes", "no"):
-            # niente risposta per questa domanda → salta
-            continue
+    FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
 
+    for q in questions:
+        response_text = (request.POST.get(f"resp_{q.id}") or "").strip().lower()
         comments = (request.POST.get(f"com_{q.id}") or "").strip()
 
-        # lock/crea Answer
-        answer = (
-            Answer.objects.select_for_update()
-            .filter(language=lang, question=q)
-            .first()
-        )
-        if answer and not answer.modifiable and not _is_admin(request.user):
-            # non modificabile per utente non admin → salta
+        # Se nessuna risposta selezionata, NON creare/aggiornare Answer
+        if response_text not in ("yes", "no"):
             continue
-        if answer is None:
+
+        try:
+            answer = Answer.objects.get(language=lang, question=q)
+        except Answer.DoesNotExist:
             answer = Answer(language=lang, question=q)
 
-        # salva header Answer
-        answer.response_text = response_text
-        answer.comments = comments
-        answer.save()
-        saved_count += 1
-
-        # --- Motivazioni: many-to-many sincronizzato ---
-        try:
-            target_ids = {int(x) for x in request.POST.getlist(f"mot_{q.id}")}
-        except ValueError:
-            target_ids = set()
-
-        allowed_ids = set(
-            QuestionAllowedMotivation.objects.filter(question=q).values_list("motivation_id", flat=True)
-        )
-        target_ids &= allowed_ids
-
-        current_ids = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
-        to_add = target_ids - current_ids
-        to_del = current_ids - target_ids
-        if to_add:
-            AnswerMotivation.objects.bulk_create(
-                [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
-                ignore_conflicts=True,
-            )
-        if to_del:
-            AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
-
-        # --- ESEMPI: raccolta mutazioni + VALIDAZIONE + applicazione ---
-        FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
-
-        # 1) Raccolta delete esistenti: del_ex_<id> = "1" 
+        # --- raccolta deletes ---
         del_ids = []
         for key, val in request.POST.items():
-            if not key.startswith("del_ex_"):
-                continue
-            if (val or "").strip() != "1":
-                continue
-            try:
-                del_ids.append(int(key.split("_", 2)[2]))
-            except ValueError:
-                pass
+            if key.startswith("del_ex_") and (val or "").strip() == "1":
+                try:
+                    del_ids.append(int(key.split("_", 2)[2]))
+                except ValueError:
+                    pass
 
-        # 2) Raccolta update delle textarea esistenti (serve per lo stato finale)
+        # --- raccolta update textarea esistenti ---
         updated_textareas = {}
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
@@ -481,7 +394,7 @@ def parameter_save(request, lang_id, param_id):
             if field == "textarea":
                 updated_textareas[ex_id] = (val or "").strip()
 
-        # 3) Raccolta nuovi esempi (buckets newex_<QID>_<UID>_<field>)
+        # --- nuovi esempi ---
         prefix = f"newex_{q.id}_"
         buckets = {}
         for key, val in request.POST.items():
@@ -496,40 +409,58 @@ def parameter_save(request, lang_id, param_id):
                 continue
             buckets.setdefault(uid, {})[field] = (val or "").strip()
 
-        # 4) VALIDAZIONE: se YES, deve esistere almeno una textarea NON vuota nello stato finale
+        # Validazione YES
         if response_text == "yes":
-            has_nonempty_textarea = False
-
-            # esempi esistenti che rimangono (escludi quelli marcati delete)
-            existing_qs = Example.objects.filter(answer=answer).exclude(id__in=del_ids).only("id", "textarea")
-            for ex in existing_qs:
-                final_txt = updated_textareas.get(ex.id, (ex.textarea or ""))
-                if final_txt.strip():
-                    has_nonempty_textarea = True
+            has_textarea_final = False
+            existing_qs = Example.objects.filter(answer__language=lang, answer__question=q)
+            existing_map = {ex.id: ex for ex in existing_qs}
+            for ex_id, ex in existing_map.items():
+                if ex_id in del_ids:
+                    continue
+                tx = updated_textareas.get(ex_id, (ex.textarea or "").strip())
+                if tx:
+                    has_textarea_final = True
                     break
-
-            # nuovi esempi
-            if not has_nonempty_textarea:
+            if not has_textarea_final and buckets:
                 for _uid, data in buckets.items():
                     if (data.get("textarea") or "").strip():
-                        has_nonempty_textarea = True
+                        has_textarea_final = True
                         break
-
-            if not has_nonempty_textarea:
-                messages.error(
-                    request,
-                    _t(f"Question {q.id}: with YES you must provide at least one example with a non-empty Example text.")
-                )
-                transaction.set_rollback(True)
+            if not has_textarea_final:
+                messages.error(request, _t("If you answer YES, you must provide at least one example with a non-empty text."))
                 return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{param.id}")
 
-        # 5) APPLICAZIONE MUTAZIONI (solo se validazione passata)
+        # Applica Answer
+        answer.response_text = response_text
+        answer.comments = comments
+        answer.save()
+        saved_count += 1
 
-        # 5.1) Delete esistenti
+        # Motivazioni (solo allowed)
+        try:
+            target_ids = {int(x) for x in request.POST.getlist(f"mot_{q.id}")}
+        except ValueError:
+            target_ids = set()
+        allowed_ids = set(
+            QuestionAllowedMotivation.objects.filter(question=q).values_list("motivation_id", flat=True)
+        )
+        target_ids &= allowed_ids
+        current_ids = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
+        to_add = target_ids - current_ids
+        to_del = current_ids - target_ids
+        if to_add:
+            AnswerMotivation.objects.bulk_create(
+                [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
+                ignore_conflicts=True,
+            )
+        if to_del:
+            AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
+
+        # Esempi: delete
         if del_ids:
             Example.objects.filter(answer=answer, id__in=del_ids).delete()
 
-        # 5.2) Update esistenti (tutti i campi ex_<ID>_<field>)
+        # Esempi: update
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
                 continue
@@ -543,7 +474,7 @@ def parameter_save(request, lang_id, param_id):
             cleaned = (val or "").strip()
             Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
 
-        # 5.3) Create nuovi esempi dai buckets
+        # Esempi: create
         if buckets:
             to_create = []
             for uid, data in buckets.items():
@@ -569,15 +500,28 @@ def parameter_save(request, lang_id, param_id):
             if to_create:
                 Example.objects.bulk_create(to_create, ignore_conflicts=True)
 
+    # Flag Save/Next
+    action = (request.POST.get("action") or "save").strip().lower()
+    try:
+        if action == "next":
+            ParameterReviewFlag.objects.update_or_create(
+                language=lang, parameter=param, user=request.user, defaults={"flag": True}
+            )
+        else:
+            ParameterReviewFlag.objects.update_or_create(
+                language=lang, parameter=param, user=request.user, defaults={"flag": False}
+            )
+    except Exception:
+        pass
+
     messages.success(request, _t(f"Saved {saved_count} answers for parameter {param.id}."))
     next_param = (
-        ParameterDef.objects
-        .filter(is_active=True, position__gt=param.position)
-        .order_by("position")
-        .first()
+        ParameterDef.objects.filter(is_active=True, position__gt=param.position).order_by("position").first()
     )
     target_id = next_param.id if next_param else param.id
     return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{target_id}")
+
+
 
 @login_required
 @require_http_methods(["POST"])
@@ -1220,3 +1164,37 @@ def language_export_xlsx(request, lang_id: str):
     resp["Content-Disposition"] = f'attachment; filename="{filename}"'
     wb.save(resp)
     return resp
+
+# === API per review flag (riuso di ParameterReviewFlag) =================
+
+@login_required
+@require_http_methods(["GET"])
+def review_flags_list(request, lang_id: str):
+    """
+    Ritorna i param id marcati 'torno dopo' dall'utente corrente per la lingua data.
+    """
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        return JsonResponse({"flags": []})
+    flags = list(
+        ParameterReviewFlag.objects.filter(language=lang, user=request.user, flag=True)
+        .values_list("parameter_id", flat=True)
+    )
+    return JsonResponse({"flags": flags})
+
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_review_flag(request, lang_id: str, param_id: str):
+    """
+    Imposta/rimuove il flag 'torno dopo' per l'utente corrente sul parametro dato.
+    """
+    lang = get_object_or_404(Language, pk=lang_id)
+    if not _check_language_access(request.user, lang):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+    param = get_object_or_404(ParameterDef, pk=param_id, is_active=True)
+    flag = (request.POST.get("flag") or "").strip() == "1"
+    ParameterReviewFlag.objects.update_or_create(
+        language=lang, parameter=param, user=request.user, defaults={"flag": flag}
+    )
+    return JsonResponse({"ok": True, "flag": flag})

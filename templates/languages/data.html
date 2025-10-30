@@ -492,16 +492,48 @@
           </div> {# fine .card della singola domanda #}
         {% endfor %}
 
-        <div class="toolbar" style="margin-top:.5rem">
-          <button type="submit" class="btn btn--primary"
-            {% with s=lang_status.overall %}
-              {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
-              {% endif %}
-            {% endwith %}>
-            Save {{ p.id }}
-          </button>
+        <div class="toolbar" style="margin-top:.75rem; display:flex; flex-direction:column; gap:.75rem;">
+
+          <!-- riga SAVE -->
+          <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; width:100%;">
+            <p class="muted" style="margin:0; font-size:.9rem;">
+              Click <strong>Save</strong> if you are confident in your answer.  
+              You can still edit or review it later.
+            </p>
+            <button type="submit"
+                    class="btn btn--primary"
+                    data-submit-action="save"
+                    style="margin-left:auto;"
+              {% with s=lang_status.overall %}
+                {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                  disabled aria-disabled="true" title="Editing blocked until review"
+                {% endif %}
+              {% endwith %}>
+              Save {{ p.id }}
+            </button>
+          </div>
+
+          <!-- riga NEXT -->
+          <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; width:100%;">
+            <p class="muted" style="margin:0; font-size:.9rem;">
+              Click <strong>Next</strong> if you are unsure and want to return to this parameter later.  
+            </p>
+            <button type="submit"
+                    class="btn"
+                    data-submit-action="next"
+                    style="margin-left:auto;"
+              {% with s=lang_status.overall %}
+                {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                  disabled aria-disabled="true" title="Editing blocked until review"
+                {% endif %}
+              {% endwith %}>
+              Next
+            </button>
+          </div>
+
+          <input type="hidden" name="action" value="save" data-action-field="1">
         </div>
+
       </form>
     </section>
   {% endfor %}
@@ -557,29 +589,15 @@
       --edge: color-mix(in srgb, currentColor 55%, black);
     }
 
-    /* PARZIALE (gialli) -> view usa 'warn' : bordo tratteggiato */
-    .param-nav .param-btn[data-status="warn"] {
-      border: 2px dashed var(--edge);
-      border-radius: 4px;
-      position: relative;      
-    }
+/* pulizia stati: niente giallo; usiamo inline bg/fg dalla view */
+.param-nav .param-btn { border: 2px solid rgba(0,0,0,.65); border-radius: 6px; }
 
-    /* MANCANTI (rossi):  */
-    .param-nav .param-btn[data-status="missing"] {
-      border: 2px solid var(--edge);
-      border-radius: 4px;
-      position: relative;
-      overflow: visible;  
-    }
+/* opzionale: i completi (ok) rotondi */
+.param-nav .param-btn[data-status="ok"] { border-radius: 50%; }
 
-    /* === PARAMETRI OK (verdi) — forma circolare === */
-    .param-nav .param-btn[data-status="ok"],
-    .param-nav .param-btn:not([data-status]) {
-      border: 2px solid var(--edge);
-      border-radius: 50%;     
-      position: relative;
-      overflow: visible;    
-    }
+/* untouched: nessuno sfondo, solo bordo standard */
+.param-nav .param-btn[data-status="untouched"] { background: transparent !important; color: inherit !important; }
+
 
     /* Preferenze utente alta visibilità */
     @media (prefers-contrast: more) {
@@ -1002,4 +1020,18 @@ document.addEventListener('change', async function(e){
   }
 });
 </script>
+
+<script>
+// Imposta il campo hidden "action" in base al bottone premuto (save/next)
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('button[data-submit-action]');
+  if (!btn) return;
+  const form = btn.closest('form');
+  if (!form) return;
+  const hidden = form.querySelector('input[data-action-field]');
+  if (!hidden) return;
+  hidden.value = btn.getAttribute('data-submit-action'); // "save" | "next"
+});
+</script>
+
 {% endblock %}
