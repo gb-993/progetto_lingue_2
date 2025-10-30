@@ -59,8 +59,8 @@
         {# In EDIT non mostriamo la password #}
 
         <div class="form-group" style="grid-column:1/-1">
-          <fieldset>
-            <legend id="lang-legend">Assigned languages (optional)</legend>
+          <!-- <fieldset> -->
+            <!-- <legend id="lang-legend">Assigned languages (optional)</legend> -->
 
             {# Se l'utente è admin, promemoria #}
             {% if form.role.value == "admin" %}
@@ -75,9 +75,6 @@
               <label for="lang-search" class="sr-only">Cerca lingue</label>
               <input id="lang-search" type="search" class="form-control"
                      placeholder="Cerca lingue… (codice o nome)" aria-describedby="lang-help">
-              <small id="lang-help" class="muted">
-                Filtra per codice (es. <code>ita</code>) o nome (es. <code>Italian</code>).
-              </small>
             </div>
 
             {# Lista checkbox: codice — nome #}

@@ -198,7 +198,7 @@ def accounts_edit(request, user_id):
                 Language.objects.filter(id__in=lang_ids).update(assigned_user=user)
                 Language.objects.filter(assigned_user=user).exclude(id__in=lang_ids).update(assigned_user=None)
 
-            messages.success(request, "Account aggiornato.")
+            messages.success(request, "Account updated")
             return redirect("accounts_list")
 
         # form non valido -> ricostruisci contesto e torna al template
@@ -254,7 +254,7 @@ def my_account(request):
             pwd_form = MyPasswordChangeForm(user=user)  # form vuota per la sezione password
             if form.is_valid():
                 form.save()
-                messages.success(request, _("Dati profilo aggiornati."))
+                messages.success(request, _("Profile data updated"))
                 return redirect("my_account")
             else:
                 messages.error(request, _("Correggi gli errori nel profilo."))
@@ -264,10 +264,10 @@ def my_account(request):
             if pwd_form.is_valid():
                 user = pwd_form.save()
                 update_session_auth_hash(request, user)  # evita logout
-                messages.success(request, _("Password aggiornata correttamente."))
+                messages.success(request, _("Password successfully updated"))
                 return redirect("my_account")
             else:
-                messages.error(request, _("Correggi gli errori nella password."))
+                messages.error(request, _("Correct the errors in the password"))
         else:
             # fallback: tratta come GET
             form = MyAccountForm(instance=user)

@@ -86,6 +86,14 @@
             </li>
 
             <li>
+              {% if urln == 'param_graph_page' %}
+                <span class="btn is-current" aria-current="page" aria-disabled="true">Graph</span>
+              {% else %}
+                <a class="btn" href="{% url 'param_graph_page' %}">Graph</a>
+              {% endif %}
+            </li>
+
+            <li>
               {% if urln == 'tablea_index' %}
                 <span class="btn is-current" aria-current="page" aria-disabled="true">Table A</span>
               {% else %}
@@ -117,13 +125,6 @@
               {% endif %}
             </li>
 
-            <li>
-              {% if urln == 'param_graph_page' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">Graph</span>
-              {% else %}
-                <a class="btn" href="{% url 'param_graph_page' %}">Graph</a>
-              {% endif %}
-            </li>
           {% endif %}
 
           {# Spaziatore elastico che crea buco e spinge Logout/Theme a destra #}
