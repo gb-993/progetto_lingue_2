@@ -314,3 +314,69 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
+/* === Validazione submit: YES ⇒ almeno una textarea non vuota ===
+   Incolla questo blocco alla FINE di static/js/examples.js
+*/
+document.addEventListener("DOMContentLoaded", function () {
+  // intercetta tutti i form che salvano il parametro
+  const forms = document.querySelectorAll('form[action*="parameter_save"]');
+  forms.forEach(form => {
+    form.addEventListener("submit", function (e) {
+      // pulizia messaggi precedenti
+      form.querySelectorAll(".js-yes-examples-error").forEach(n => {
+        n.style.display = "none";
+        n.textContent = "";
+      });
+
+      let invalid = false;
+
+      // per ogni select risposta nel form
+      const selects = form.querySelectorAll('[name^="resp_"][data-qid]');
+      selects.forEach(selectEl => {
+        const qid = selectEl.getAttribute("data-qid");
+        if (!qid) return;
+        if ((selectEl.value || "").toLowerCase() !== "yes") return;
+
+        const list = form.querySelector(`.examples-list[data-qid="${qid}"]`);
+        if (!list) return;
+
+        let hasNonEmpty = false;
+
+        // esempi esistenti visibili non cancellati
+        const rows = list.querySelectorAll('.example-row');
+        for (const row of rows) {
+          // ignorare righe marcate per delete
+          const delHidden = row.querySelector('input[type="hidden"][name^="del_ex_"]');
+          const isDeleted = delHidden && delHidden.value === "1";
+          if (isDeleted) continue;
+
+          const txt = row.querySelector('input[name$="_textarea"]');
+          if (txt && txt.value.trim()) { hasNonEmpty = true; break; }
+        }
+
+        // nuovi esempi (newex_<QID>_*_textarea)
+        if (!hasNonEmpty) {
+          const newInputs = list.querySelectorAll(`input[name^="newex_${qid}_"][name$="_textarea"]`);
+          for (const inp of newInputs) {
+            if ((inp.value || "").trim()) { hasNonEmpty = true; break; }
+          }
+        }
+
+        if (!hasNonEmpty) {
+          invalid = true;
+          const err = form.querySelector(`.js-yes-examples-error[data-qid="${qid}"]`);
+          if (err) {
+            err.textContent = "With YES you must add at least one example with a non-empty Example text.";
+            err.style.display = "";
+          }
+        }
+      });
+
+      if (invalid) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, { capture: true });
+  });
+});

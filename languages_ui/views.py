@@ -384,15 +384,15 @@ def language_data(request, lang_id):
 # -----------------------
 # Salvataggio risposte
 # -----------------------
-
 @login_required
 @require_http_methods(["POST"])
 @transaction.atomic
 def parameter_save(request, lang_id, param_id):
     """
     Salvataggio in bulk di tutte le risposte del parametro selezionato.
-    Dopo il salvataggio reindirizza automaticamente al parametro successivo
-    (in base a 'position'); se non esiste, resta su quello corrente.
+    Vincoli:
+      - Se response_text == "yes" => deve esistere almeno un Example con textarea non vuota
+        nello stato finale (esistenti non cancellati/aggiornati + nuovi).
     """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -404,49 +404,45 @@ def parameter_save(request, lang_id, param_id):
 
     saved_count = 0
     for q in questions:
+        # --- Answer: value + comments ---
         resp_key = f"resp_{q.id}"
         response_text = (request.POST.get(resp_key) or "").strip().lower()
         if response_text not in ("yes", "no"):
+            # niente risposta per questa domanda → salta
             continue
 
         comments = (request.POST.get(f"com_{q.id}") or "").strip()
 
+        # lock/crea Answer
         answer = (
             Answer.objects.select_for_update()
             .filter(language=lang, question=q)
             .first()
         )
         if answer and not answer.modifiable and not _is_admin(request.user):
+            # non modificabile per utente non admin → salta
             continue
         if answer is None:
             answer = Answer(language=lang, question=q)
 
+        # salva header Answer
         answer.response_text = response_text
         answer.comments = comments
         answer.save()
         saved_count += 1
 
-        # --- Motivazioni (rispettando allowed e esclusività MOT1) ---
+        # --- Motivazioni: many-to-many sincronizzato ---
         try:
-            motivation_ids = [int(x) for x in request.POST.getlist(f"mot_{q.id}")]
+            target_ids = {int(x) for x in request.POST.getlist(f"mot_{q.id}")}
         except ValueError:
-            motivation_ids = []
+            target_ids = set()
 
         allowed_ids = set(
-            QuestionAllowedMotivation.objects.filter(question=q)
-            .values_list("motivation_id", flat=True)
+            QuestionAllowedMotivation.objects.filter(question=q).values_list("motivation_id", flat=True)
         )
-        mot1 = Motivation.objects.filter(code="MOT1").only("id").first()
+        target_ids &= allowed_ids
 
-        if response_text == "yes":
-            target_ids = set()
-        else:
-            filtered = [mid for mid in motivation_ids if mid in allowed_ids]
-            target_ids = {mot1.id} if (mot1 and mot1.id in filtered) else set(filtered)
-
-        current_ids = set(
-            AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
-        )
+        current_ids = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
         to_add = target_ids - current_ids
         to_del = current_ids - target_ids
         if to_add:
@@ -457,34 +453,35 @@ def parameter_save(request, lang_id, param_id):
         if to_del:
             AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-        # --- Esempi: delete/update/create ---
+        # --- ESEMPI: raccolta mutazioni + VALIDAZIONE + applicazione ---
         FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
 
-        # delete
+        # 1) Raccolta delete esistenti: del_ex_<id> = "1" (NON eseguire ancora)
         del_ids = []
         for key, val in request.POST.items():
-            if key.startswith("del_ex_") and val == "1":
-                try:
-                    del_ids.append(int(key.split("_", 2)[2]))
-                except ValueError:
-                    pass
-        if del_ids:
-            Example.objects.filter(answer=answer, id__in=del_ids).delete()
+            if not key.startswith("del_ex_"):
+                continue
+            if (val or "").strip() != "1":
+                continue
+            try:
+                del_ids.append(int(key.split("_", 2)[2]))
+            except ValueError:
+                pass
 
-        # update esistenti
+        # 2) Raccolta update delle textarea esistenti (serve per lo stato finale)
+        updated_textareas = {}
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
                 continue
             try:
-                _ex, ex_id_str, field = key.split("_", 2)
-                ex_id = int(ex_id_str)
+                _ex, ex_id, field = key.split("_", 2)
+                ex_id = int(ex_id)
             except ValueError:
                 continue
-            if field not in FIELDS:
-                continue
-            Example.objects.filter(id=ex_id, answer=answer).update(**{field: (val or "").strip()})
+            if field == "textarea":
+                updated_textareas[ex_id] = (val or "").strip()
 
-        # nuovi esempi
+        # 3) Raccolta nuovi esempi (buckets newex_<QID>_<UID>_<field>)
         prefix = f"newex_{q.id}_"
         buckets = {}
         for key, val in request.POST.items():
@@ -499,6 +496,54 @@ def parameter_save(request, lang_id, param_id):
                 continue
             buckets.setdefault(uid, {})[field] = (val or "").strip()
 
+        # 4) VALIDAZIONE: se YES, deve esistere almeno una textarea NON vuota nello stato finale
+        if response_text == "yes":
+            has_nonempty_textarea = False
+
+            # esempi esistenti che rimangono (escludi quelli marcati delete)
+            existing_qs = Example.objects.filter(answer=answer).exclude(id__in=del_ids).only("id", "textarea")
+            for ex in existing_qs:
+                final_txt = updated_textareas.get(ex.id, (ex.textarea or ""))
+                if final_txt.strip():
+                    has_nonempty_textarea = True
+                    break
+
+            # nuovi esempi
+            if not has_nonempty_textarea:
+                for _uid, data in buckets.items():
+                    if (data.get("textarea") or "").strip():
+                        has_nonempty_textarea = True
+                        break
+
+            if not has_nonempty_textarea:
+                messages.error(
+                    request,
+                    _t(f"Question {q.id}: with YES you must provide at least one example with a non-empty Example text.")
+                )
+                transaction.set_rollback(True)
+                return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{param.id}")
+
+        # 5) APPLICAZIONE MUTAZIONI (solo se validazione passata)
+
+        # 5.1) Delete esistenti
+        if del_ids:
+            Example.objects.filter(answer=answer, id__in=del_ids).delete()
+
+        # 5.2) Update esistenti (tutti i campi ex_<ID>_<field>)
+        for key, val in request.POST.items():
+            if not key.startswith("ex_"):
+                continue
+            try:
+                _ex, ex_id, field = key.split("_", 2)
+                ex_id = int(ex_id)
+            except ValueError:
+                continue
+            if field not in FIELDS:
+                continue
+            cleaned = (val or "").strip()
+            Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
+
+        # 5.3) Create nuovi esempi dai buckets
         if buckets:
             to_create = []
             for uid, data in buckets.items():
@@ -524,9 +569,7 @@ def parameter_save(request, lang_id, param_id):
             if to_create:
                 Example.objects.bulk_create(to_create, ignore_conflicts=True)
 
-    # Messaggio e calcolo del prossimo parametro
     messages.success(request, _t(f"Saved {saved_count} answers for parameter {param.id}."))
-
     next_param = (
         ParameterDef.objects
         .filter(is_active=True, position__gt=param.position)
@@ -536,12 +579,16 @@ def parameter_save(request, lang_id, param_id):
     target_id = next_param.id if next_param else param.id
     return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{target_id}")
 
-
-
 @login_required
 @require_http_methods(["POST"])
 @transaction.atomic
 def answer_save(request, lang_id, question_id):
+    """
+    Salvataggio singolo di una risposta per una domanda.
+    Vincoli:
+      - Se response_text == "yes" => deve esistere almeno un Example con textarea non vuota
+        nello stato finale (esistenti non cancellati/aggiornati + nuovi).
+    """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
@@ -549,7 +596,7 @@ def answer_save(request, lang_id, question_id):
 
     question = get_object_or_404(Question, pk=question_id)
 
-    # 1) Normalizza input
+    # 1) Input di base
     response_text = (request.POST.get("response_text") or "").strip().lower()
     if response_text not in ("yes", "no"):
         messages.error(request, _t("Invalid answer value."))
@@ -557,79 +604,62 @@ def answer_save(request, lang_id, question_id):
 
     comments = (request.POST.get("comments") or "").strip()
 
-    # 2) Carica/lock Answer (evita race-condition)
+    # 2) Lock/crea Answer
     answer = (
         Answer.objects.select_for_update()
         .filter(language=lang, question=question)
         .first()
     )
-
-    # Rispetta 'modifiable' per gli utenti; ADMIN bypassa
     if answer and not answer.modifiable and not _is_admin(request.user):
         messages.error(request, _t("This answer is locked (waiting/approved)."))
         return redirect("language_data", lang_id=lang.id)
-
-    # 3) Motivazioni: leggi e filtra
-    try:
-        motivation_ids = [int(x) for x in request.POST.getlist("motivation_ids")]
-    except ValueError:
-        motivation_ids = []
-
-    allowed_ids = set(
-        QuestionAllowedMotivation.objects.filter(question=question)
-        .values_list("motivation_id", flat=True)
-    )
-
-    # Esclusività "Motivazione1" via CODE stabile (modelli hanno 'code' unico)
-    mot1 = Motivation.objects.filter(code="MOT1").only("id").first()
-
-    if response_text == "yes":
-        target_ids = set()  # YES => niente motivazioni
-    else:
-        filtered = [mid for mid in motivation_ids if mid in allowed_ids]
-        if mot1 and mot1.id in filtered:
-            target_ids = {mot1.id}
-        else:
-            target_ids = set(filtered)
-
-    # 4) Crea/aggiorna Answer
     if answer is None:
         answer = Answer(language=lang, question=question)
+
+    # 3) Salva header
     answer.response_text = response_text
     answer.comments = comments
-    answer.save()  # vincolo unico già in DB
+    answer.save()
 
-    # 5) Sync motivazioni (differenziale, dentro la stessa transazione)
-    current_ids = set(
-        AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True)
+    # 4) Motivazioni
+    try:
+        motivation_ids = {int(x) for x in request.POST.getlist("motivation_ids")}
+    except ValueError:
+        motivation_ids = set()
+
+    allowed_ids = set(
+        QuestionAllowedMotivation.objects.filter(question=question).values_list("motivation_id", flat=True)
     )
-    to_add = target_ids - current_ids
-    to_del = current_ids - target_ids
+    motivation_ids &= allowed_ids
 
+    current_ids = set(AnswerMotivation.objects.filter(answer=answer).values_list("motivation_id", flat=True))
+    to_add = motivation_ids - current_ids
+    to_del = current_ids - motivation_ids
     if to_add:
         AnswerMotivation.objects.bulk_create(
             [AnswerMotivation(answer=answer, motivation_id=mid) for mid in to_add],
-            ignore_conflicts=True,  # sicuro: in DB hai uq answer+motivation
+            ignore_conflicts=True,
         )
     if to_del:
         AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-    # 6) Examples: delete, update, create (singola domanda)
-
+    # 5) ESEMPI: raccolta mutazioni + VALIDAZIONE + applicazione (singola domanda)
     FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
 
-    # 6.0) Delete esistenti: del_ex_<id> = "1"
+    # 5.1) Raccolta delete: del_ex_<id> = "1" (NON eseguire ancora)
     del_ids = []
     for key, val in request.POST.items():
-        if key.startswith("del_ex_") and val == "1":
-            try:
-                del_ids.append(int(key.split("_", 2)[2]))
-            except ValueError:
-                pass
-    if del_ids:
-        Example.objects.filter(answer=answer, id__in=del_ids).delete()
+        if not key.startswith("del_ex_"):
+            continue
+        if (val or "").strip() != "1":
+            continue
+        try:
+            del_ids.append(int(key.split("_", 2)[2]))
+        except ValueError:
+            pass
 
-    # 6.1) Update esempi esistenti: ex_<ID>_<field>
+    # 5.2) Raccolta update delle textarea esistenti
+    updated_textareas = {}
     for key, val in request.POST.items():
         if not key.startswith("ex_"):
             continue
@@ -638,12 +668,10 @@ def answer_save(request, lang_id, question_id):
             ex_id = int(ex_id)
         except ValueError:
             continue
-        if field not in FIELDS:
-            continue
-        cleaned = (val or "").strip()
-        Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
+        if field == "textarea":
+            updated_textareas[ex_id] = (val or "").strip()
 
-    # 6.2) Crea esempi nuovi: newex_<QID>_<UID>_<field>
+    # 5.3) Raccolta nuovi esempi
     prefix = f"newex_{question.id}_"
     buckets = {}
     for key, val in request.POST.items():
@@ -658,6 +686,52 @@ def answer_save(request, lang_id, question_id):
             continue
         buckets.setdefault(uid, {})[field] = (val or "").strip()
 
+    # 5.4) VALIDAZIONE per YES
+    if response_text == "yes":
+        has_nonempty_textarea = False
+
+        existing_qs = Example.objects.filter(answer=answer).exclude(id__in=del_ids).only("id", "textarea")
+        for ex in existing_qs:
+            final_txt = updated_textareas.get(ex.id, (ex.textarea or ""))
+            if final_txt.strip():
+                has_nonempty_textarea = True
+                break
+
+        if not has_nonempty_textarea:
+            for _uid, data in buckets.items():
+                if (data.get("textarea") or "").strip():
+                    has_nonempty_textarea = True
+                    break
+
+        if not has_nonempty_textarea:
+            messages.error(
+                request,
+                _t(f"Question {question.id}: with YES you must provide at least one example with a non-empty Example text.")
+            )
+            transaction.set_rollback(True)
+            return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.parameter_id}")
+
+    # 5.5) APPLICAZIONE MUTAZIONI
+
+    # delete
+    if del_ids:
+        Example.objects.filter(answer=answer, id__in=del_ids).delete()
+
+    # update esistenti (tutti i campi)
+    for key, val in request.POST.items():
+        if not key.startswith("ex_"):
+            continue
+        try:
+            _ex, ex_id, field = key.split("_", 2)
+            ex_id = int(ex_id)
+        except ValueError:
+            continue
+        if field not in FIELDS:
+            continue
+        cleaned = (val or "").strip()
+        Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
+
+    # create nuovi
     if buckets:
         to_create = []
         for uid, data in buckets.items():
@@ -669,7 +743,6 @@ def answer_save(request, lang_id, question_id):
                 data.get("reference"),
             ])
             num = (data.get("number") or "").strip()
-            # se non c'è niente, salta
             if not has_payload and not num:
                 continue
             to_create.append(Example(
@@ -684,11 +757,8 @@ def answer_save(request, lang_id, question_id):
         if to_create:
             Example.objects.bulk_create(to_create, ignore_conflicts=True)
 
-
     messages.success(request, _t("Answer saved."))
-    return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.id}")
-
-
+    return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.parameter_id}")
 
 
 
