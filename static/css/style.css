@@ -1,5 +1,5 @@
 
-/* 1) Design tokens (tema chiaro) */
+/* 1) Design  (tema chiaro) */
 :root{
   --brand:#d14124; --brand-700:#b53a20;
   --text:#1b1d20; --text-muted:#61656b;
@@ -14,8 +14,8 @@
   --radius: 12px; --radius-sm: 8px;
   --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.06);
   --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.25rem; --sp-6:1.5rem; --sp-8:2rem;
-  --w-col-label: 9.5rem;  /* larghezza fissa colonna "Label" */
-  --w-col-name:  22rem;   /* larghezza fissa colonna "Name"  */
+  --w-col-label: 9.5rem;  
+  --w-col-name:  22rem;   
 }
 /* =========================================================
    THEME: Dark overrides (attivo quando [data-theme="dark"])
@@ -84,7 +84,7 @@
   background: var(--brand);
   border-color: color-mix(in oklab, var(--brand) 75%, black);
   color: #fff;
-  opacity: 1;                /* rimuove effetto grigio */
+  opacity: 1;                
   cursor: default;
   pointer-events: none;
 }
@@ -98,14 +98,14 @@
   text-decoration: underline;
 }
 
-/* 5) Sottotitoli/testi attenuati: garantisci contrasto sufficiente */
+/* 5) Sottotitoli/testi attenuati */
 :root[data-theme="dark"] .muted,
 :root[data-theme="dark"] .site-title .site-subtitle,
 :root[data-theme="dark"] .breadcrumb {
   color: var(--text-muted);
 }
 
-/* 6) Badge/Pill generiche (se usi una classe .badge altrove) */
+/* 6) Badge/Pill generiche  */
 :root[data-theme="dark"] .badge {
   background: var(--surface-2);
   color: var(--text);
@@ -136,13 +136,13 @@
   border-color: color-mix(in oklab, var(--bad) 25%, var(--border));
 }
 
-/* 9) Bottoni primari/negativi: assicurati testo bianco */
+/* 9) Bottoni primari/negativi */
 .btn--primary,
 .btn--bad {
   color: #fff;
 }
 
-/* 10) Tiles della dashboard (bg brand): testo bianco ovunque */
+/* 10) Tiles della dashboard */
 .nav-tiles .tile,
 .nav-tiles .tile strong,
 .nav-tiles .tile .tile-sub {
@@ -186,7 +186,7 @@ a:hover{text-decoration:underline}
   color: var(--text-muted);
   font-weight: 500;
   margin-top: .25rem;
-  margin-bottom: 1rem; /* spazio maggiore tra subtitle e nav-list */
+  margin-bottom: 1rem; 
 }
 
 
@@ -196,7 +196,7 @@ a:hover{text-decoration:underline}
 
 .nav {
   margin-top: .5rem;
-  margin-bottom: 1.5rem; /* spazio sotto il sottotitolo */
+  margin-bottom: 1.5rem;
 }
 
 /* barra di navigazione */
@@ -213,15 +213,15 @@ a:hover{text-decoration:underline}
 
 /* crea vuoto espandibile tra i tab "normali" e il gruppo sessione */
 .nav-list .nav-spacer {
-  flex: 1 1 auto;                 /* prende tutto lo spazio disponibile */
-  min-width: 2rem;                /* garantisce spaziatura anche se va a capo */
+  flex: 1 1 auto;                 
+  min-width: 2rem;                
   height: 1.5rem;
   margin-left: .75rem;
   padding-left: .75rem;
-  border-left: 1px solid var(--border);  /* linea di separazione visiva */
+  border-left: 1px solid var(--border);  
 }
 
-/* gruppo Logout + Theme tenuti insieme dopo lo spacer */
+/* gruppo Logout + Theme  */
 .nav-list .nav-session {
   display: flex;
   align-items: center;
@@ -319,14 +319,14 @@ aside.card.sidebar a:hover{ text-decoration:underline }
 button.btn {
   font-family: inherit;
   font-size: inherit;
-  line-height: 1.1;         /* stesso della .btn */
-  padding: .55rem .9rem;    /* identico */
+  line-height: 1.1;         
+  padding: .55rem .9rem;  
   border: 1px solid var(--btn-bd);
   border-radius: 10px;
   background: var(--btn-bg);
   color: var(--btn-fg);
   cursor: pointer;
-  appearance: none;         /* rimuove padding/ombre nativi */
+  appearance: none;        
 }
 
 
@@ -335,7 +335,7 @@ button.btn {
 .btn[disabled], .btn[aria-disabled="true"]{ opacity:.6; pointer-events:none }
 .btn--primary{ --btn-bg:var(--brand); --btn-fg:#fff; --btn-bd:color-mix(in oklab, var(--brand) 75%, black) }
 .btn--bad{
-  --btn-bg:var(--brand);           /* rosso brand principale (#d14124) */
+  --btn-bg:var(--brand);           
   --btn-fg:#fff;
   --btn-bd:color-mix(in oklab, var(--brand) 75%, black);
 }
@@ -401,20 +401,19 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 /* Wrapper centrato che fa scroll orizzontale interno */
 .table-container { padding: 0; }
 .table-scroll{
-  overflow: auto;                /* scroll sia orizzontale che verticale */
-  max-height: 70vh;              /* l'header sticky lavora dentro questo container */
+  overflow: auto;               
+  max-height: 70vh;              
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius);
 }
 
 
-/* Congela l'header (thead) mentre scrolli in verticale */
+/* Congela l'header (thead)  */
 .table.table--freeze thead th{
   position: sticky;
   top: 0;
   z-index: 5; /* sopra le celle */
   background: var(--surface);
-  /* ripristina il bordo inferiore dell'header che altrimenti "scorre" */
   border-bottom: 1px solid var(--border);
 }
 
@@ -422,13 +421,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 .table.table--freeze th[scope="row"]{
   position: sticky;
   left: 0;
-  z-index: 4; /* sotto l'angolo header-left */
+  z-index: 4; 
   background: var(--surface);
-  /* piccola ombra per evidenziare l'ancoraggio */
   box-shadow: 1px 0 0 var(--border);
 }
 
-/* Prima colonna sticky (Label) — dimensioni e sticky coerenti ovunque */
+/* Prima colonna sticky (Label) */
 .table.table--freeze .col-sticky-left{
   position: sticky;
   left: 0;
@@ -439,7 +437,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   width: var(--w-col-label);
 }
 
-/* Seconda colonna sticky (Name) — left calcolato dalla 1ª */
+/* Seconda colonna sticky */
 .table.table--freeze .col-sticky-left-2{
   position: sticky;
   left: var(--w-col-label);
@@ -453,7 +451,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 
 .table.table--freeze thead .col-sticky-left,
 .table.table--freeze thead .col-sticky-left-2{
-  z-index: 7; /* angolo in alto a sinistra con priorità massima */
+  z-index: 7; 
 }
 .table.table--freeze col.w-label { 
   width: var(--w-col-label); 
@@ -466,16 +464,15 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 /* Allinea la prima colonna sticky nei th dell'header */
 .table.table--freeze thead .col-sticky-left{
   left: 0;
-  z-index: 6; /* angolo in alto a sinistra sopra tutto */
+  z-index: 6;
 }
 
 
-/* Prevenire "sforamenti" della tabella nel wrapper */
 .table-scroll .table{
-  width: max(100%, 900px); /* mantiene almeno una larghezza comoda */
+  width: max(100%, 900px); 
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
-  border-radius: 0; /* i bordi arrotondati li fa il wrapper */
+  border-radius: 0; 
 }
 
 /* Migliora la leggibilità quando c'è molto scroll */
@@ -514,13 +511,13 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 .pagination .current{ background:var(--brand); color:#fff; border-color:color-mix(in oklab, var(--brand) 75%, black) }
 .pagination a:hover{ text-decoration:none; transform:translateY(-1px) }
 
-/* 13) Azioni riga & piccoli aggiustamenti */
+/* 13) Azioni riga */
 .row-actions{
   display:flex;
   gap:.4rem;
   flex-wrap:wrap;
-  align-items:center;          /* centra verticalmente il bottone */
-  justify-content:flex-end;    /* allinea a destra la colonna azioni */
+  align-items:center;          
+  justify-content:flex-end;    
 }
 .row-actions .btn{ padding:.4rem .6rem }
 .card > .toolbar{ margin-top:.35rem }
@@ -528,30 +525,28 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 .grid .form-row textarea{ min-height:4.25rem }
 [disabled],[aria-disabled="true"]{ filter:saturate(.2) brightness(.96) }
 .table a.btn{ text-decoration:none }
-/* === Navbar current fix: no desaturation on disabled current === */
+
 .nav-list .btn.is-current[aria-disabled="true"] {
-  /* ribadisco lo stato attivo rosso e annullo il filtro globale */
   background: var(--brand);
   border-color: color-mix(in oklab, var(--brand) 75%, black);
   color: #fff;
-  filter: none;           /* <-- rimuove l'effetto grigio */
+  filter: none;          
   opacity: 1;
   cursor: default;
   pointer-events: none;
 }
 :root[data-theme="dark"] .nav-list .btn.is-current[aria-disabled="true"] {
-  /* opzionale: stessa resa in dark, se vuoi puoi scurire con --brand-700 */
   background: var(--brand);
   border-color: color-mix(in oklab, var(--brand) 75%, black);
   color: #fff;
   filter: none;
 }
 
-/* Toolbar – più aria tra input e Search, e Add a tutta larghezza sotto */
+/* Toolbar  */
 .toolbar{
   display:flex; align-items:flex-start; justify-content:space-between;
-  gap: 1rem;                /* più spazio tra form e add */
-  margin-bottom: 1.75rem;   /* un filo più distanziata dal contenuto sotto */
+  gap: 1rem;                
+  margin-bottom: 1.75rem;   
   flex-wrap: wrap;
 }
 /* === Toolbar buttons – dark mode fix === */
@@ -562,15 +557,15 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 
 .toolbar__form{
   display:flex; align-items:center;
-  gap: 0.65rem;             /* più spazio tra input e bottone Search */
-  flex: 1 1 560px;          /* input più largo su desktop */
+  gap: 0.65rem;            
+  flex: 1 1 560px;         
   max-width: 680px;
 }
 .toolbar__add{
-  flex: 1 0 100%;           /* forza il blocco Add su una riga sotto */
+  flex: 1 0 100%;         
   margin-top: 0.25rem;
 }
-.btn--wide{                 /* pulsante Add a tutta larghezza */
+.btn--wide{                
   width: 100%;
   justify-content: center;
 }
@@ -580,7 +575,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   padding: 0.65rem 0.9rem;
 }
 
-/* Mobile: già colonna; manteniamo tutto full-width in modo naturale */
+/* Mobile: già colonna;*/
 @media (max-width: 600px){
   .toolbar{ flex-direction: column; align-items: stretch; gap: 0.75rem; }
   .toolbar__form{ width: 100%; max-width: none; }
@@ -653,9 +648,9 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
 
 /* colonna sinistra = griglia pulsanti admin/user */
 .dashboard-links-grid {
-  flex: 0 1 480px;           /* prende ~480px di larghezza se c'è spazio */
+  flex: 0 1 480px;         
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 colonne */
+  grid-template-columns: repeat(2, minmax(0, 1fr)); 
   gap: 1rem 1rem;
   align-content: flex-start;
 }
@@ -667,7 +662,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   justify-content: center;
   text-align: center;
 
-  min-height: 4rem;          /* più "grosso" / tappabile */
+  min-height: 4rem;         
   border-radius: 16px;
   font-weight: 700;
   font-size: 1rem;
@@ -688,7 +683,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   transform: translateY(-1px);
 }
 
-/* label interna (utile se un domani vuoi mettere anche una sublabel più piccola) */
+/* label interna  */
 .dash-tile-label {
   display: block;
   color: #fff;
@@ -727,9 +722,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   list-style: none;
   margin: 0;
   padding: 0;
-
   flex: 1 1 auto;
-  /* di base nessun limite, ma verrà sovrascritto dagli stati */
 }
 
 .news-item {
@@ -756,16 +749,16 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
    - il bottone rimane comunque sotto, visibile
 */
 .news-box.collapsed .news-list {
-  max-height: 180px;       /* puoi alzare/abbassare questo valore */
+  max-height: 180px;       
   overflow-y: hidden;
 }
 
 /* Stato ESPANSO:
-   - la lista si può espandere molto di più
+   - la lista si può espandere 
    - scrollbar interna SOLO nella lista
 */
 .news-box.expanded .news-list {
-  max-height: 50vh;        /* simile al tuo 65vh precedente ma riferito alla lista */
+  max-height: 50vh;        
   overflow-y: auto;
 }
 
@@ -813,7 +806,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
   .dashboard-links-grid {
     width: 100%;
     flex: 1 1 auto;
-    grid-template-columns: 1fr;  /* i pulsanti diventano una colonna */
+    grid-template-columns: 1fr;  
   }
 
   .news-box {
@@ -821,9 +814,9 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px sol
     max-width: 100%;
   }
 
-  /* Su mobile, quando è espanso preferiamo NON avere scrollbar interna nella lista,
+  /* Su mobile, quando è espanso è meglio NON avere scrollbar interna nella lista,
      ma lasciare scrollare tutta la pagina normalmente.
-     Quindi togliamo il max-height/overflow nella versione expanded mobile.
+     Quindi si toglie il max-height/overflow nella versione expanded mobile.
   */
   .news-box.expanded .news-list {
     max-height: none;
@@ -915,8 +908,8 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   padding: 0;
   margin: 0;
   display: flex;
-  flex-direction: column; /* vertical stack */
-  gap: 0.6rem; /* vertical spacing between items */
+  flex-direction: column; 
+  gap: 0.6rem; 
 }
 
 .queries-page .queries-nav li {
@@ -932,7 +925,7 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   color: var(--text-muted);
   background-color: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 1rem; /* rounded corners like your cards */
+  border-radius: 1rem;
   font-size: 0.95rem;
   transition: all 0.15s ease-in-out;
   line-height: 1.3;
@@ -952,22 +945,21 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   box-shadow: 0 0 0 2px var(--surface);
 }
 
-/* === Spacing for form buttons on the Queries page === */
 .queries-page form .btn {
-  margin-top: 0.6rem;     /* adds vertical space above each button */
+  margin-top: 0.6rem;    
 }
 
-/* === Spacing between the page title and the list of queries === */
+
 .queries-page .card-header {
-  margin-bottom: 1rem;  /* adds space below the "Queries" title */
+  margin-bottom: 1rem;  
 }
 
 /* === Table A filters layout === */
 .filters-form {
   display: flex;
-  flex-direction: column;      /* mettiamo gli elementi in colonna */
-  align-items: flex-start;     /* allinea tutto a sinistra */
-  gap: .75rem;                 /* spazio verticale tra blocchi */
+  flex-direction: column;      
+  align-items: flex-start;   
+  gap: .75rem;               
 }
 
 .filters-form label {
@@ -975,3 +967,5 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   text-align: left;
   width: 100%;
 }
+
+
