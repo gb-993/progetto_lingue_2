@@ -8,6 +8,7 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="dashboard", permanent=False)),
+    path("", include("core.urls")),  
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("languages/", include("languages_ui.urls")),

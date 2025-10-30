@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Parameters DAG{% endblock %}
+{% block breadcrumb %}Graphs / Parameters{% endblock %}
+
+{% block content %}
+<main class="card" style="padding:1rem;">
+  <h3 style="margin-top:0;">Parameters DAG (active only)</h3>
+
+  <div class="form-row" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:center;">
+    <button id="btn-reload" class="btn btn--secondary" type="button">Reload</button>
+    <label class="switch">
+      <input type="checkbox" id="toggle-rank" checked>
+      <span>Layered by rank</span>
+    </label>
+    <div id="meta" aria-live="polite" style="margin-left:auto;"></div>
+  </div>
+
+  <div id="cy" style="width:100%; height:65vh; margin-top:1rem; border:1px solid var(--border); border-radius: var(--radius);"></div>
+
+  <p class="help" style="margin-top:.75rem;">
+    Suggestions: click on a node for details; double-click to highlight adjacency; zoom with mouse/touch.  </p>
+</main>
+
+<script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js" integrity="" crossorigin="anonymous"></script>
+<script src="{% static 'js/param_graph.js' %}"></script>
+{% endblock %}
