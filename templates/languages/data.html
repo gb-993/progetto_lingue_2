@@ -36,11 +36,6 @@
           {% endif %}
         </dd>
 
-        {# Family (non top-level: quella resta nella lista) #}
-        {% if language.family %}
-          <dt style="font-weight:600;">Family</dt>
-          <dd>{{ language.family }}</dd>
-        {% endif %}
 
         {# Historical #}
         <dt style="font-weight:600;">Historical</dt>
@@ -48,7 +43,7 @@
           {% if language.historical_language %}
             <span title="Historical language">Yes</span>
           {% else %}
-            <span class="muted">—</span>
+            <span class="muted">No</span>
           {% endif %}
         </dd>
 

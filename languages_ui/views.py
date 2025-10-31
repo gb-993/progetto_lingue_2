@@ -18,6 +18,8 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from django.utils.translation import gettext as _t
 from django.urls import reverse
+from datetime import datetime, time, date  
+from django.utils import timezone   
 
 from core.models import (
     Language,
@@ -968,10 +970,8 @@ def language_reopen(request, lang_id):
 
 @login_required
 def language_export_xlsx(request, lang_id: str):
-    # --- Fetch lingua + autorizzazione coerente con tutta l'app ---
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
-        # 404 "soft" per non rivelare l'esistenza della risorsa
         raise Http404("Language not found")
 
     is_admin = _is_admin(request.user)
@@ -1007,7 +1007,7 @@ def language_export_xlsx(request, lang_id: str):
     ex_by_qid = {}
     examples = (
         Example.objects
-        .select_related("answer")                # serve per accedere a answer.question_id
+        .select_related("answer")                
         .filter(answer__language_id=lang.id)
     )
     for ex in examples:
@@ -1015,7 +1015,6 @@ def language_export_xlsx(request, lang_id: str):
         ex_by_qid.setdefault(qid, []).append(ex)
 
     for arr in ex_by_qid.values():
-        # ordina per numero, gestendo stringhe/non numerici
         def _as_int(v):
             try:
                 return int(v)
@@ -1087,8 +1086,8 @@ def language_export_xlsx(request, lang_id: str):
                 ws_examples.append([
                     lang.id,
                     q.id,
-                    getattr(ex, "number", ""),             # Numero esempio
-                    getattr(ex, "textarea", ""),           # Data
+                    getattr(ex, "number", ""),             
+                    getattr(ex, "textarea", ""),           
                     getattr(ex, "transliteration", ""),
                     getattr(ex, "gloss", ""),
                     getattr(ex, "translation", ""),
@@ -1112,10 +1111,9 @@ def language_export_xlsx(request, lang_id: str):
             return "Not compiled"
 
         for p in params:
-            p_label = getattr(p, "name", getattr(p, "label", p.id))
+            p_label = p.id
             for q in qs_by_param.get(p.id, []):
                 a = ans_by_qid.get(q.id)
-                # Valore parametro per questa domanda/parametro (prima eval, poi orig)
                 param_value = (
                     value_eval_by_pid.get(q.parameter_id)
                     or value_orig_by_pid.get(q.parameter_id)
@@ -1123,7 +1121,6 @@ def language_export_xlsx(request, lang_id: str):
                 )
 
                 if a:
-                    # motivazioni via through AnswerMotivation (liste ID -> testi)
                     ids = list(
                         AnswerMotivation.objects
                         .filter(answer=a)
@@ -1136,7 +1133,7 @@ def language_export_xlsx(request, lang_id: str):
                         p_label,
                         q.id,
                         getattr(q, "text", ""),
-                        _pretty_qc_from_status(getattr(a, "status", None)),  # QC da Answer.status
+                        _pretty_qc_from_status(getattr(a, "status", None)), 
                         getattr(a, "response_text", ""),
                         param_value,
                         mot_text,
@@ -1150,7 +1147,7 @@ def language_export_xlsx(request, lang_id: str):
                         getattr(q, "text", ""),
                         "Not compiled",
                         "",
-                        param_value,  # anche se non c'è answer, il valore parametro può esistere
+                        param_value,  
                         "",
                         "",
                     ])
@@ -1198,3 +1195,122 @@ def toggle_review_flag(request, lang_id: str, param_id: str):
         language=lang, parameter=param, user=request.user, defaults={"flag": flag}
     )
     return JsonResponse({"ok": True, "flag": flag})
+
+
+       
+
+@login_required
+@require_http_methods(["GET"])
+def language_list_export_xlsx(request):
+    """
+    Esporta in Excel tutte le lingue visibili all'utente corrente, con TUTTI
+    gli attributi del modello Language. Rispetta i filtri della lista (q)
+    e la visibilità (admin vede tutto; utenti vedono solo le proprie/assegnate).
+    """
+    from django.db.models import Max, Q
+    q = (request.GET.get("q") or "").strip()
+    user = request.user
+    is_admin = _is_admin(user)
+
+    qs = (
+        Language.objects
+        .select_related("assigned_user")
+        .annotate(last_change=Max("answers__updated_at"))
+        .order_by("position")
+    )
+    if not is_admin:
+        qs = qs.filter(Q(assigned_user=user) | Q(users=user))
+
+    if q:
+        filt = (
+            Q(id__icontains=q)
+            | Q(name_full__icontains=q)
+            | Q(isocode__icontains=q)
+            | Q(glottocode__icontains=q)
+            | Q(grp__icontains=q)
+            | Q(informant__icontains=q)
+            | Q(supervisor__icontains=q)
+            | Q(family__icontains=q)
+            | Q(top_level_family__icontains=q)
+            | Q(source__icontains=q)
+        )
+        ql = q.lower()
+        if ql in {"hist", "stor", "storica", "storico", "true", "yes"}:
+            filt |= Q(historical_language=True)
+        if ql in {"false", "no"}:
+            filt |= Q(historical_language=False)
+        if is_admin:
+            filt |= Q(assigned_user__email__icontains=q)
+        qs = qs.filter(filt)
+
+    def _xlsx_sanitize(v):
+        if v is None:
+            return ""
+        if isinstance(v, datetime):
+            if timezone.is_aware(v):
+                v = timezone.localtime(v)
+            return v.replace(tzinfo=None)
+        if isinstance(v, time):
+            if v.tzinfo is not None:
+                return v.replace(tzinfo=None)
+            return v
+        if isinstance(v, (list, tuple, set)):
+            return ", ".join(str(x) for x in v)
+        return v
+
+    # Campi concreti del modello 
+    lang_fields = []
+    fk_extras = []
+    m2m_extras = []
+
+    for f in Language._meta.get_fields():
+        if getattr(f, "concrete", False) and not getattr(f, "auto_created", False):
+            if getattr(f, "many_to_many", False):
+                continue
+            lang_fields.append(f.name)
+
+    fk_extras.append(("assigned_user_email", lambda L: getattr(getattr(L, "assigned_user", None), "email", "")))
+    m2m_extras.append(("users_emails", lambda L: ", ".join(sorted({u.email for u in getattr(L, "users").all()})) if hasattr(L, "users") else ""))
+    extra_annot = [("last_change", lambda L: L.last_change)]
+
+    headers = lang_fields + [name for name, _ in fk_extras] + [name for name, _ in m2m_extras] + [name for name, _ in extra_annot]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Languages"
+
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    # applica sanificazione cella per cella
+    for L in qs.iterator():
+        row = []
+        for fname in lang_fields:
+            row.append(_xlsx_sanitize(getattr(L, fname, None)))
+        for _, fn in fk_extras:
+            row.append(_xlsx_sanitize(fn(L)))
+        for _, fn in m2m_extras:
+            row.append(_xlsx_sanitize(fn(L)))
+        for _, fn in extra_annot:
+            row.append(_xlsx_sanitize(fn(L)))
+        ws.append(row)
+
+    # Auto larghezza
+    from openpyxl.utils import get_column_letter
+    for col_idx in range(1, ws.max_column + 1):
+        col_letter = get_column_letter(col_idx)
+        max_len = 8
+        for cell in ws[col_letter]:
+            val = cell.value
+            if val is None:
+                continue
+            max_len = max(max_len, len(str(val)))
+        ws.column_dimensions[col_letter].width = min(max_len + 2, 60)
+
+    ts = timezone.localtime(timezone.now()).strftime("%Y%m%d_%H%M")  
+    filename = f"PCM_languages_{ts}.xlsx"
+    resp = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    wb.save(resp)
+    return resp

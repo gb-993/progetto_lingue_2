@@ -4,16 +4,23 @@
 
 {% block body_class %}languages-list{% endblock %}
 
-
 {% block content %}
 <header class="dashboard-hero">
   <h1>Languages</h1>
 </header>
+
 {% if is_admin %}
   {% include "_toolbar_search.html" with q=q placeholder="Search a language…" add_url="language_add" add_label="Add a new language" %}
 {% else %}
   {% include "_toolbar_search.html" with q=q placeholder="Search language…" %}
 {% endif %}
+
+<div class="toolbar-actions" style="margin:.5rem 0 1rem; display:flex; gap:.5rem; flex-wrap:wrap;">
+  <!-- NEW: pulsante Download Excel; preserva eventuale query di ricerca -->
+  <a class="btn" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">
+    Download Excel
+  </a>
+</div>
 
 <div class="table-responsive">
   <table class="table">
@@ -22,32 +29,29 @@
         <th scope="col">Id</th>
         <th scope="col">Name</th>
         <th scope="col">Top-level family</th>
+        <th scope="col">Family</th>
         <th scope="col">Group</th>
         <th scope="col">Last modified</th>
         <th scope="col" class="sr-only">Actions</th>
       </tr>
     </thead>
-
-
     <tbody>
       {% for l in languages %}
         <tr>
           <td data-label="Id">{{ l.id }}</td>
-
           <td data-label="Name">{{ l.name_full }}</td>
-
-          <td data-label="Top-level">{{ l.top_level_family }}</td>
-
-          <td data-label="Group">{{ l.grp }}</td>
-
-          <td data-label="Last modified">
-            {% if l.last_change %}
-              {{ l.last_change|date:"Y-m-d H:i" }}
-            {% else %}
-              <span class="muted">—</span>
-            {% endif %}
+          <td data-label="Top-level">
+            {% if l.top_level_family %}{{ l.top_level_family }}{% else %}<span class="muted">—</span>{% endif %}
           </td>
-
+          <td data-label="Family">
+            {% if l.family %}{{ l.family }}{% else %}<span class="muted">—</span>{% endif %}
+          </td>
+          <td data-label="Group">
+            {% if l.grp %}{{ l.grp }}{% else %}<span class="muted">—</span>{% endif %}
+          </td>
+          <td data-label="Last modified">
+            {% if l.last_change %}{{ l.last_change|date:"Y-m-d H:i" }}{% else %}<span class="muted">—</span>{% endif %}
+          </td>
           <td class="row-actions" data-label="Actions">
             <div class="row-actions-buttons" style="display:flex; flex-wrap:wrap; gap:.5rem;">
               <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
@@ -59,7 +63,6 @@
           </td>
         </tr>
       {% endfor %}
-
     </tbody>
   </table>
 </div>

@@ -99,7 +99,6 @@ def submission_detail(request, submission_id):
     """
 
     # ----- ANSWERS -----
-    # Question.id = SubmissionAnswer.question_code
     question_parameter_id_sq = (
         Question.objects
         .filter(pk=OuterRef("question_code"))
@@ -109,10 +108,10 @@ def submission_detail(request, submission_id):
 
     answers_qs = (
         SubmissionAnswer.objects
-        .annotate(                       # 1) prima ricavo il parameter_id
+        .annotate(                       
             param_id=Subquery(question_parameter_id_sq)
         )
-        .annotate(                       # 2) poi lo riuso con OuterRef("param_id")
+        .annotate(                       
             param_pos=Subquery(
                 ParameterDef.objects
                 .filter(pk=OuterRef("param_id"))
@@ -134,7 +133,6 @@ def submission_detail(request, submission_id):
     answers_prefetch = Prefetch("answers", queryset=answers_qs)
 
     # ----- PARAMS -----
-    # SubmissionParam.parameter_id (char) ↔ ParameterDef.id
     subparam_position_sq = (
         ParameterDef.objects
         .filter(pk=OuterRef("parameter_id"))

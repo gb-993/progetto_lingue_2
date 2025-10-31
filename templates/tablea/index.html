@@ -14,7 +14,9 @@
       <select id="family" name="family">
         <option value="">All families</option>
         {% for fam in families %}
-          <option value="{{ fam }}" {% if fam == selected_family %}selected{% endif %}>{{ fam|default:"(empty)" }}</option>
+          {% if fam %}
+            <option value="{{ fam }}" {% if fam == selected_family %}selected{% endif %}>{{ fam }}</option>
+          {% endif %}
         {% endfor %}
       </select>
 
@@ -46,16 +48,13 @@
           <colgroup>
             <col class="w-label" />
             <col class="w-name" />
-            <col /> <!-- Implication -->
+            <col /> 
           </colgroup>
-          <!-- <caption id="tablea-desc">
-            Valori per parametro (righe) e lingua (colonne).
-          </caption> -->
+
 
           <thead>
             <tr>
               <th scope="col" class="col-sticky-left">Label</th>
-              {# ⚠️ RIMOSSA sticky dalla colonna Name #}
               <th scope="col">Name</th>
               <th scope="col">Implicational condition(s)</th>
               {% for lang in languages %}
@@ -70,7 +69,6 @@
             {% for row in rows %}
               <tr>
                 <th scope="row" class="col-sticky-left">{{ row.p.id }}</th>
-                {# ⚠️ RIMOSSA sticky dalla cella Name #}
                 <td>{{ row.p.name }}</td>
                 <td class="muted">{{ row.p.implicational_condition }}</td>
 
@@ -83,7 +81,7 @@
             {% empty %}
               <tr>
                 <td colspan="{{ languages|length|add:3 }}">
-                  Nessun dato disponibile per Table A.
+                  No available data for TableA.
                 </td>
               </tr>
             {% endfor %}
@@ -91,7 +89,7 @@
         </table>
       </div>
     {% else %}
-      <p role="status">Nessun dato disponibile per Table A.</p>
+      <p role="status">No available data for TableA.</p>
     {% endif %}
   </div>
 {% endblock %}
