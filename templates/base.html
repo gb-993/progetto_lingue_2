@@ -3,11 +3,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- THEME: early apply (no flash) -->
   <script>
     (function () {
       try {
-        var stored = localStorage.getItem('theme'); // 'light' | 'dark' | null
+        var stored = localStorage.getItem('theme'); 
         var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.style.colorScheme = theme;
@@ -127,10 +126,8 @@
 
           {% endif %}
 
-          {# Spaziatore elastico che crea buco e spinge Logout/Theme a destra #}
           <li class="nav-spacer" aria-hidden="true"></li>
 
-          {# Gruppo sessione (logout + tema), visivamente separato #}
           <li class="nav-session">
             <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
               <button class="btn" type="submit">Logout</button>
@@ -195,7 +192,6 @@
         updateButton(next);
       }
       function updateButton(theme) {
-        // Usa caratteri Unicode diretti
         var icon = theme === 'dark'
           ? 'Light'  
           : 'Dark'; 

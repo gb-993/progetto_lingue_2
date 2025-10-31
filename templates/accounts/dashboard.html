@@ -11,7 +11,6 @@
   </header>
 
   <div class="dashboard-flex">
-    {# --- COLONNA SINISTRA: link rapidi --- #}
     <nav class="dashboard-links-grid" role="navigation" aria-label="Dashboard shortcuts">
       {# sempre visibili #}
       <a class="dash-tile" href="{% url 'language_list' %}" aria-label="Open languages">
@@ -55,7 +54,6 @@
       {% endif %}
     </nav>
 
-    {# --- COLONNA DESTRA: latest changes --- #}
     {% if is_admin %}
       <aside class="card news-box collapsed" aria-labelledby="last-changes-heading">
         <h3 id="last-changes-heading">Latest changes</h3>

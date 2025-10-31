@@ -16,7 +16,6 @@
 {% endif %}
 
 <div class="toolbar-actions" style="margin:.5rem 0 1rem; display:flex; gap:.5rem; flex-wrap:wrap;">
-  <!-- NEW: pulsante Download Excel; preserva eventuale query di ricerca -->
   <a class="btn" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">
     Download Excel
   </a>

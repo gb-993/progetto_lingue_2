@@ -19,7 +19,6 @@
     </caption>
     <thead>
       <tr>
-        <!--<th scope="col">Position</th> -->
         <th scope="col">Label</th>
         <th scope="col">Name</th>
         <th scope="col">Schema</th>   
@@ -34,7 +33,6 @@
     <tbody>
       {% for p in parameters %}
       <tr>
-        <!--<td data-label="Position">{{ p.position }}</td> -->
         <td data-label="Label">{{ p.id }}</td>
         <td data-label="Name">{{ p.name }}</td>
         <td data-label="Schema">{{ p.schema|default:"—" }}</td>
