@@ -34,13 +34,12 @@
     <tbody>
       {% for p in parameters %}
       <tr>
-        {# NB: su mobile ogni cella mostra l’etichetta tramite data-label #}
         <!--<td data-label="Position">{{ p.position }}</td> -->
         <td data-label="Label">{{ p.id }}</td>
         <td data-label="Name">{{ p.name }}</td>
         <td data-label="Schema">{{ p.schema|default:"—" }}</td>
         <td data-label="Type">{{ p.param_type|default:"—" }}</td>
-        <td data-label="#Q">{{ p.questions_count }}</td>
+        <td data-label="#Q">{{ p.questions_count  }}</td>
         <td data-label="#Stop">{{ p.stop_count }}</td>
         <td data-label="Status">
           {% if p.is_active %}

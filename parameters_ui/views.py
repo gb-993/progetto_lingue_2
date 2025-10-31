@@ -111,15 +111,11 @@ def parameter_list(request):
             | Q(param_type__icontains=q)
         )
     qs = qs.annotate(
-        questions_count=Count("questions", distinct=True),
-        stop_count=Sum(
-            Case(
-                When(questions__is_stop_question=True, then=1),
-                default=0,
-                output_field=IntegerField(),
-            )
-        ),
+        questions_count=Count("questions", filter=Q(questions__is_stop_question=False), distinct=True),
+        stop_count=Count("questions", filter=Q(questions__is_stop_question=True), distinct=True),
     )
+
+    
     return render(request, "parameters/list.html", {"parameters": qs})
 
 @login_required
