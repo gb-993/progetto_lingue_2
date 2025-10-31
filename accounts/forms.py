@@ -62,10 +62,7 @@ class AccountForm(forms.ModelForm):
             user.set_password(pwd)
         if commit:
             user.save()
-            # Lingue M2M se presenti
             if HAS_LANGUAGE and hasattr(user, "languages"):
-                # il template invia name="lang_ids" (multiplo)
-                # le recuperiamo nella view per non accedere a self.data in save().
                 pass
         return user
 
@@ -95,7 +92,6 @@ class MyAccountForm(forms.ModelForm):
         email = (self.cleaned_data.get("email") or "").lower().strip()
         if not email:
             raise ValidationError("Email obbligatoria.")
-        # Unicità case-insensitive ma escludendo se stesso
         qs = User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk)
         if qs.exists():
             raise ValidationError("Questa email è già in uso.")
