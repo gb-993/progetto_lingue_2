@@ -6,7 +6,9 @@
 
 
 {% block content %}
-
+<header class="dashboard-hero">
+  <h1>Languages</h1>
+</header>
 {% if is_admin %}
   {% include "_toolbar_search.html" with q=q placeholder="Search a language…" add_url="language_add" add_label="Add a new language" %}
 {% else %}

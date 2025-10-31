@@ -4,6 +4,10 @@
 
 {% block content %}
 
+<header class="dashboard-hero">
+  <h1>Parameters</h1>
+</header>
+
 {% include "_toolbar_search.html" with q=request.GET.q placeholder="Search a parameter…" add_url="parameter_add" add_label="Add a new parameter" %}
 
   <h2 id="table-heading" class="sr-only">Parameter list</h2>

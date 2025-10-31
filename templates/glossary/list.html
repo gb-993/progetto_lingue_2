@@ -3,6 +3,11 @@
 {% block breadcrumb %}Glossary{% endblock %}
 
 {% block content %}
+
+<header class="dashboard-hero">
+  <h1>Glossary</h1>
+</header>
+
 {% if is_admin %}
   {% include "_toolbar_search.html" with q=q placeholder="Search entry or description…" add_url="glossary_add" add_label="Add a new entry" %}
 {% else %}

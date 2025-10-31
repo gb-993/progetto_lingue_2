@@ -3,6 +3,10 @@
 {% block breadcrumb %}Accounts{% endblock %}
 {% block content %}
 
+<h1 class="dashboard-hero">
+    Accounts
+</h1>
+
 {% include "_toolbar_search.html" with q=request.GET.q placeholder="Search a user…" add_url="accounts_add" add_label="Add a new account" %}
 
   <div>
