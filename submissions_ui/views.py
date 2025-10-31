@@ -1,15 +1,10 @@
-# submissions_ui/views.py
 from __future__ import annotations
-
-from typing import Optional
-from django.db.models import OuterRef, Subquery, IntegerField, Prefetch
-from core.models import ParameterDef
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import OuterRef, Subquery, IntegerField, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -22,6 +17,8 @@ from core.models import (
     SubmissionAnswerMotivation,
     SubmissionExample,
     SubmissionParam,
+    ParameterDef,
+    Question,
 )
 from .services import create_language_submission
 
@@ -31,10 +28,6 @@ def _is_admin(user) -> bool:
 
 
 def _safe_next_url(request, fallback_name: str = "submissions_list") -> str:
-    """
-    Restituisce una URL di ritorno sicura.
-    Priorità: POST[next] > HTTP_REFERER > reverse(fallback_name).
-    """
     candidate = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse(fallback_name)
     return candidate if url_has_allowed_host_and_scheme(candidate, allowed_hosts={request.get_host()}, require_https=request.is_secure()) else reverse(fallback_name)
 
@@ -42,18 +35,11 @@ def _safe_next_url(request, fallback_name: str = "submissions_list") -> str:
 @login_required
 @user_passes_test(_is_admin)
 def submission_create_for_language(request, language_id):
-    """
-    Crea una Submission per la lingua indicata.
-    - GET: mostra una minima pagina di conferma (se usata).
-    - POST: crea la submission in transazione e fa redirect sicuro.
-    """
     lang = get_object_or_404(Language, pk=language_id)
-
     if request.method == "POST":
         note = request.POST.get("note") or ""
         with transaction.atomic():
             res = create_language_submission(lang, request.user, note=note)
-
         messages.success(
             request,
             _("Submission creata per %(lang)s alle %(ts)s (pruned=%(p)d)") % {
@@ -63,20 +49,12 @@ def submission_create_for_language(request, language_id):
             },
         )
         return redirect(_safe_next_url(request))
-
-    # GET: pagina di conferma minimale
     return render(request, "submissions/confirm_create.html", {"language": lang})
 
 
 @login_required
 @user_passes_test(_is_admin)
 def submissions_list(request):
-    """
-    Lista submission con filtri basilari:
-      - language: id lingua es. 'Sic'
-      - submitted_by: id utente (int)
-      - date_from/date_to: ISO YYYY-MM-DD (inclusivo/esclusivo)
-    """
     qs = Submission.objects.select_related("language", "submitted_by").order_by("-submitted_at", "-id")
 
     language_id = (request.GET.get("language") or "").strip()
@@ -98,46 +76,84 @@ def submissions_list(request):
     paginator = Paginator(qs, 20)
     page = paginator.get_page(request.GET.get("page"))
 
-    ctx = {
-        "page": page,
-        "language_id": language_id,
-        "submitted_by": submitted_by,
-        "date_from": date_from,
-        "date_to": date_to,
-    }
-    return render(request, "submissions/list.html", ctx)
+    return render(
+        request,
+        "submissions/list.html",
+        {
+            "page": page,
+            "language_id": language_id,
+            "submitted_by": submitted_by,
+            "date_from": date_from,
+            "date_to": date_to,
+        },
+    )
+
 
 @login_required
 @user_passes_test(_is_admin)
 def submission_detail(request, submission_id):
     """
-    Detail con prefetch e **ordinamento dei parametri** per ParameterDef.position
-    (via Subquery annotate DB-side).
+    Annotazioni coerenti con i modelli:
+    - SubmissionAnswer.question_code (char) ↔ Question.id (pk char)
+    - Question.parameter_id → ParameterDef.{position,name}
     """
-    # Prefetch risposte
-    answers_prefetch = Prefetch(
-        "answers",
-        queryset=SubmissionAnswer.objects.order_by("question_code"),
+
+    # ----- ANSWERS -----
+    # Question.id = SubmissionAnswer.question_code
+    question_parameter_id_sq = (
+        Question.objects
+        .filter(pk=OuterRef("question_code"))
+        .values("parameter_id")[:1]
     )
 
-    # Prefetch parametri: annota la position del ParameterDef e ordina per quella
-    param_position_sq = ParameterDef.objects.filter(pk=OuterRef("parameter_id")).values("position")[:1]
+
+    answers_qs = (
+        SubmissionAnswer.objects
+        .annotate(                       # 1) prima ricavo il parameter_id
+            param_id=Subquery(question_parameter_id_sq)
+        )
+        .annotate(                       # 2) poi lo riuso con OuterRef("param_id")
+            param_pos=Subquery(
+                ParameterDef.objects
+                .filter(pk=OuterRef("param_id"))
+                .values("position")[:1]
+            , output_field=IntegerField()),
+            param_name=Subquery(
+                ParameterDef.objects
+                .filter(pk=OuterRef("param_id"))
+                .values("name")[:1]
+            ),
+        )
+        .order_by("param_pos", "param_id", "question_code")
+    )
+
+
+
+
+
+    answers_prefetch = Prefetch("answers", queryset=answers_qs)
+
+    # ----- PARAMS -----
+    # SubmissionParam.parameter_id (char) ↔ ParameterDef.id
+    subparam_position_sq = (
+        ParameterDef.objects
+        .filter(pk=OuterRef("parameter_id"))
+        .values("position")[:1]
+    )
     params_prefetch = Prefetch(
         "params",
         queryset=(
             SubmissionParam.objects
-            .annotate(param_pos=Subquery(param_position_sq, output_field=IntegerField()))
-            .order_by("param_pos", "parameter_id")  # fallback su id in caso di pari posizione/None
+            .annotate(param_pos=Subquery(subparam_position_sq, output_field=IntegerField()))
+            .order_by("param_pos", "parameter_id")
         ),
     )
 
-    # Prefetch motivazioni
+    # ----- MOTIVATIONS & EXAMPLES -----
     mots_prefetch = Prefetch(
         "answer_motivations",
         queryset=SubmissionAnswerMotivation.objects.order_by("question_code", "motivation_code"),
     )
-
-    # Prefetch esempi
     examples_prefetch = Prefetch(
         "examples",
         queryset=SubmissionExample.objects.order_by("question_code", "id"),
@@ -149,15 +165,22 @@ def submission_detail(request, submission_id):
         pk=submission_id,
     )
 
-    # Collezioni già prefetchate e ordinate lato DB
+    # Aggregazione motivazioni per riga answer
+    mot_by_q = {}
+    for m in sub.answer_motivations.all():
+        mot_by_q.setdefault(m.question_code, []).append(m.motivation_code)
+
+    answers = list(sub.answers.all())
+    for a in answers:
+        a.mot_text = ", ".join(mot_by_q.get(a.question_code, [])) or ""
+
     return render(
         request,
         "submissions/detail.html",
         {
             "sub": sub,
-            "sub_answers": list(sub.answers.all()),
-            "sub_mots": list(sub.answer_motivations.all()),
+            "sub_answers": answers,
             "sub_examples": list(sub.examples.all()),
-            "sub_params": list(sub.params.all()),  # <-- ora in ordine per position
+            "sub_params": list(sub.params.all()),
         },
     )

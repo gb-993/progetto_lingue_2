@@ -12,17 +12,27 @@
   <h2>Parameters values</h2>
   <div class="table-responsive">
     <table class="table table-sm">
-      <thead><tr><th>Label</th><th>Initial value</th><th>Warn (init)</th><th>Final value</th><th>Warn (final)</th></tr></thead>
+      <thead>
+        <tr>
+          <th scope="col">Parameter</th>
+          <th scope="col">Initial value</th>
+          <th scope="col">Warn (init)</th>
+          <th scope="col">Final value</th>
+          <th scope="col">Warn (final)</th>
+        </tr>
+      </thead>
       <tbody>
         {% for p in sub_params %}
           <tr>
             <td>{{ p.parameter_id }}</td>
             <td>{{ p.value_orig|default:"" }}</td>
             <td>{{ p.warning_orig|yesno:"✔," }}</td>
-            <td>{{ p.value_eval|default:""  }}</td>
+            <td>{{ p.value_eval|default:"" }}</td>
             <td>{{ p.warning_eval|yesno:"✔," }}</td>
           </tr>
-        {% empty %}<tr><td colspan="6">No parameters</td></tr>{% endfor %}
+        {% empty %}
+          <tr><td colspan="5">No parameters</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
@@ -30,30 +40,45 @@
   <h2>Answers</h2>
   <div class="table-responsive">
     <table class="table table-sm">
-      <thead><tr><th>Questions</th><th>Answers</th><th>Comments</th></tr></thead>
+      <thead>
+        <tr>
+          <th scope="col">Parameter</th>
+          <th scope="col">Question</th>
+          <th scope="col">Answer</th>
+          <th scope="col">Motivations</th>
+          <th scope="col">Comments</th>
+        </tr>
+      </thead>
       <tbody>
         {% for a in sub_answers %}
           <tr>
+            {# param_id viene dall'annotazione nel view #}
+            <td>{{ a.param_id }}</td>
             <td>{{ a.question_code }}</td>
             <td>{{ a.response_text }}</td>
+            <td>{{ a.mot_text }}</td> 
             <td>{{ a.comments }}</td>
           </tr>
-        {% empty %}<tr><td colspan="3">No answers</td></tr>{% endfor %}
+        {% empty %}
+          <tr><td colspan="5">No answers</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <h3>Motivations</h3>
-  <ul>
-    {% for m in sub_mots %}
-      <li><code>{{ m.question_code }}</code> → {{ m.motivation_code }}</li>
-    {% empty %}<li>No motivations</li>{% endfor %}
-  </ul>
-
   <h3>Language examples</h3>
   <div class="table-responsive">
     <table class="table table-sm">
-      <thead><tr><th>Questions</th><th>Example text</th><th>Transliteration</th><th>Gloss</th><th>English translation</th><th>Reference</th></tr></thead>
+      <thead>
+        <tr>
+          <th scope="col">Question</th>
+          <th scope="col">Example text</th>
+          <th scope="col">Transliteration</th>
+          <th scope="col">Gloss</th>
+          <th scope="col">English translation</th>
+          <th scope="col">Reference</th>
+        </tr>
+      </thead>
       <tbody>
         {% for e in sub_examples %}
           <tr>
@@ -64,7 +89,9 @@
             <td>{{ e.translation }}</td>
             <td>{{ e.reference }}</td>
           </tr>
-        {% empty %}<tr><td colspan="6">Nessun esempio</td></tr>{% endfor %}
+        {% empty %}
+          <tr><td colspan="6">No examples</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
