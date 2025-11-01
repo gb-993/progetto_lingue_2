@@ -45,7 +45,7 @@ def glossary_add(request):
             form.save()
             messages.success(request, "Entry created successfully")
             return redirect("glossary_list")
-        messages.error(request, "Correggi gli errori e riprova.")
+        messages.error(request, "Correct the errors and try again.")
     else:
         form = GlossaryForm()
 
@@ -70,11 +70,10 @@ def glossary_edit(request, word):
     if request.method == "POST":
         form = GlossaryForm(request.POST, instance=obj)
         if form.is_valid():
-            # Se la "word" cambia (è pk), il save crea una nuova pk; va bene perché abbiamo validazione uniqueness iexact.
             form.save()
             messages.success(request, "Entry updated")
             return redirect("glossary_list")
-        messages.error(request, "Correggi gli errori e riprova.")
+        messages.error(request, "Correct the errors and try again.")
     else:
         form = GlossaryForm(instance=obj)
     return render(request, "glossary/edit.html", {"form": form, "obj": obj})
@@ -90,5 +89,4 @@ def glossary_delete(request, word):
         obj.delete()
         messages.success(request, "Entry deleted")
         return redirect("glossary_list")
-    # GET → conferma semplice
     return render(request, "glossary/confirm_delete.html", {"obj": obj})

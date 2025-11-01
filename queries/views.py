@@ -10,8 +10,7 @@ from django.utils.translation import gettext as _
 from core.models import (
     Language, ParameterDef, LanguageParameter, LanguageParameterEval,
 )
-from core.services.logic_parser import evaluate_with_parser, pretty_print_expression  # parser/pretty
-# NOTA: useremo un semplice estrattore token come in dag_eval
+from core.services.logic_parser import evaluate_with_parser, pretty_print_expression 
 import re
 
 from .forms import (
@@ -38,18 +37,15 @@ def safe_pretty(expr: str) -> str:
     try:
         return pretty_print_expression(s)
     except Exception:
-        # fallback: mostra la stringa originale senza interrompere la pagina
         return (expr or "")
 
 
 # ------------- Helper dati “finali” (+/-/0/None) -------------
 @dataclass
 class FinalValue:
-    """Valore finale per (lingua, parametro): preferisci eval, altrimenti orig."""
-    value: str | None  # '+', '-', '0' oppure None
+    value: str | None  
 
 def final_value_for(lang_id: str, param_id: str) -> FinalValue:
-    # 1) prova eval
     lpe = (
         LanguageParameterEval.objects
         .filter(language_parameter__language_id=lang_id,
@@ -60,7 +56,6 @@ def final_value_for(lang_id: str, param_id: str) -> FinalValue:
     if lpe and lpe.value_eval in {"+", "-", "0"}:
         return FinalValue(lpe.value_eval)
 
-    # 2) fallback orig
     lp = (
         LanguageParameter.objects
         .filter(language_id=lang_id, parameter_id=param_id)
@@ -70,30 +65,20 @@ def final_value_for(lang_id: str, param_id: str) -> FinalValue:
     return FinalValue(lp.value_orig if lp else None)
 
 def final_map_for_language(lang: Language) -> Dict[str, str | None]:
-    """
-    Ritorna una mappa param_id -> valore finale (+/-/0/None), privilegiando eval.
-    """
+
     out: Dict[str, str | None] = {}
-    # eval noti
     for lpe in LanguageParameterEval.objects.filter(language_parameter__language=lang)\
                                            .select_related("language_parameter"):
         out[lpe.language_parameter.parameter_id] = lpe.value_eval
-    # completa con orig mancanti
     for lp in LanguageParameter.objects.filter(language=lang).only("parameter_id", "value_orig"):
         out.setdefault(lp.parameter_id, lp.value_orig)
     return out
 
 # ------------- Query #1 e #2: implicati/implicanti e distribuzione lingue -------------
 def implicated_and_implicating(parameter: ParameterDef) -> Tuple[Set[str], Set[str]]:
-    """
-    Ritorna:
-      - refs_in_param: set dei param citati nella condizione di 'parameter' (implicanti)
-      - targets_using_param: set di target che citano 'parameter' (implicati da 'parameter')
-    """
-    # implicanti (citati dalla condizione del parametro stesso)
+
     refs_in_param = {tok for _, tok in extract_tokens(parameter.implicational_condition or "")}
 
-    # implicati (altri parametri che referenziano questo)
     targets_using_param: Set[str] = set()
     for p in ParameterDef.objects.exclude(pk=parameter.pk).only("id", "implicational_condition"):
         cond = (p.implicational_condition or "")
@@ -104,16 +89,9 @@ def implicated_and_implicating(parameter: ParameterDef) -> Tuple[Set[str], Set[s
     return refs_in_param, targets_using_param
 
 def language_distribution_for_param(parameter: ParameterDef) -> Dict[str, List[Language]]:
-    """
-    Raggruppa le lingue in tre insiemi:
-      '+': value_eval=='+'
-      '-': value_eval=='-'
-      '0': value_eval=='0'  (neutralizzate)
-    Se manca eval, usa orig (+/-) e NON le mette tra '0'.
-    """
+
     plus, minus, zero = [], [], []
 
-    # Preleva direttamente da eval se presente (join su LP -> LPE)
     eval_qs = LanguageParameterEval.objects.filter(
         language_parameter__parameter=parameter
     ).select_related("language_parameter__language")
@@ -129,7 +107,6 @@ def language_distribution_for_param(parameter: ParameterDef) -> Dict[str, List[L
         elif lpe.value_eval == "0":
             zero.append(lang)
 
-    # Fallback: per le lingue senza riga eval, usa orig (+/-)
     for lp in LanguageParameter.objects.filter(parameter=parameter)\
                                        .select_related("language"):
         if lp.language_id in seen_langs:
@@ -138,23 +115,18 @@ def language_distribution_for_param(parameter: ParameterDef) -> Dict[str, List[L
             plus.append(lp.language)
         elif lp.value_orig == "-":
             minus.append(lp.language)
-        # None resta fuori
 
     return {"+": plus, "-": minus, "0": zero}
 
 # ------------- Query #3: perché neutralizzato (condizioni non soddisfatte) -------------
 @dataclass
 class UnsatisfiedLiteral:
-    sign: str  # '+', '-', '0'
+    sign: str  
     param_id: str
-    reason: str  # "expected '+', got '-'", "derived zero", "unknown", ...
+    reason: str 
 
 def explain_neutralization(language: Language, parameter: ParameterDef) -> Dict:
-    """
-    Spiega perché value_eval == '0' per (lingua,parametro):
-      - se qualsiasi riferimento ha già '0' => derivazione da zero
-      - altrimenti: condizione valutata a FALSE => elenca i token non soddisfatti
-    """
+
     final_map = final_map_for_language(language)  # param -> '+','-','0',None
     cond = (parameter.implicational_condition or "").strip()
     tokens = extract_tokens(cond)
@@ -173,7 +145,6 @@ def explain_neutralization(language: Language, parameter: ParameterDef) -> Dict:
         for z in zero_refs:
             unsatisfied.append(UnsatisfiedLiteral("0", z, "derived zero"))
     elif cond_true is False:
-        # elenca i letterali non rispettati
         for s, pid in tokens:
             v = final_map.get(pid)
             if v is None:
@@ -209,21 +180,11 @@ def comparable_params_for(lang_a: Language, lang_b: Language) -> List[Tuple[Para
 @login_required
 @user_passes_test(_is_linguist_or_admin)
 def home(request):
-    """
-    UI a tab:
-      1) Per parametro -> implicanti/implicati
-      2) Per parametro -> lingue + / - / neutralizzate
-      3) Per lingua+param -> perché neutralizzato (0)
-      4) Per lingua -> elenco param con '+'
-      5) Per lingua -> elenco param con '-'
-      6) Per lingua -> elenco param neutralizzati + condizione
-      7) Per coppia lingue -> parametri confrontabili (+/-) con valori
-    """
+
     active_tab = request.GET.get("tab") or ""
 
     ctx = {
         "tab": active_tab,
-        # forms
         "form_q1": ParamPickForm(request.GET if request.GET.get("tab") == "q1" else None),
         "form_q2": ParamPickForm(request.GET if request.GET.get("tab") == "q2" else None),
         "form_q3": ParamNeutralizationForm(request.GET if request.GET.get("tab") == "q3" else None),
@@ -231,7 +192,6 @@ def home(request):
         "form_q5": LangOnlyForm(request.GET if request.GET.get("tab") == "q5" else None),
         "form_q6": LangOnlyForm(request.GET if request.GET.get("tab") == "q6" else None),
         "form_q7": LangPairForm(request.GET if request.GET.get("tab") == "q7" else None),
-        # results placeholders
         "q1": None, "q2": None, "q3": None, "q4": None, "q5": None, "q6": None, "q7": None,
     }
 
@@ -274,11 +234,9 @@ def home(request):
         if form.is_bound and form.is_valid():
             lang = form.cleaned_data["language"]
             fmap = final_map_for_language(lang)
-            # filtra
             wanted_ids = [pid for pid, v in fmap.items() if v == want]
             params = list(ParameterDef.objects.filter(pk__in=wanted_ids).order_by("position"))
             if want == "0":
-                # Aggiungi condizione implicazionale in chiaro
                 rows = []
                 for p in params:
                     cond = p.implicational_condition or ""

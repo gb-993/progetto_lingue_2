@@ -10,7 +10,6 @@ _SELECT = {"class": "form-select"}
 _INPUT = {"class": "form-control"}
 
 class ParamPickForm(forms.Form):
-    """Per-query #1 e #2: selezione parametro."""
     parameter = forms.ModelChoiceField(
         queryset=ParameterDef.objects.order_by("position"),
         required=True,
@@ -19,7 +18,6 @@ class ParamPickForm(forms.Form):
     )
 
 class ParamNeutralizationForm(forms.Form):
-    """Per-query #3: param & lingua per vedere perché è stato neutralizzato (0)."""
     language = forms.ModelChoiceField(
         queryset=Language.objects.order_by("position"),
         required=True,
@@ -34,7 +32,6 @@ class ParamNeutralizationForm(forms.Form):
     )
 
 class LangOnlyForm(forms.Form):
-    """Per-query #4, #5, #6: selezione lingua."""
     language = forms.ModelChoiceField(
         queryset=Language.objects.order_by("position"),
         required=True,
@@ -43,7 +40,6 @@ class LangOnlyForm(forms.Form):
     )
 
 class LangPairForm(forms.Form):
-    """Per-query #7: coppia di lingue per la mini-Table A."""
     language_a = forms.ModelChoiceField(
         queryset=Language.objects.order_by("position"),
         required=True,

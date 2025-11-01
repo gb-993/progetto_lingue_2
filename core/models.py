@@ -14,9 +14,9 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("Email obbligatoria")
-        email = self.normalize_email(email).lower()  # forza lowercase
+        email = self.normalize_email(email).lower()  
         user = self.model(email=email, **extra_fields)
-        user.set_password(password)                  # hash
+        user.set_password(password)                 
         user.save(using=self._db)
         return user
 
@@ -35,15 +35,15 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (("admin", "Admin"), ("user", "User"))
 
-    email = models.EmailField(unique=True)  # <-- obbligatorio per USERNAME_FIELD
+    email = models.EmailField(unique=True)  
     name = models.CharField(max_length=100)
     surname = models.CharField(max_length=100)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="user")
 
     m2m_languages  = models.ManyToManyField(
-        "core.Language",      # riferimento per stringa, niente import
+        "core.Language",      
         blank=True,
-        related_name="users"  # es: language.users.all()
+        related_name="users"  
     )
 
     is_active = models.BooleanField(default=True)
@@ -72,7 +72,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 # GLOSSARY
 # =============
 class Glossary(models.Model):
-    id = models.BigAutoField(primary_key=True)  # chiave automatica
+    id = models.BigAutoField(primary_key=True) 
     word = models.CharField(max_length=255, unique=True)
     description = models.TextField()
 
@@ -96,7 +96,7 @@ from django.db.models import F, Max, UniqueConstraint, Deferrable
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
 class Language(models.Model):
-    id = models.CharField(primary_key=True, max_length=10)  # 'ita','en',...
+    id = models.CharField(primary_key=True, max_length=10)  
     name_full = models.CharField(max_length=255)
 
     position = models.PositiveIntegerField()
@@ -134,7 +134,6 @@ class Language(models.Model):
     def __str__(self):
         return self.name_full
 
-    # Advisory lock per serializzare gli shift 
     def _advisory_lock(self):
         with connection.cursor() as cur:
             cur.execute("SELECT pg_advisory_xact_lock(%s);", [123456789])
@@ -160,7 +159,7 @@ class Language(models.Model):
                     self.position = max_pos + 1
                     return super().save(*args, **kwargs)
 
-                # Inserisco a 'position' richiesta e shifto le successive
+                # Inserisce a position richiesta e shifto le successive
                 type(self).objects.filter(position__gte=self.position).update(position=F("position") + 1)
                 return super().save(*args, **kwargs)
 
@@ -168,7 +167,6 @@ class Language(models.Model):
             try:
                 old = type(self).objects.get(pk=self.pk)
             except ObjectDoesNotExist:
-                # oggetto non esiste più, salvo semplice
                 return super().save(*args, **kwargs)
 
             old_pos = old.position
@@ -192,7 +190,7 @@ class Language(models.Model):
 
             return super().save(*args, **kwargs)
 
-    # Evita che la validazione lato Django blocchi per 'position' (ci pensa il DB deferrable)
+    # Evita che la validazione lato Django blocchi per 'position'
     def validate_unique(self, exclude=None):
         ex = set(exclude or [])
         ex.add("position")
@@ -228,7 +226,6 @@ class Language(models.Model):
 # =======================
 
 class ParamSchema(models.Model):
-    # prima: code + label + is_active → ORA: solo label unico
     label = models.CharField(max_length=100, unique=True)
 
     class Meta:
@@ -289,12 +286,12 @@ class ParameterDef(models.Model):
             self._advisory_lock()
 
             if is_new:
-                if not self.position:  # append in coda
+                if not self.position:  
                     max_pos = type(self).objects.aggregate(m=Max("position"))["m"] or 0
                     self.position = max_pos + 1
                     return super().save(*args, **kwargs)
 
-                # inserisco a 'position' richiesta e shifto le successive
+                # inserisce a 'position' richiesta e shifto le successive
                 type(self).objects.filter(position__gte=self.position)\
                     .update(position=F("position") + 1)
                 return super().save(*args, **kwargs)
@@ -360,8 +357,8 @@ class ParameterDef(models.Model):
 class ParameterChangeLog(models.Model):
     id = models.BigAutoField(primary_key=True)
     parameter = models.ForeignKey(ParameterDef, on_delete=models.CASCADE, related_name="change_logs")
-    recap = models.TextField()  # obbligatorio
-    diff = models.JSONField(default=dict, blank=True)  # {campo: {"old":..., "new":...}}
+    recap = models.TextField()  
+    diff = models.JSONField(default=dict, blank=True)  
     changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="parameter_change_logs")
     changed_at = models.DateTimeField(auto_now_add=True)
 
@@ -380,7 +377,7 @@ class ParameterChangeLog(models.Model):
 
 
 class Question(models.Model):
-    id = models.CharField(primary_key=True, max_length=40)  # es. 'FGMQ_a'
+    id = models.CharField(primary_key=True, max_length=40)  
     parameter = models.ForeignKey(
         ParameterDef,
         on_delete=models.RESTRICT,
@@ -439,15 +436,13 @@ class LanguageParameter(models.Model):
     language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name="language_parameters")
     parameter = models.ForeignKey(ParameterDef, on_delete=models.RESTRICT, related_name="language_parameters")
 
-    # MODIFICA: permettiamo NULL per rappresentare "indeterminato"
-    value_orig = models.CharField(max_length=1, null=True, blank=True)   # '+','-' oppure NULL (indeterminato)
+    value_orig = models.CharField(max_length=1, null=True, blank=True)   
     warning_orig = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["language", "parameter"], name="uq_lang_param"),
 
-            # MODIFICA: aggiorniamo il check per consentire anche NULL
             models.CheckConstraint(
                 check=(models.Q(value_orig__in=["+", "-"]) | models.Q(value_orig__isnull=True)),
                 name="ck_value_orig_pm_or_null",
@@ -476,7 +471,7 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.RESTRICT, related_name="answers")
     status = models.CharField(max_length=24, choices=AnswerStatus.choices, default=AnswerStatus.PENDING)
     modifiable = models.BooleanField(default=True)
-    response_text = models.CharField(max_length=3)  # 'yes'|'no'
+    response_text = models.CharField(max_length=3) 
     comments = models.TextField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
@@ -524,7 +519,7 @@ class ParameterReviewFlag(models.Model):
 
 class Example(models.Model):
     id = models.BigAutoField(primary_key=True)
-    number = models.CharField(max_length=50)  # lasciato come testo
+    number = models.CharField(max_length=50)  
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE, related_name="examples")
     textarea = models.TextField(null=True, blank=True)
     gloss = models.TextField(null=True, blank=True)
@@ -541,11 +536,10 @@ class Example(models.Model):
 # ============
 class Motivation(models.Model):
     id = models.SmallAutoField(primary_key=True)
-    code = models.CharField(max_length=50, unique=True)  # es. 'MOT1'
+    code = models.CharField(max_length=50, unique=True)  
     label = models.CharField(max_length=255)
 
     def __str__(self):
-        # Esempio: "MOT1 — No morphological marking"
         if self.code:
             return f"{self.code} — {self.label}"
         return self.label
@@ -556,7 +550,7 @@ class QuestionAllowedMotivation(models.Model):
     question = models.ForeignKey(
         "core.Question",
         on_delete=models.CASCADE,
-        related_name="allowed_motivation_links"  # <-- prima era "allowed_motivations"
+        related_name="allowed_motivation_links"  
     )
     motivation = models.ForeignKey(
         "core.Motivation",
@@ -603,7 +597,6 @@ class LanguageParameterEval(models.Model):
         related_name="eval",
     )
 
-    # Ora può essere NULL per rappresentare "indeterminato" (da mostrare vuoto in UI)
     value_eval = models.CharField(
         max_length=1,
         null=True,
@@ -616,7 +609,6 @@ class LanguageParameterEval(models.Model):
 
     class Meta:
         constraints = [
-            # Nuovo vincolo: consente '+', '-', '0' OPPURE NULL
             models.CheckConstraint(
                 name="ck_value_eval_pm0_or_null",
                 check=Q(value_eval__in=['+', '-', '0']) | Q(value_eval__isnull=True),

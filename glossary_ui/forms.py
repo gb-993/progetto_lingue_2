@@ -21,14 +21,12 @@ class GlossaryForm(forms.ModelForm):
         }
 
     def clean_word(self):
-        # normalizziamo: niente spazi doppi, case-fold per evitare duplicati per maiuscole/minuscole
         w = (self.cleaned_data.get("word") or "").strip()
         if not w:
-            raise ValidationError("La parola è obbligatoria.")
-        # Evita duplicati case-insensitive diversi dalla stessa istanza
+            raise ValidationError("This entry is mandatory.")
         qs = Glossary.objects.filter(word__iexact=w)
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
-            raise ValidationError("Esiste già una voce (ignora maiuscole/minuscole) con questa parola.")
+            raise ValidationError("An entry with this word already exists.")
         return w

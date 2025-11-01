@@ -20,6 +20,7 @@ from django.utils.translation import gettext as _t
 from django.urls import reverse
 from datetime import datetime, time, date  
 from django.utils import timezone   
+from .forms import LanguageForm 
 
 from core.models import (
     Language,
@@ -41,11 +42,9 @@ except Exception:
     LanguageParameterEval = None 
     HAS_EVAL = False  
 
-# Se gli status sono definiti nel modello:
 try:
-    from core.models import AnswerStatus  # PENDING/WAITING/APPROVED/REJECTED
+    from core.models import AnswerStatus  
 except Exception:
-    # (evita crash se l'enum non è disponibile)
     class AnswerStatus:
         PENDING = "pending"
         WAITING = "waiting_for_approval"
@@ -126,7 +125,6 @@ def _language_overall_status(lang: Language) -> dict:
     else:
         overall = AnswerStatus.PENDING
 
-    # conteggi elementari (non usati molto, ma utili)
     counts = {
         "pending":   sum(1 for s in qs if s == AnswerStatus.PENDING),
         "waiting":   sum(1 for s in qs if s == AnswerStatus.WAITING),
@@ -144,7 +142,7 @@ def _all_questions_answered(language: Language) -> bool:
         Question.objects.filter(parameter__is_active=True).values_list("id", flat=True)
     )
     if not active_qids:
-        return False  # se non hai domande, non consento approvazione
+        return False 
     answered_qids = set(
         Answer.objects.filter(
             language=language,
@@ -158,7 +156,6 @@ def _all_questions_answered(language: Language) -> bool:
 # -----------------------
 # List / CRUD lingua
 # -----------------------
-# languages_ui/views.py — SOSTITUISCI l'intera language_list con questa
 
 @login_required
 def language_list(request):
@@ -167,7 +164,6 @@ def language_list(request):
     user = request.user
     is_admin = _is_admin(user)
 
-    # Annotiamo l'ultima modifica proveniente dalle Answer
     qs = (
         Language.objects
         .select_related("assigned_user")
@@ -175,11 +171,9 @@ def language_list(request):
         .order_by("position")
     )
 
-    # Solo proprie lingue se non admin
     if not is_admin:
         qs = qs.filter(Q(assigned_user=user) | Q(users=user))
 
-    # Ricerca (email assegnata visibile solo ad admin)
     if q:
         filt = (
             Q(id__icontains=q)
@@ -194,7 +188,6 @@ def language_list(request):
             | Q(source__icontains=q)
         )
 
-        # match grezzo per booleano ("hist", "stor", "true"/"false")
         if q.lower() in {"hist", "stor", "storica", "storico", "true", "yes"}:
             filt |= Q(historical_language=True)
         if q.lower() in {"false", "no"}:
@@ -217,7 +210,7 @@ def language_list(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def language_add(request):
-    from .forms import LanguageForm  # import locale per evitare cicli
+    from .forms import LanguageForm  
     if request.method == "POST":
         form = LanguageForm(request.POST)
         if form.is_valid():
@@ -232,10 +225,8 @@ def language_add(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def language_edit(request, lang_id):
-    from .forms import LanguageForm  # import locale del form
     lang = get_object_or_404(Language, pk=lang_id)
     if request.method == "POST":
-        # instance=lang per fare update e non creare elemento nuovo
         form = LanguageForm(request.POST, instance=lang)
         if form.is_valid():
             form.save()
@@ -344,12 +335,7 @@ def language_data(request, lang_id):
 @require_http_methods(["POST"])
 @transaction.atomic
 def parameter_save(request, lang_id, param_id):
-    """
-    Salvataggio bulk per un parametro.
-    - YES richiede almeno un Example con 'textarea' non vuota (in stato finale).
-    - 'action' ∈ {'save','next'}: 'next' marca il parametro come 'torno dopo' (rosso anche se completo).
-    - NOVITÀ: non creare/salvare Answer con response_text vuoto → se tutto è vuoto resta 'untouched' (trasparente).
-    """
+
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
@@ -529,12 +515,7 @@ def parameter_save(request, lang_id, param_id):
 @require_http_methods(["POST"])
 @transaction.atomic
 def answer_save(request, lang_id, question_id):
-    """
-    Salvataggio singolo di una risposta per una domanda.
-    Vincoli:
-      - Se response_text == "yes" => deve esistere almeno un Example con textarea non vuota
-        nello stato finale (esistenti non cancellati/aggiornati + nuovi).
-    """
+
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
@@ -592,7 +573,7 @@ def answer_save(request, lang_id, question_id):
     # 5) ESEMPI: raccolta mutazioni + VALIDAZIONE + applicazione (singola domanda)
     FIELDS = {"number", "textarea", "transliteration", "gloss", "translation", "reference"}
 
-    # 5.1) Raccolta delete: del_ex_<id> = "1" (NON eseguire ancora)
+    # 5.1) Raccolta delete
     del_ids = []
     for key, val in request.POST.items():
         if not key.startswith("del_ex_"):
@@ -724,12 +705,7 @@ def language_save_instructions(request, lang_id):
 # -----------------------
 @login_required
 def language_debug(request, lang_id: str):
-    """
-    Debug per una lingua (solo admin):
-      - Tabella unica con: ID domande, risposte yes/no, value_orig (+/-), value_eval (+/-/0),
-        warning init/final, condizione raw/pretty e esito condizione (TRUE/FALSE).
-      - Sezione diagnostica inferiore rimossa: i campi TRUE/FALSE sono integrati nella tabella principale.
-    """
+
     user = request.user
     lang = get_object_or_404(Language, pk=lang_id)
 
@@ -775,9 +751,7 @@ def language_debug(request, lang_id: str):
             final_by_pid[pid] = ""
             warnf_by_pid[pid] = False
 
-    # Diagnostica parser (per cond_true)
     diag_rows = diagnostics_for_language(lang)
-    # d.param_id, d.cond_true, d.cond_raw, d.cond_pretty, d.value_orig, d.value_eval, d.note
     cond_map = {}
     for d in diag_rows:
         pid = getattr(d, "param_id", None) if not isinstance(d, dict) else d.get("param_id")
@@ -804,7 +778,7 @@ def language_debug(request, lang_id: str):
             "warn_init": bool(warni_by_pid.get(p.id, False)),
             "warn_final": bool(warnf_by_pid.get(p.id, False)),
             "cond": (p.implicational_condition or ""),
-            "cond_true": cond_map.get(p.id, None),   # <<< NUOVO CAMPO USATO DAL TEMPLATE
+            "cond_true": cond_map.get(p.id, None),  
         })
 
     ctx = {
@@ -852,16 +826,12 @@ def language_run_dag(request, lang_id: str):
 @login_required
 @require_POST
 def language_submit(request, lang_id):
-    """
-    USER: submit finale SEMPRE consentita anche con risposte mancanti.
-    Blocca l'editing (WAITING + modifiable=False) e NON avvia il DAG.
-    """
+
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
 
-    # Avvisa se ci sono domande mancanti, ma non blocca la submit
     if not _all_questions_answered(lang):
         messages.warning(request, _t("You submitted with some unanswered questions. An admin will review before approval."))
 
@@ -894,7 +864,6 @@ def language_approve(request, lang_id):
         status=AnswerStatus.APPROVED, modifiable=False
     )
 
-    # Log decisione di approvazione
     LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
 
     # Avvia il DAG
@@ -921,11 +890,7 @@ def language_approve(request, lang_id):
 @login_required
 @require_POST
 def language_reject(request, lang_id):
-    """
-    ADMIN: Reject SEMPRE consentito, anche senza submit finale.
-    Riapre l'editing all'utente (tutte le risposte diventano REJECTED + modifiable=True).
-    Registra messaggio facoltativo.
-    """
+
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
@@ -938,7 +903,6 @@ def language_reject(request, lang_id):
         changed = Answer.objects.filter(language=lang).update(
             status=AnswerStatus.REJECTED, modifiable=False
         )
-        # Log decisione di reject (con messaggio opzionale)
         LanguageReview.objects.create(language=lang, decision="reject", message=message, created_by=request.user)
 
     if changed == 0:
@@ -951,9 +915,7 @@ def language_reject(request, lang_id):
 @login_required
 @require_POST
 def language_reopen(request, lang_id):
-    """
-    USER: su stato rejected può riaprire (torna pending/modifiable=True).
-    """
+
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
@@ -976,7 +938,6 @@ def language_export_xlsx(request, lang_id: str):
 
     is_admin = _is_admin(request.user)
 
-    # --- Dati base (ordinamento coerente con UI) ---
     params = (
         ParameterDef.objects
         .filter(is_active=True)
@@ -1296,7 +1257,6 @@ def language_list_export_xlsx(request):
             row.append(_xlsx_sanitize(fn(L)))
         ws.append(row)
 
-    # Auto larghezza
     from openpyxl.utils import get_column_letter
     for col_idx in range(1, ws.max_column + 1):
         col_letter = get_column_letter(col_idx)

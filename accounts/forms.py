@@ -40,7 +40,6 @@ class AccountForm(forms.ModelForm):
         email = (self.cleaned_data.get("email") or "").strip().lower()
         if not email:
             raise ValidationError("Email obbligatoria.")
-        # Evita collisioni case-insensitive
         qs = User.objects.all()
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
@@ -56,7 +55,6 @@ class AccountForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        # email già normalizzata in clean_email
         pwd = self.cleaned_data.get("password")
         if pwd:
             user.set_password(pwd)

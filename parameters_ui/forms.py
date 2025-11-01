@@ -18,7 +18,6 @@ from core.services.logic_parser import validate_expression, ParseException
 # PARAMETER FORM (ModelForm)
 # =========================
 class ParameterForm(forms.ModelForm):
-    # menu a tendina
     schema = forms.ChoiceField(
         required=False,
         choices=[],
@@ -104,11 +103,9 @@ class ParameterForm(forms.ModelForm):
         instance = getattr(self, "instance", None)
         has_pk = bool(instance and instance.pk)
 
-        # Se NON posso disattivare e l'istanza è attiva, forza comunque is_active=True
         if has_pk and getattr(self, "can_deactivate", True) is False and instance.is_active:
             cleaned["is_active"] = True
 
-        # Audit: se ci sono modifiche reali (escluso change_note), la nota è obbligatoria
         if has_pk and self.has_changed():
             changed_fields = [f for f in self.changed_data if f != "change_note"]
             note = (cleaned.get("change_note") or "").strip()
@@ -123,15 +120,10 @@ class ParameterForm(forms.ModelForm):
         return pos
 
     def clean_implicational_condition(self):
-        """
-        Regole:
-        - token senza spazi tra segno e parametro: +FGM, -FGK, 0ABC
-        - operatori: &, |, AND/OR/NOT (case-insensitive)
-        - niente spazi tra segno e parametro (anche NBSP, \u00A0)
-        """
+
         raw = (self.cleaned_data.get("implicational_condition") or "").strip()
         if not raw:
-            return ""  # condizione vuota = OK
+            return "" 
         try:
             validate_expression(raw)
         except ParseException as e:
@@ -155,7 +147,6 @@ class QuestionForm(forms.ModelForm):
     ]
     template_type = forms.ChoiceField(choices=TEMPLATE_CHOICES, required=False)
 
-    # Campo virtuale per le motivazioni disponibili per questa domanda
     motivations = forms.ModelMultipleChoiceField(
         queryset=Motivation.objects.all(),
         required=False,
@@ -189,28 +180,22 @@ class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Gestione 'id'
         if "id" in self.fields:
             if self.instance and self.instance.pk:
-                # EDIT: id non modificabile ma deve rientrare nel POST (hidden)
                 self.fields["id"].required = False
                 self.fields["id"].widget = forms.HiddenInput()
                 self.initial["id"] = self.instance.pk
             else:
-                # CREATE: id obbligatorio
                 self.fields["id"].required = True
 
-        # Pre-selezione motivazioni già collegate
         if self.instance and self.instance.pk:
             self.fields["motivations"].initial = list(
                 self.instance.allowed_motivations.values_list("pk", flat=True)
             )
 
-        # in edit nascondiamo la checkbox stop_question (solo creazione)
         if self.instance and self.instance.pk:
             self.fields.pop("is_stop_question", None)
 
-    # Salvataggio + sync delle motivazioni
     def save(self, commit=True):
         instance = super().save(commit=commit)
         if instance.pk and commit:
@@ -271,22 +256,18 @@ QuestionFormSet = inlineformset_factory(
 
 
 class DeactivateParameterForm(forms.Form):
-    """
-    Conferma disattivazione parametro:
-    - richiede password per re-auth
-    - motivo (audit, opzionale ma consigliato)
-    """
+
     password = forms.CharField(
-        label="Password amministratore",
+        label="Admin Password",
         widget=forms.PasswordInput(attrs={"autocomplete": "current-password", "class": "form-control"}),
         required=True,
-        help_text="Inserisci la tua password per confermare la disattivazione."
+        help_text="Insert your password to deactivate."
     )
     reason = forms.CharField(
-        label="Motivo",
+        label="Motivations",
         widget=forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
         required=False,
-        help_text="Motivo della disattivazione (verrà mostrato nei log)."
+        help_text="Motivation of deletion."
     )
 
     def __init__(self, *args, request=None, **kwargs):
@@ -298,7 +279,7 @@ class DeactivateParameterForm(forms.Form):
         pwd = cleaned.get("password") or ""
         user = getattr(self.request, "user", None)
         if not user or not user.is_authenticated:
-            raise forms.ValidationError("Utente non autenticato.")
+            raise forms.ValidationError("User not authenticated.")
         if not user.check_password(pwd):
-            raise forms.ValidationError("Password non corretta.")
+            raise forms.ValidationError("Incorrect password.")
         return cleaned

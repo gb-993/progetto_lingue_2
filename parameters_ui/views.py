@@ -162,20 +162,17 @@ def parameter_edit(request, param_id: str):
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
 
-    # Dove è referenziato?
     where_used = find_where_used(param.id)
     can_deactivate = bool(param.is_active and len(where_used) == 0)
 
     if request.method == "POST":
         form = ParameterForm(request.POST, instance=param, can_deactivate=can_deactivate)
 
-        # segnale nascosto dal template che dice "qualcosa (domande/motivazioni) è stato toccato"
         had_external_changes = request.POST.get("had_external_changes") == "1"
 
         if form.is_valid():
             old_obj = ParameterDef.objects.get(pk=param.pk)
 
-            # Costruisco il diff solo sui campi realmente cambiati (escludo id/change_note)
             changed_fields = [f for f in form.changed_data if f not in ("change_note", "id")]
             diff = {}
             for f in changed_fields:
@@ -184,22 +181,17 @@ def parameter_edit(request, param_id: str):
                 if old_val != new_val:
                     diff[f] = {"old": _to_jsonable(old_val), "new": _to_jsonable(new_val)}
 
-            # --- Enforce nota anche se non ci sono cambi interni ma c'erano modifiche esterne ---
             note_val = (form.cleaned_data.get("change_note") or "").strip()
             if had_external_changes and not note_val:
-                # forziamo errore in modo simile a form.clean()
                 form.add_error(
                     "change_note",
                     "Insert recap of changes made to this parameter, its questions, or motivations."
                 )
                 messages.error(request, "Please add a recap of the external changes.")
             else:
-                # Salvo il parametro
                 param = form.save()
 
-                # Log solo se c'è qualcosa di cambiato internamente
-                # (nota: modifiche esterne non generano diff nei campi del parametro;
-                # possiamo comunque NON loggare diff vuoto)
+
                 if diff:
                     ParameterChangeLog.objects.create(
                         parameter=param,
@@ -209,8 +201,7 @@ def parameter_edit(request, param_id: str):
                     )
                     messages.success(request, "Parameter updated.")
                 else:
-                    # Nessun campo del parametro cambiato
-                    # Se had_external_changes e ho nota, potremmo opzionalmente loggare "external only"
+
                     if had_external_changes and note_val:
                         ParameterChangeLog.objects.create(
                             parameter=param,
@@ -226,7 +217,6 @@ def parameter_edit(request, param_id: str):
         else:
             messages.error(request, "Please fix the highlighted errors.")
 
-        # Se arrivo qui, form non valido → devo ricaricare pagina con gli altri dati per il template
         questions = (
             param.questions
             .order_by("is_stop_question", "id")
@@ -238,7 +228,6 @@ def parameter_edit(request, param_id: str):
 
         deactivate_form = DeactivateParameterForm(request=None) if can_deactivate else None
 
-        # external_dirty per il template in questo caso è: se had_external_changes era 1
         return render(
             request,
             "parameters/edit.html",
@@ -257,16 +246,12 @@ def parameter_edit(request, param_id: str):
             status=400,
         )
 
-    # GET
     else:
         form = ParameterForm(instance=param, can_deactivate=can_deactivate)
 
-        # controlla se sono appena tornato da add/edit/delete question
-        # passando ?q_changed=1 nella redirect
         q_changed_flag = request.GET.get("q_changed") == "1"
         external_dirty = q_changed_flag
 
-        # Query domande (come prima)
         questions = (
             param.questions
             .order_by("is_stop_question", "id")
@@ -301,11 +286,7 @@ def parameter_edit(request, param_id: str):
 @user_passes_test(_is_admin)
 @require_POST
 def parameter_deactivate(request, param_id: str):
-    """
-    Disattiva un parametro SOLO se non esistono più referenze a lui,
-    richiedendo conferma password. Protezione race: lock + ricontrollo in transazione.
-    """
-    # Form di conferma (password + motivo)
+
     form = DeactivateParameterForm(request.POST, request=request)
     if not form.is_valid():
         param = get_object_or_404(ParameterDef, pk=param_id)
@@ -330,10 +311,8 @@ def parameter_deactivate(request, param_id: str):
 
 
     with transaction.atomic():
-        # Lock del record per evitare race tra più admin
         param = ParameterDef.objects.select_for_update().get(pk=param_id)
 
-        # Ricontrollo referenze "ora"
         refs_now = find_where_used(param.id)
         if refs_now:
             messages.error(
@@ -346,7 +325,6 @@ def parameter_deactivate(request, param_id: str):
             messages.info(request, "Il parametro è già disattivato.")
             return redirect("parameter_edit", param_id=param.id)
 
-        # Disattiva
         param.is_active = False
         param.save(update_fields=["is_active"])
 
@@ -364,12 +342,7 @@ def parameter_deactivate(request, param_id: str):
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def question_add(request, param_id: str):
-    """
-    Crea una nuova domanda per il parametro.
-    NON crea più motivazioni inline: ora le motivazioni si gestiscono
-    nella pagina dedicata ('motivations_manage').
-    - La checkbox 'is_stop_question' è visibile solo qui (gestito in QuestionForm.__init__).
-    """
+
     param = get_object_or_404(ParameterDef, pk=param_id)
     instance = Question(parameter=param)
 
@@ -416,12 +389,7 @@ def question_add(request, param_id: str):
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def question_edit(request, param_id: str, question_id: str):
-    """
-    Modifica una domanda esistente.
-    NON crea più motivazioni inline: ora le motivazioni si gestiscono
-    nella pagina dedicata ('motivations_manage').
-    - In edit la checkbox 'is_stop_question' NON è mostrata (gestito in QuestionForm.__init__).
-    """
+
     param = get_object_or_404(ParameterDef, pk=param_id)
     question = get_object_or_404(Question, pk=question_id, parameter=param)
 
@@ -429,7 +397,7 @@ def question_edit(request, param_id: str, question_id: str):
         q_form = QuestionForm(request.POST, instance=question)
 
         if q_form.is_valid():
-            q_form.save()  # salva e sincronizza allowed_motivations
+            q_form.save()  
             messages.success(request, "Question updated.")
             return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
@@ -482,7 +450,6 @@ def question_delete(request, param_id: str, question_id: str):
     param = get_object_or_404(ParameterDef, pk=param_id)
     question = get_object_or_404(Question, pk=question_id, parameter=param)
 
-    # conteggi per UX
     answers_qs = Answer.objects.filter(question=question)
     examples_qs = Example.objects.filter(answer__question=question)
     amots_qs   = AnswerMotivation.objects.filter(answer__question=question)
@@ -496,7 +463,6 @@ def question_delete(request, param_id: str, question_id: str):
     }
 
     if request.method == "GET":
-        # pagina di conferma
         return render(
             request,
             "parameters/question_confirm_delete.html",
@@ -504,15 +470,12 @@ def question_delete(request, param_id: str, question_id: str):
                 "parameter": param,
                 "question": question,
                 "counts": counts,
-                # se ci sono figli, abilito la UI del "force"
                 "can_force": (counts["answers"] > 0 or counts["examples"] > 0 or counts["answer_motivations"] > 0),
             },
         )
 
-    # POST
     force = request.POST.get("force") == "1"
 
-    # se esistono figli e non è richiesto force, blocco con messaggio chiaro
     if (counts["answers"] > 0 or counts["examples"] > 0 or counts["answer_motivations"] > 0) and not force:
         messages.error(
             request,
@@ -534,9 +497,7 @@ def question_delete(request, param_id: str, question_id: str):
             status=409,
         )
 
-    # force delete: elimino prima i figli, poi la domanda
     with transaction.atomic():
-        # ordine prudente: prima motivazioni di risposta, poi esempi, poi risposte, poi allowed motivations della domanda
         amots_qs.delete()
         examples_qs.delete()
         answers_qs.delete()
@@ -550,10 +511,7 @@ def question_delete(request, param_id: str, question_id: str):
 @login_required
 @require_http_methods(["GET"])
 def review_flags_list(request, lang_id: str):
-    """
-    Restituisce i parametri segnati 'da rivedere' dall'utente corrente su una lingua.
-    JSON: { "flags": ["FGM", "FGA", ...] }
-    """
+
     lang = get_object_or_404(Language, pk=lang_id)
     qs = ParameterReviewFlag.objects.filter(language=lang, user=request.user, flag=True).values_list("parameter_id", flat=True)
     return JsonResponse({"flags": list(qs)})
@@ -562,10 +520,7 @@ def review_flags_list(request, lang_id: str):
 @login_required
 @require_POST
 def toggle_review_flag(request, lang_id: str, param_id: str):
-    """
-    Imposta o rimuove il flag 'da rivedere' per (utente, lingua, parametro).
-    POST: flag=1|0
-    """
+
     lang = get_object_or_404(Language, pk=lang_id)
     param = get_object_or_404(ParameterDef, pk=param_id)
     flag_val = request.POST.get("flag")
@@ -583,14 +538,7 @@ def toggle_review_flag(request, lang_id: str, param_id: str):
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def lookups_manage(request):
-    """
-    Gestione minimale per ParamSchema/ParamType con un solo campo 'label'.
-    Azioni:
-      - POST add_schema: label
-      - POST del_schema: id
-      - POST add_type: label
-      - POST del_type: id
-    """
+
     if request.method == "POST":
         action = request.POST.get("action")
         try:
@@ -634,12 +582,7 @@ def lookups_manage(request):
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def motivations_manage(request):
-    """
-    Gestione minimale per Motivation (code + label).
-    Azioni:
-      - POST add_motivation: code, label
-      - POST del_motivation: id
-    """
+
     if request.method == "POST":
         action = request.POST.get("action")
         try:
@@ -653,9 +596,7 @@ def motivations_manage(request):
 
             if action == "del_motivation":
                 pk = request.POST.get("id")
-                # NB: on_delete=RESTRICT su AnswerMotivation / QuestionAllowedMotivation
-                # significa che se è ancora referenziata potresti avere eccezioni DB.
-                # Per ora tentiamo e se fallisce mostriamo errore.
+
                 try:
                     Motivation.objects.filter(pk=pk).delete()
                     messages.success(request, "Motivation deleted.")
