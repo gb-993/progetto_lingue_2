@@ -230,6 +230,7 @@
     {% else %}
       <div class="workflow-action-grid">
 
+        {# Colonna azione principale: Reopen / Submit / Submit disabilitato #}
         {% with s=lang_status.overall %}
           {% if s == 'rejected' %}
             <form method="post"
@@ -259,7 +260,7 @@
           {% else %}
             <div class="workflow-form-block">
               <span class="hint-disabled"
-                    title="{% if s == 'waiting_for_approval' or s == 'waiting' %}In attesa di revisione dell'admin{% else %}Già approvata dall'admin{% endif %}"
+                    title="{% if s == 'waiting_for_approval' or s == 'waiting' %}Waiting for admin's approval{% else %}Already approved{% endif %}"
                     tabindex="0">
                 <button type="button"
                         class="btn workflow-main-btn"
@@ -269,19 +270,21 @@
                 </button>
               </span>
             </div>
-
-            <div class="workflow-form-block">
-              <a href="{% url 'language_export_xlsx' language.id %}"
-                 class="btn workflow-secondary-btn"
-                 title="Download .xlsx">
-                Download .xlsx
-              </a>
-            </div>
           {% endif %}
         {% endwith %}
 
+        <div class="workflow-form-block">
+          <a href="{% url 'language_export_xlsx' language.id %}"
+             class="btn workflow-secondary-btn"
+             data-role="download"
+             title="Download .xlsx">
+            Download .xlsx
+          </a>
+        </div>
+
       </div>
     {% endif %}
+
   </div>
 
     
@@ -559,6 +562,7 @@
     }
     .is-readonly .card input::placeholder,
     .is-readonly .card textarea::placeholder { color: #999; }
+
     .is-readonly .btn,
     .is-readonly .add-example-btn,
     .is-readonly .btn-ex-toggle-delete {
@@ -566,7 +570,18 @@
     }
     .locked-hint { font-size: .9rem; color: #666; margin-left: .5rem; }
     .hint-disabled[title] { cursor: help; display: inline-block; }
-    .is-readonly form[action$="reopen/"] .btn { opacity: 1; pointer-events: auto; cursor: pointer; }
+
+    /* eccezione: REOPEN attivo anche in read-only */
+    .is-readonly form[action$="reopen/"] .btn { 
+      opacity: 1; pointer-events: auto; cursor: pointer; 
+    }
+
+    /* eccezione: DOWNLOAD sempre attivo e cliccabile */
+    .is-readonly a.btn[data-role="download"] {
+      opacity: 1; pointer-events: auto; cursor: pointer;
+    }
+
+    
 
     /* --------- Accessibilità stati parametri --------- */
 
