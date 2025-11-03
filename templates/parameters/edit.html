@@ -236,29 +236,4 @@
   {% endif %}
 </section>
 
-{% if can_deactivate %}
-<section class="card" aria-labelledby="deactivate-heading">
-  <h3 id="deactivate-heading">Deactivate parameter</h3>
-  <p>This will set the parameter as inactive. Confirm with your password.</p>
-  <form method="post" action="{% url 'parameter_deactivate' parameter.id %}" novalidate>
-    {% csrf_token %}
-    <div class="form-row">
-      {{ deactivate_form.password.label_tag }}
-      {{ deactivate_form.password }}
-      {% if deactivate_form.password.errors %}<div class="form-error">{{ deactivate_form.password.errors }}</div>{% endif %}
-    </div>
-    <div class="form-row">
-      {{ deactivate_form.reason.label_tag }}
-      {{ deactivate_form.reason }}
-      {% if deactivate_form.reason.errors %}<div class="form-error">{{ deactivate_form.reason.errors }}</div>{% endif %}
-    </div>
-    {% if deactivate_form.non_field_errors %}
-      <div class="form-error">{{ deactivate_form.non_field_errors }}</div>
-    {% endif %}
-    <div class="actions">
-      <button type="submit" class="btn btn--danger">Confirm deactivation</button>
-    </div>
-  </form>
-</section>
-{% endif %}
 {% endblock %}
