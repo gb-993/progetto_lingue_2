@@ -52,6 +52,7 @@
       <hr>
       <form method="post"
             action="{% url 'language_delete' language.id %}"
+            onsubmit="return confirm('WARNING: All data linked to this language (parameters, answers, examples, motivations, logs, etc.) will be PERMANENTLY deleted. Do you want to continue?')"
             style="display:block; margin-top:1.5rem; padding-top:1rem; clear:both; max-width:20rem;">
         {% csrf_token %}
         <label for="admin_password" class="muted" style="display:block; margin-bottom:.25rem;">
