@@ -624,7 +624,7 @@ class LanguageParameterEval(models.Model):
 # ============================
 class Submission(models.Model):
     id = models.BigAutoField(primary_key=True)
-    language = models.ForeignKey(Language, on_delete=models.RESTRICT, related_name="submissions")
+    language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name="submissions")
     submitted_by = models.ForeignKey(User, on_delete=models.RESTRICT, related_name="submissions")
     submitted_at = models.DateTimeField(default=timezone.now)
     note = models.TextField(null=True, blank=True)

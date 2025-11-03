@@ -237,6 +237,28 @@ def language_edit(request, lang_id):
     return render(request, "languages/edit.html", {"page_title": "Edit language", "form": form, "language": lang})
 
 
+
+@login_required
+@require_POST
+@transaction.atomic
+def language_delete(request, lang_id: str):
+    if not _is_admin(request.user):
+        messages.error(request, _t("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    lang = get_object_or_404(Language, pk=lang_id)
+
+    pwd = request.POST.get("admin_password") or ""
+    if not request.user.check_password(pwd):
+        messages.error(request, _t("Incorrect password. Deletion aborted."))
+        return redirect("language_edit", lang_id=lang_id)
+
+    lang.delete()
+    messages.success(request, _t(f"Language “{lang_id}” deleted with related data."))
+    return redirect("language_list")
+
+
+
 # -----------------------
 # Pagina data/compilazione
 # -----------------------

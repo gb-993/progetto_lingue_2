@@ -6,6 +6,8 @@ urlpatterns = [
     path("languages/", views.language_list, name="language_list"),
     path("languages/add/", views.language_add, name="language_add"),
     path("languages/<str:lang_id>/edit/", views.language_edit, name="language_edit"),
+    path("languages/<str:lang_id>/delete/", views.language_delete, name="language_delete"),
+
 
     path("languages/<str:lang_id>/", views.language_data, name="language_data"),
     path("languages/<str:lang_id>/export/", views.language_export_xlsx, name="language_export_xlsx"),

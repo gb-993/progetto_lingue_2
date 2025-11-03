@@ -47,5 +47,28 @@
         <a class="btn" href="{% url 'language_list' %}">Cancel</a>
       </div>
     </form>
+    
+    {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+      <hr>
+      <form method="post"
+            action="{% url 'language_delete' language.id %}"
+            style="display:block; margin-top:1.5rem; padding-top:1rem; clear:both; max-width:20rem;">
+        {% csrf_token %}
+        <label for="admin_password" class="muted" style="display:block; margin-bottom:.25rem;">
+          Confirm with password:
+        </label>
+        <input type="password"
+              id="admin_password"
+              name="admin_password"
+              class="form-control"
+              required
+              style="width:100%; margin-bottom:.75rem;">
+        <button type="submit" class="btn btn--danger">
+          Delete language
+        </button>
+      </form>
+    {% endif %}
+
+
   </div>
 {% endblock %}
