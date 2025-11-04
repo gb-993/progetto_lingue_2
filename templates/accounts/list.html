@@ -72,7 +72,7 @@
               <span class="muted"></span>
               {% if u.m2m_languages.exists %}
                 <details>
-                  <summary>Dettaglio</summary>
+                  <summary>Details</summary>
                   <ul>
                     {% for l in u.m2m_languages.all|slice:":12" %}
                       <li>{{ l }}</li>

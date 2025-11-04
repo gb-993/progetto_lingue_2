@@ -23,21 +23,6 @@
       {% endif %}
 
       <div class="grid grid-2">
-        <div class="form-group">
-          <label for="{{ form.email.id_for_label }}">Email</label>
-          {{ form.email }}
-          {% if form.email.errors %}
-            <div class="field-error" role="alert">{{ form.email.errors|striptags }}</div>
-          {% endif %}
-        </div>
-
-        <div class="form-group">
-          <label for="{{ form.role.id_for_label }}">Role</label>
-          {{ form.role }}
-          {% if form.role.errors %}
-            <div class="field-error" role="alert">{{ form.role.errors|striptags }}</div>
-          {% endif %}
-        </div>
 
         <div class="form-group">
           <label for="{{ form.name.id_for_label }}">Name</label>
@@ -52,6 +37,22 @@
           {{ form.surname }}
           {% if form.surname.errors %}
             <div class="field-error" role="alert">{{ form.surname.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="field-error" role="alert">{{ form.email.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.role.id_for_label }}">Role</label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="field-error" role="alert">{{ form.role.errors|striptags }}</div>
           {% endif %}
         </div>
 
@@ -78,7 +79,7 @@
             <div class="form-row" style="margin-bottom:.5rem;">
               <label for="lang-search" class="sr-only">Cerca lingue</label>
               <input id="lang-search" type="search" class="form-control"
-                     placeholder="Cerca lingue… (codice o nome)" aria-describedby="lang-help">
+                     placeholder="Search languages…" aria-describedby="lang-help">
             </div>
 
             <div id="lang-list" class="checkbox-list" role="group" aria-labelledby="lang-legend"
@@ -97,7 +98,7 @@
             </div>
 
             <div class="muted" aria-live="polite" style="margin-top:.5rem;">
-              <strong>Selezionate:</strong>
+              <strong>Selected:</strong>
               <ul id="lang-selected" style="margin:.25rem 0 0 .75rem;">
                 {% for lang in languages %}
                   {% if lang.id in selected_lang_ids %}
