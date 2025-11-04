@@ -3,11 +3,11 @@
 {% block content %}
   <h1>Submission #{{ sub.id }}</h1>
   <p>
-    <strong>Language:</strong> {{ sub.language_id }} |
+    <strong>Language:</strong> {{ sub.language.name_full }} ({{ sub.language_id }}) |
     <strong>User:</strong> {{ sub.submitted_by.email }} |
     <strong>Date:</strong> <time datetime="{{ sub.submitted_at|date:'c' }}">{{ sub.submitted_at|date:"Y-m-d H:i:s" }}</time>
   </p>
-  {% if sub.note %}<p><strong>Nota:</strong> {{ sub.note }}</p>{% endif %}
+  {% if sub.note %}<p><strong>Submission note:</strong> {{ sub.note }}</p>{% endif %}
 
   <h2>Parameters values</h2>
   <div class="table-responsive">

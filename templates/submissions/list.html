@@ -29,9 +29,11 @@
       {% for s in page.object_list %}
         <tr>
           <td><time datetime="{{ s.submitted_at|date:'c' }}">{{ s.submitted_at|date:"Y-m-d H:i:s" }}</time></td>
-          <td>{{ s.language_id }}</td>
+          <td>{{ s.language.name_full }} ({{ s.language_id }})</td>
           <td>{{ s.submitted_by.email }}</td>
-          <td><a class="btn btn-sm btn-primary" href="{% url 'submission_detail' s.id %}">Open</a></td>
+          <td style="text-align: right;">
+             <a class="btn btn-sm btn-primary" href="{% url 'submission_detail' s.id %}">Open</a>
+          </td>
         </tr>
       {% empty %}
         <tr><td colspan="4">No submissions</td></tr>
