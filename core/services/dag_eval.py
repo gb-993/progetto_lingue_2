@@ -1,11 +1,9 @@
-# core/services/dag_eval.py
 from __future__ import annotations
 from collections import defaultdict, deque
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 from django.db import transaction
-
 from django.db.models import Q
 
 from core.models import (
@@ -18,9 +16,6 @@ logger = logging.getLogger(__name__)
 
 # Token parametri nelle condizioni: +FGM, -SCO, 0ABC
 TOKEN_RE = re.compile(r"[+\-0]([A-Za-z0-9_]+)")
-
-from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
 
 @dataclass
 class DagReport:
@@ -41,7 +36,6 @@ def _extract_refs(cond: str) -> Set[str]:
     # normalizza a MAIUSCOLO per allinearsi agli id in DB e al parser
     return {m.upper() for m in TOKEN_RE.findall(cond or "")}
 
-
 def _build_graph_active_scope(active_ids: Set[str]) -> Dict[str, List[str]]:
     """
     Crea grafo ref -> target SOLO per param attivi.
@@ -58,7 +52,7 @@ def _build_graph_active_scope(active_ids: Set[str]) -> Dict[str, List[str]]:
         refs = _extract_refs(cond)
         if not refs:
             continue
-        # Se la cond cita parametri fuori scope, ignora completamente la regola 
+        # Se la cond cita parametri fuori scope, ignora completamente la regola
         if not refs.issubset(active_ids):
             continue
 
@@ -113,28 +107,23 @@ def _ensure_eval_row(lang: Language, pid: str, lp_id: int | None) -> LanguagePar
     else:
         from core.models import LanguageParameter as LP
         lp = LP.objects.get(pk=lp_id)
-    lpe, _ = LanguageParameterEval.objects.get_or_create(language_parameter=lp, defaults={"value_eval": "0", "warning_eval": False})
+    lpe, _ = LanguageParameterEval.objects.get_or_create(
+        language_parameter=lp,
+        defaults={"value_eval": "0", "warning_eval": False}
+    )
     return lpe
-
-def _refs_for_target(target: str) -> Set[str]:
-    cond = (ParameterDef.objects.only("implicational_condition")
-            .get(pk=target).implicational_condition or "")
-    return _extract_refs(cond)
 
 @transaction.atomic
 def run_dag_for_language(language_id: str) -> DagReport:
     """
-    Regole:
-    - '0' SOLO se:
-        (a) condizione implicazionale è FALSA, oppure
-        (b) almeno una ref ha value_eval == '0' (short-circuit per derivazione da zero),
-            ECCEZIONE: se l'intera condizione è un NOT semplice su un singolo token (+P o -P),
-            in tal caso NON si applica il bypass dello '0' (es. 'not +FGM' con FGM=0 -> VERO).  # CHANGED
-    - In TUTTI gli altri casi indeterminati (mancanti/parse error/non valutabile):
-        value_eval = NULL (mostra vuoto).
-    - Se condizione è VERA:
-        value_eval = value_orig se '+' o '-', altrimenti NULL.
-    - Warning: si propaga come prima.
+    Nuove regole (nessuna propagazione automatica dello '0'):
+    - Valuta SEMPRE la condizione con il parser, indipendentemente da eventuali ref='0'.
+    - Esiti:
+        * condizione VERA  → value_eval = value_orig se '+' o '-', altrimenti NULL
+        * condizione FALSA → value_eval = '0'
+        * condizione INDETERMINATA (parse error / ref sconosciute) → value_eval = NULL
+    - Nessun forcing a '0' per la sola presenza di ref='0'.
+    - Warning: si propaga se una qualsiasi referenza è in warning.
     """
     lang = Language.objects.select_for_update().get(pk=language_id)
     active_ids = _active_parameter_ids()
@@ -168,35 +157,31 @@ def run_dag_for_language(language_id: str) -> DagReport:
     ).only("id", "parameter_id", "value_orig"):
         lp_map[lp.parameter_id] = (lp.id, lp.value_orig)
 
-    # Valori correnti da passare al parser:
-    #   - SOLO '+' o '-' se noti
-    #   - '0' se il parametro è già stato valutato a zero (via step precedente)
+    # Valori correnti per il parser:
+    #   - SOLO '+' o '-' se noti (da value_eval già prodotti)
+    #   - '0' se il parametro è già stato valutato a zero
     #   - assenza di chiave = sconosciuto/indeterminato
     cond_values: dict[str, str] = {}
-    unknown_params: Set[str] = set()  # param con value_eval = NULL (indeterminati)
+    unknown_params: Set[str] = set()
 
-    # Mappa target->cond
+    # Cache condizioni
     cond_map: dict[str, str] = {
         p.id: (p.implicational_condition or "")
         for p in ParameterDef.objects.filter(id__in=active_ids)
     }
-
-    # Regex locale per riconoscere NOT semplice su un singolo token (+P | -P)  # CHANGED
-    _SIMPLE_NOT_RE = re.compile(r"^\s*\(*\s*not\s*[+\-][A-Za-z0-9_]+\s*\)*\s*$", re.IGNORECASE)  # CHANGED
 
     for target in order:
         lp_id, v_orig = lp_map[target]
         lpe = _ensure_eval_row(lang, target, lp_id)
 
         cond = (cond_map.get(target) or "").strip()
+        # Caso: nessuna condizione → copia orig se +/- altrimenti NULL
         if not cond:
-            # Nessuna condizione: copia l'originale se '+/-', altrimenti NULL
             new_eval = v_orig if v_orig in ("+", "-") else None
             lpe.value_eval = new_eval
             lpe.warning_eval = (target in warnings)
             lpe.save(update_fields=["value_eval", "warning_eval"])
 
-            # Aggiorna strutture per step successivi
             if new_eval in ("+", "-"):
                 cond_values[target] = new_eval
                 unknown_params.discard(target)
@@ -204,56 +189,48 @@ def run_dag_for_language(language_id: str) -> DagReport:
                 cond_values[target] = "0"
                 unknown_params.discard(target)
             else:
-                # indeterminato: rimuovi eventuale valore precedente
                 cond_values.pop(target, None)
                 unknown_params.add(target)
 
             processed.append(target)
             continue
 
-        # valutazione
         refs = _extract_refs(cond)
 
-        # 1) Short-circuit: se QUALSIASI ref è già '0' -> condizione FALSA,
-        #    MA non applicare il bypass se la condizione è un NOT semplice su +P/-P  # CHANGED
-        has_zero_ref = any(cond_values.get(r) == "0" for r in refs)
-        simple_not = bool(_SIMPLE_NOT_RE.match(cond))  # CHANGED
-        if has_zero_ref and not simple_not:  # CHANGED
-            cond_ok = False
+        # Valutazione SEMPRE tramite parser; nessuno short-circuit sullo '0'
+        try:
+            parsed_ok = evaluate_with_parser(cond, cond_values)
             parse_error = None
-        else:
-            # 2) Se esistono ref sconosciute (non '+'/'-' e non '0'), la condizione è indeterminata
-            has_unknown_ref = any(cond_values.get(r) not in ("+", "-") for r in refs)
-            if has_unknown_ref and not simple_not:  # CHANGED: per NOT semplice lasciamo valutare il parser
-                cond_ok = None  # indeterminata
-                parse_error = None
-            else:
-                # 3) Valutazione via parser (tutte note come '+'/'-' oppure caso NOT semplice che può valutare con '0')  # CHANGED
-                try:
-                    cond_ok = evaluate_with_parser(cond, cond_values)
-                    parse_error = None
-                except Exception as e:
-                    # parse error -> indeterminata
-                    cond_ok = None
-                    parse_error = e
+        except Exception as e:
+            parsed_ok = None
+            parse_error = e
 
-        # Applica esito
+        # Se il parser non può decidere (ref mancanti / parse error) → indeterminata
+        # NOTA: evaluate_with_parser ritorna False su errori; per distinguere,
+        # usiamo l'eccezione catturata.
+        if parse_error is not None:
+            cond_ok = None
+        else:
+            # parsed_ok è un boolean; ma può essere “falso” perché davvero FALSE.
+            cond_ok = parsed_ok
+
+        # Applica l’esito secondo le nuove regole
         if cond_ok is False:
-            # condizione falsa -> '0'
+            # condizione falsa ⇒ '0' (UNICO caso che porta a zero)
             if lpe.value_eval != "0":
                 lpe.value_eval = "0"
                 lpe.save(update_fields=["value_eval"])
             forced_zero.append(target)
 
         elif cond_ok is True:
-            # condizione vera -> copia '+/-' se presente, altrimenti NULL
+            # condizione vera ⇒ copia '+'/'-' se presente, altrimenti NULL
             new_eval = v_orig if v_orig in ("+", "-") else None
             if lpe.value_eval != new_eval:
                 lpe.value_eval = new_eval
                 lpe.save(update_fields=["value_eval"])
 
         else:
-            # indeterminata: NULL (vuoto); registra eventuale parse error nel report
+            # condizione indeterminata ⇒ NULL (vuoto)
             if lpe.value_eval is not None:
                 lpe.value_eval = None
                 lpe.save(update_fields=["value_eval"])
@@ -272,9 +249,7 @@ def run_dag_for_language(language_id: str) -> DagReport:
 
         processed.append(target)
 
-        # - se '0'  -> memorizza '0' (serve per short-circuit dei successivi)
-        # - se '+/-'-> memorizza quel segno
-        # - se None -> rimuovi dal dict (sconosciuto)
+        # Aggiorna cond_values in base al nuovo value_eval
         if lpe.value_eval == "0":
             cond_values[target] = "0"
             unknown_params.discard(target)
