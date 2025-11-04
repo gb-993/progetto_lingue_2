@@ -4,6 +4,7 @@
 
 {% block content %}
   <div class="card">
+    <h2 class="h3">Add entry</h2>
     <form method="post" novalidate>
       {% csrf_token %}
       <div class="grid">
@@ -20,7 +21,7 @@
         </div>
       </div>
 
-      <div class="toolbar" style="justify-content: flex-end;">
+      <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn btn--primary">Save</button>
         <a class="btn" href="{% url 'glossary_list' %}">Cancel</a>
       </div>

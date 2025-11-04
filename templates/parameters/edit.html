@@ -25,7 +25,7 @@
 
 {% block content %}
 <section class="card" aria-labelledby="param-heading">
-  <h2 id="param-heading">{% if is_create %}Add parameter{% else %}Parameter {{ parameter.id }}{% endif %}</h2>
+  <h2 id="param-heading">{% if is_create %}Add parameter{% else %}Edit parameter — {{ parameter.id }}{% endif %}</h2>
 
   <form id="param-edit-form" method="post" novalidate
         {% if not is_create %}
@@ -62,6 +62,36 @@
       </div>
     {% endif %}
 
+    <div style="display: flex; gap: 1rem; align-items: flex-end;">
+      <div class="form-row" style="flex: 0 0 60%;">
+        <label for="{{ form.label.id_for_label }}">{{ form.label.label }}</label>
+        {{ form.label }}
+        {% if form.label.errors %}<div class="form-error">{{ form.label.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="flex: 0 0 10rem;">
+        <label for="{{ form.position.id_for_label }}">{{ form.position.label }}</label>
+        {{ form.position }}
+        {% if form.position.errors %}<div class="form-error">{{ form.position.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="flex: 0 0 auto;">
+        <label for="{{ form.is_active.id_for_label }}">Active</label>
+        {% if form.instance.is_active and not can_deactivate %}
+          <input
+            type="checkbox"
+            id="{{ form.is_active.id_for_label }}"
+            checked
+            disabled
+            aria-disabled="true"
+          >
+          <input type="hidden" name="{{ form.is_active.html_name }}" value="1">
+        {% else %}
+          {{ form.is_active }}
+        {% endif %}
+        {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
+      </div>
+    </div>
 
     <div class="form-row">
       <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
@@ -77,24 +107,26 @@
     </div>
 
 
-    <div class="actions" style="margin:.5rem 0 .25rem">
+
+    <div style="display: flex; gap: 1rem;">
+      <div class="form-row" style="flex: 1;">
+        <label for="{{ form.schema.id_for_label }}">{{ form.schema.label }}</label>
+        {{ form.schema }}
+        {% if form.schema.errors %}<div class="form-error">{{ form.schema.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="flex: 1;">
+        <label for="{{ form.param_type.id_for_label }}">{{ form.param_type.label }}</label>
+        {{ form.param_type }}
+        {% if form.param_type.errors %}<div class="form-error">{{ form.param_type.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="actions" style="margin:.5rem 0 .25rem; text-align: right;">
       <a class="btn" href="{% url 'param_lookups_manage' %}" target="_blank" rel="noopener"
          aria-label="Open Schema/Type manager in a new tab">
         Edit schema & type
       </a>
-    </div>
-
-    <div class="form-row">
-      <label for="{{ form.schema.id_for_label }}">{{ form.schema.label }}</label>
-      {{ form.schema }}
-      {% if form.schema.errors %}<div class="form-error">{{ form.schema.errors }}</div>{% endif %}
-    </div>
-
-
-    <div class="form-row">
-      <label for="{{ form.param_type.id_for_label }}">{{ form.param_type.label }}</label>
-      {{ form.param_type }}
-      {% if form.param_type.errors %}<div class="form-error">{{ form.param_type.errors }}</div>{% endif %}
     </div>
 
 
@@ -106,35 +138,6 @@
 
 
     <div class="form-row">
-      <label for="{{ form.is_active.id_for_label }}">Active</label>
-
-      {% if form.instance.is_active and not can_deactivate %}
-        <input
-          type="checkbox"
-          id="{{ form.is_active.id_for_label }}"
-          checked
-          disabled
-          aria-disabled="true"
-        >
-        <input type="hidden" name="{{ form.is_active.html_name }}" value="1">
-        <p class="hint b-bad" role="note">
-          This parameter cannot be deactivated because other parameters reference it. See the list below and clean their conditions first.
-        </p>
-      {% else %}
-        {{ form.is_active }}
-      {% endif %}
-
-      {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
-    </div>
-
-    <div class="form-row">
-      <label for="{{ form.position.id_for_label }}">{{ form.position.label }}</label>
-      {{ form.position }}
-      {% if form.position.errors %}<div class="form-error">{{ form.position.errors }}</div>{% endif %}
-    </div>
-
-
-    <div class="form-row">
       <label class="sr-only" for="{{ form.warning_default.id_for_label }}">Warning default</label>
       {{ form.warning_default }}
       {% if form.warning_default.errors %}<div class="form-error">{{ form.warning_default.errors }}</div>{% endif %}
@@ -142,16 +145,9 @@
 
     {% if not is_create %}
 
-      <fieldset class="form-row" aria-labelledby="questions-heading">
-        <legend id="questions-heading">Questions for this parameter</legend>
-
-        <div class="actions" style="margin-bottom: .5rem;">
-          <a class="btn btn--primary" href="{% url 'question_add' parameter.id %}">Add question</a>
-        </div>
-
         <div class="grid grid--2">
           <div>
-            <h4 class="q-section-title">Questions</h4>
+            <label>Questions</label>
             {% if questions_normal and questions_normal|length > 0 %}
               <div class="q-list">
                 {% for q in questions_normal %}
@@ -173,7 +169,7 @@
           </div>
 
           <div>
-            <h4 class="q-section-title">Stop questions</h4>
+            <label>Stop questions</label>
             {% if questions_stop and questions_stop|length > 0 %}
               <div class="q-list">
                 {% for q in questions_stop %}
@@ -194,23 +190,22 @@
             {% endif %}
           </div>
         </div>
-      </fieldset>
+
+        <div class="actions" style="margin-bottom: .5rem; text-align: right;">
+          <a class="btn btn--primary" href="{% url 'question_add' parameter.id %}">Add a new question</a>
+        </div>
     {% endif %}
 
     {% if not is_create %}
-        <fieldset class="form-row" aria-labelledby="change-note-heading">
-          <legend id="change-note-heading" class="sr-only">Brief summary of changes</legend>
           <label for="{{ form.change_note.id_for_label }}">{{ form.change_note.label }}</label>
+          <p id="changeNoteHint" class="help">This field is required only if you modified one or more fields of this parameter</p>
           {{ form.change_note }}
           {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
-          <p id="changeNoteHint" class="help">This field is required if you modified one or more fields of this parameter</p>
-        </fieldset>
-
     {% endif %}
 
-    <div class="actions">
+    <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
       <button id="saveBtn" type="submit" class="btn btn--primary" aria-disabled="false">Save</button>
-      <a class="btn" href="{% url 'parameter_list' %}">Back</a>
+      <a class="btn" href="{% url 'parameter_list' %}">Cancel</a>
     </div>
   </form>
 </section>
@@ -218,7 +213,7 @@
 <section class="card" aria-labelledby="where-used-heading">
   <h3 id="where-used-heading">Who references this parameter</h3>
   {% if where_used and where_used|length > 0 %}
-    <p class="muted">The following parameters reference this ID in their implicational condition(s). Edit their implicational condition(s) before deactivating this parameter.</p>
+    <p class="muted">The following parameters reference this parameter in their implicational condition(s): edit their implicational condition(s) before deactivating this parameter.</p>
     <ul class="list">
       {% for target, cond in where_used %}
         <li>
@@ -228,7 +223,7 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="muted">No parameter references this ID. You can proceed with deactivation (password required).</p>
+    <p class="muted">No parameter references this parameter: you can proceed with deactivation.</p>
   {% endif %}
 </section>
 

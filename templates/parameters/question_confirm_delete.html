@@ -6,15 +6,15 @@
 
 {% block content %}
 <section class="card" aria-labelledby="del-heading">
-  <h2 id="del-heading">{% trans "Delete question" %}: {{ question.id }}</h2>
+  <h2 id="del-heading">{% trans "Delete question" %} — {{ question.id }}</h2>
 
   <p class="muted">
-    {% trans "You're about to permanently delete this question from parameter" %} <strong>{{ parameter.id }}</strong>.
+    {% trans "You're about to permanently delete this question from parameter" %} <strong>{{ parameter.id }}. This action cannot be undone</strong>.
   </p>
 
   <article class="card" style="margin-top:.5rem">
     <h3 class="sr-only">{% trans "Question preview" %}</h3>
-    <p><strong>ID:</strong> {{ question.id }}</p>
+    <p><strong>Id:</strong> {{ question.id }}</p>
     <p><strong>{% trans "Text" %}:</strong> {{ question.text }}</p>
     <p><strong>{% trans "Stop question" %}:</strong>
       {% if question.is_stop_question %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}
@@ -30,7 +30,7 @@
       </p>
       <div class="actions" style="display:flex;gap:.5rem;flex-wrap:wrap;">
         <button type="submit" name="force" value="1" class="btn btn--danger">
-          ⚠️ {% trans "Force delete (also remove linked data)" %}
+          ⚠️ {% trans "Force delete and remove linked data" %}
         </button>
         <a class="btn" href="{% url 'parameter_edit' parameter.id %}">
           {% trans "Cancel" %}
@@ -44,9 +44,5 @@
     {% endif %}
   </form>
 
-
-  <p class="help" style="margin-top:.75rem">
-    {% trans "This action cannot be undone. Allowed motivations linked to this question will also be removed." %}
-  </p>
 </section>
 {% endblock %}

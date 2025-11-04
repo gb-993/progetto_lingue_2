@@ -44,7 +44,7 @@ class ParameterForm(forms.ModelForm):
             "param_type",
         ]
         labels = {
-        "id": "Code",   
+        "id": "Label",   
         "position": "Position",
         "name": "Name",
         "short_description": "Short description",

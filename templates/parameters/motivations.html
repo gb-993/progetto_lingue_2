@@ -5,34 +5,31 @@
 {% block content %}
 <section class="card">
   <h2>Motivations</h2>
-  <p class="muted">
-    Add or delete motivations. These values feed the checkboxes in the Question form.
-  </p>
 
   <form method="post" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:1rem; align-items:end; margin-bottom:1rem;">
     {% csrf_token %}
     <input type="hidden" name="action" value="add_motivation">
 
     <div class="form-row">
-      <label for="mot-new-code">New code</label>
-      <input id="mot-new-code" class="form-control" name="code" required placeholder="e.g. MOT1">
+      <label for="mot-new-code">Label</label>
+      <input id="mot-new-code" class="form-control" name="code" required placeholder="">
     </div>
 
     <div class="form-row" style="grid-column:1 / -1;">
-      <label for="mot-new-label">Label / description</label>
+      <label for="mot-new-label">Description</label>
       <textarea id="mot-new-label" class="form-control" name="label" rows="2" required placeholder="Describe this motivation..."></textarea>
     </div>
 
-    <div class="actions" style="grid-column:1 / -1;">
-      <button class="btn btn--primary" type="submit">Add motivation</button>
+    <div class="actions" style="grid-column:1 / -1; text-align: right;">
+      <button class="btn btn--primary" type="submit">Add a new motivation</button>
     </div>
   </form>
 
   <table class="table" style="margin-top:.75rem;">
     <thead>
       <tr>
-        <th>Code</th>
         <th>Label</th>
+        <th>Description</th>
         <th></th>
       </tr>
     </thead>
@@ -61,7 +58,7 @@
   </table>
 
   <p class="muted" style="margin-top:.75rem;">
-    Removing a motivation that is already in use may fail if it is referenced by existing answers.
+    Deleting a motivation that is already in use may fail if it is referenced by existing answers.
   </p>
 </section>
 {% endblock %}

@@ -4,13 +4,12 @@
 
 {% block content %}
 <section class="card">
-  <h2>Parameter lookups</h2>
-  <p class="muted">Add or remove options for <strong>Schema</strong> and <strong>Type</strong>. These values feed the dropdowns in the Parameter form.</p>
+  <h2>Edit schemas and types</h2>
 
   <div class="grid grid-2">
     <div>
       <h3>Schemas</h3>
-      <form method="post" class="grid" style="grid-template-columns:1fr 120px; gap:.5rem; align-items:end;">
+      <form method="post" class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
         {% csrf_token %}
         <input type="hidden" name="action" value="add_schema">
         <div>
@@ -23,12 +22,12 @@
       </form>
 
       <table class="table" style="margin-top:.75rem;">
-        <thead><tr><th>List</th><th></th></tr></thead>
+        <thead><tr><th>Existing schemas</th><th></th></tr></thead>
         <tbody>
           {% for s in schemas %}
           <tr>
             <td>{{ s.label }}</td>
-            <td>
+            <td style="text-align: right;">
               <form method="post" style="display:inline" onsubmit="return confirm('Delete this schema?');">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="del_schema">
@@ -46,7 +45,7 @@
 
     <div>
       <h3>Types</h3>
-      <form method="post" class="grid" style="grid-template-columns:1fr 120px; gap:.5rem; align-items:end;">
+      <form method="post" class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
         {% csrf_token %}
         <input type="hidden" name="action" value="add_type">
         <div>
@@ -59,12 +58,12 @@
       </form>
 
       <table class="table" style="margin-top:.75rem;">
-        <thead><tr><th>List</th><th></th></tr></thead>
+        <thead><tr><th>Existing types</th><th></th></tr></thead>
         <tbody>
           {% for t in types %}
           <tr>
             <td>{{ t.label }}</td>
-            <td>
+            <td style="text-align: right;">
               <form method="post" style="display:inline" onsubmit="return confirm('Delete this type?');">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="del_type">

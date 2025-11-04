@@ -7,7 +7,7 @@
     <h2 id="word-title">{{ obj.word }}</h2>
     <p>{{ obj.description|linebreaksbr }}</p>
     <div class="toolbar">
-      <a class="btn" href="{% url 'glossary_list' %}">Back</a>
+      <a class="btn" href="{% url 'glossary_list' %}">Cancel</a>
       {% if is_admin %}
         <a class="btn btn--primary" href="{% url 'glossary_edit' obj.word %}">Edit</a>
       {% endif %}

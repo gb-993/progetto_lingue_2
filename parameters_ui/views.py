@@ -126,7 +126,7 @@ def parameter_add(request):
         form = ParameterForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Parametro creato.")
+            messages.success(request, "Parameter added successfully.")
             return redirect("parameter_list")
     else:
         form = ParameterForm()

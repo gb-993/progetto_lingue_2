@@ -4,7 +4,7 @@
 
 {% block content %}
   <div class="card">
-    <h2 class="h3">Edit: {{ language.name_full }} ({{ language.id }})</h2>
+    <h2 class="h3">Edit language — {{ language.name_full }} ({{ language.id }})</h2>
 
     <form method="post" novalidate>
       {% csrf_token %}
@@ -42,7 +42,7 @@
 
       </div>
 
-      <div class="toolbar">
+      <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn btn--primary">Save</button>
         <a class="btn" href="{% url 'language_list' %}">Cancel</a>
       </div>
@@ -53,20 +53,22 @@
       <form method="post"
             action="{% url 'language_delete' language.id %}"
             onsubmit="return confirm('WARNING: All data linked to this language (answers, examples, submissions, logs, etc.) will be PERMANENTLY deleted. Do you want to continue?')"
-            style="display:block; margin-top:1.5rem; padding-top:1rem; clear:both; max-width:20rem;">
+            style="display:block; margin-top:1.5rem; padding-top:1rem; clear:both; max-width:50rem;">
         {% csrf_token %}
         <label for="admin_password" class="muted" style="display:block; margin-bottom:.25rem;">
-          Confirm with password:
+          Type your password to delete this language
         </label>
-        <input type="password"
-              id="admin_password"
-              name="admin_password"
-              class="form-control"
-              required
-              style="width:100%; margin-bottom:.75rem;">
-        <button type="submit" class="btn btn--danger">
-          Delete language
-        </button>
+        <div style="display: flex; justify-content: flex-start; gap: 10px; align-items: center;">
+          <input type="password"
+                id="admin_password"
+                name="admin_password"
+                class="form-control"
+                required
+                style="width:100%; max-width:15rem;">
+          <button type="submit" class="btn btn--danger" style="min-width: 10rem;">
+            Delete language
+          </button>
+        </div>
       </form>
     {% endif %}
 

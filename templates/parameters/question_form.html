@@ -16,7 +16,7 @@
 
     <div class="grid grid-2">
       <div class="form-row">
-        <label>ID</label>
+        <label>Id</label>
         <input class="form-control" value="{{ form.instance.id }}" readonly>
         {{ form.id.as_hidden }}
       </div>
@@ -32,14 +32,8 @@
       </div>
 
       <div class="form-row" style="grid-column: 1 / -1;">
-        {{ form.instruction.label_tag }} {{ form.instruction }}
-        {% if form.instruction.errors %}<div class="field-error">{{ form.instruction.errors }}</div>{% endif %}
-      </div>
-
-      <div class="form-row" style="grid-column: 1 / -1;">
-        {{ form.instruction_yes.label_tag }} {{ form.instruction_yes }}
-        <div class="muted">Shown to the user only if the answer is YES.</div>
-        {% if form.instruction_yes.errors %}<div class="field-error">{{ form.instruction_yes.errors }}</div>{% endif %}
+        {{ form.example_yes.label_tag }} {{ form.example_yes }}
+        {% if form.example_yes.errors %}<div class="field-error">{{ form.example_yes.errors }}</div>{% endif %}
       </div>
 
       <div class="form-row" style="grid-column: 1 / -1;">
@@ -49,8 +43,14 @@
       </div>
 
       <div class="form-row" style="grid-column: 1 / -1;">
-        {{ form.example_yes.label_tag }} {{ form.example_yes }}
-        {% if form.example_yes.errors %}<div class="field-error">{{ form.example_yes.errors }}</div>{% endif %}
+        {{ form.instruction.label_tag }} {{ form.instruction }}
+        {% if form.instruction.errors %}<div class="field-error">{{ form.instruction.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row" style="grid-column: 1 / -1;">
+        {{ form.instruction_yes.label_tag }} {{ form.instruction_yes }}
+        <div class="muted">Shown to the user only if the answer is YES.</div>
+        {% if form.instruction_yes.errors %}<div class="field-error">{{ form.instruction_yes.errors }}</div>{% endif %}
       </div>
 
 
@@ -64,7 +64,7 @@
       {% endif %}
 
       <div class="form-row" style="grid-column: 1 / -1;">
-        <label>Allowed motivations</label>
+        <label>Motivations linked to this question</label>
 
         {{ form.motivations }}
         {% if form.motivations.errors %}
@@ -75,7 +75,7 @@
           Select which motivations will be available to users when they answer "NO" to this question.
         </div>
 
-        <div class="actions" style="margin-top:.75rem;">
+        <div class="actions" style="margin-top:.75rem; text-align: right;">
           <a class="btn" href="{% url 'motivations_manage' %}" target="_blank" rel="noopener"
              aria-label="Open motivation manager in a new tab">
             Edit motivations
@@ -85,9 +85,9 @@
 
     </div>
 
-    <div class="actions" style="margin-top:.75rem;">
+    <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
       <button class="btn btn--primary" type="submit">{% if is_create %}Add{% else %}Save{% endif %}</button>
-      <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Back</a>
+      <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Cancel</a>
     </div>
   </form>
 </div>
