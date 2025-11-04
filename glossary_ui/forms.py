@@ -28,5 +28,5 @@ class GlossaryForm(forms.ModelForm):
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
-            raise ValidationError("An entry with this word already exists.")
+            raise ValidationError("An entry with this label already exists.")
         return w

@@ -203,7 +203,7 @@
 
     {% if not is_create %}
         <fieldset class="form-row" aria-labelledby="change-note-heading">
-          <legend id="change-note-heading" class="sr-only">Recap of changes</legend>
+          <legend id="change-note-heading" class="sr-only">Brief summary of changes</legend>
           <label for="{{ form.change_note.id_for_label }}">{{ form.change_note.label }}</label>
           {{ form.change_note }}
           {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}

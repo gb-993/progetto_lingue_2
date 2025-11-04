@@ -88,12 +88,12 @@ class ParameterForm(forms.ModelForm):
         # Campo "change_note" se non già presente
         if "change_note" not in self.fields:
             self.fields["change_note"] = forms.CharField(
-                label="Recap modifiche",
+                label="Brief summary of changes",
                 required=False,
                 widget=forms.Textarea(attrs={
                     "class": "form-control",
                     "rows": 3,
-                    "placeholder": "Describe what changes you made to this parameter and why..."
+                    "placeholder": "Describe the changes you made to this parameter..."
                 }),
                 help_text="Mandatory if you changed any field.",
             )
