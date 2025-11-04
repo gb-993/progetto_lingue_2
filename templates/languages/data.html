@@ -361,7 +361,7 @@
                    data-qid="{{ q.id }}"
                    {% if q.ans.response_text|lower != "yes" %}style="display:none"{% endif %}>
                 <div class="muted" style="margin:.25rem 0 .5rem;">
-                  <strong>Instruction yes:</strong>
+                  <strong>Instructions for entering the example.</strong>
                   {% if q.instruction_yes %}
                     {{ q.instruction_yes|linebreaksbr }}
                   {% else %}

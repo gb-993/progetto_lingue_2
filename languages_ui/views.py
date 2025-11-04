@@ -254,7 +254,7 @@ def language_delete(request, lang_id: str):
         return redirect("language_edit", lang_id=lang_id)
 
     lang.delete()
-    messages.success(request, _t(f"Language “{lang_id}” deleted with related data."))
+    messages.success(request, _t(f"Language “{lang_id}” and related data deleted."))
     return redirect("language_list")
 
 
