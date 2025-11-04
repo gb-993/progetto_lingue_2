@@ -1,4 +1,3 @@
-# core/services/param_consolidate.py
 
 from __future__ import annotations
 from typing import Optional, Tuple
@@ -10,7 +9,7 @@ from core.models import (
     Language, ParameterDef, Question, Answer, AnswerStatus, LanguageParameter
 )
 
-# Consideriamo valide TUTTE le risposte tranne le REJECTED
+# Considera valide TUTTE le risposte tranne le REJECTED
 ALLOWED_STATUSES = (
     AnswerStatus.PENDING,
     AnswerStatus.WAITING,

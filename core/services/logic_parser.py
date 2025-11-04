@@ -1,4 +1,3 @@
-# core/services/logic_parser.py
 from __future__ import annotations
 from typing import Any
 from pyparsing import (
@@ -64,7 +63,6 @@ def eval_node(node, values: dict[str, str]) -> bool:
 
     # Catene di AND/OR: [A, op, B, op, C, ...]
     if isinstance(node, list) and len(node) >= 3 and len(node) % 2 == 1:
-        # fold-left: ((((A op B) op C) op D) ...)
         result = eval_node(node[0], values)
         i = 1
         while i < len(node):
@@ -98,7 +96,7 @@ def evaluate_with_parser(expression: str, values: dict[str, str]) -> bool:
     """
     expr = (expression or "").strip()
     if not expr:
-        return True  # condizione vuota = vera
+        return True  
 
     parser = build_parser()
     try:
@@ -153,11 +151,8 @@ def pretty_print_expression(expression: str) -> str:
 
         # Catene di AND/OR: [A, op, B, op, C, ...]
         if isinstance(n, list) and len(n) >= 3 and len(n) % 2 == 1:
-            # Costruisce una stringa con parentesi complessive per chiarezza
             parts = []
-            # primo termine
             parts.append(render(n[0]))
-            # coppie (op, termine)
             i = 1
             while i < len(n):
                 op_str = str(n[i]).lower()
