@@ -55,7 +55,7 @@
             <div class="row-actions-buttons" style="display:flex; flex-wrap:wrap; gap:.5rem;">
               <a class="btn" href="{% url 'language_data' l.id %}">Data</a>
               {% if is_admin %}
-                <a class="btn" href="{% url 'language_edit' l.id %}">Modify</a>
+                <a class="btn" href="{% url 'language_edit' l.id %}">Edit</a>
                 <a class="btn" href="{% url 'language_debug' l.id %}">Debug</a>
               {% endif %}
             </div>

@@ -38,7 +38,7 @@
         <td class="fit" style="text-align: right;">
           {% if is_admin %}
             <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
-              <a class="btn" href="{% url 'glossary_edit' obj.word %}">Modify</a>
+              <a class="btn" href="{% url 'glossary_edit' obj.word %}">Edit</a>
               <form method="post" action="{% url 'glossary_delete' obj.word %}">
                 {% csrf_token %}
                 <button class="btn btn--bad"
