@@ -198,7 +198,7 @@
         <h6 class="mb-2">{{ q4.language.id }} — {{ q4.language.name_full }}</h6>
         <ul class="list-group">
           {% for p in q4.params %}
-            <li class="list-group-item">{{ p.position }}. {{ p.id }} — {{ p.name }}</li>
+            <li class="list-group-item">{{ p.id }} — {{ p.name }}</li>
           {% empty %}
             <li class="list-group-item text-muted">No parameters set to +</li>
           {% endfor %}
@@ -221,7 +221,7 @@
         <h6 class="mb-2">{{ q5.language.id }} — {{ q5.language.name_full }}</h6>
         <ul class="list-group">
           {% for p in q5.params %}
-            <li class="list-group-item">{{ p.position }}. {{ p.id }} — {{ p.name }}</li>
+            <li class="list-group-item">{{ p.id }} — {{ p.name }}</li>
           {% empty %}
             <li class="list-group-item text-muted">No parameters set to –</li>
           {% endfor %}
@@ -246,15 +246,15 @@
           <table class="table table-sm align-middle">
             <thead>
               <tr>
-                <th>Pos.</th>
+                <!-- <th>Pos.</th> -->
                 <th>Parameter</th>
-                <th>Condition</th>
+                <th>Implicational Condition(s)</th>
               </tr>
             </thead>
             <tbody>
               {% for r in q6.rows %}
                 <tr>
-                  <td>{{ r.parameter.position }}</td>
+                  <!-- <td>{{ r.parameter.position }}</td> -->
                   <td>{{ r.parameter.id }} — {{ r.parameter.name }}</td>
                   <td><code>{{ r.condition }}</code></td>
                 </tr>
@@ -292,7 +292,7 @@
           <table class="table table-sm align-middle">
             <thead>
               <tr>
-                <th>Pos.</th>
+                <!-- <th>Pos.</th> -->
                 <th>Parameter</th>
                 <th>{{ q7.a.id }}</th>
                 <th>{{ q7.b.id }}</th>
@@ -301,7 +301,7 @@
             <tbody>
               {% for p, va, vb in q7.rows %}
                 <tr>
-                  <td>{{ p.position }}</td>
+                  <!-- <td>{{ p.position }}</td> -->
                   <td>{{ p.id }} — {{ p.name }}</td>
                   <td>{{ va }}</td>
                   <td>{{ vb }}</td>
