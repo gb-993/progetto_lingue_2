@@ -6,7 +6,7 @@
 <section class="card">
   <h2>Motivations</h2>
   <p class="muted">
-    Add or remove motivations. These values feed the checkboxes in the Question form.
+    Add or delete motivations. These values feed the checkboxes in the Question form.
   </p>
 
   <form method="post" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:1rem; align-items:end; margin-bottom:1rem;">
@@ -41,7 +41,7 @@
       <tr>
         <td>{{ m.code }}</td>
         <td>{{ m.label }}</td>
-        <td>
+        <td style="text-align:right;">
           <form method="post" style="display:inline" onsubmit="return confirm('Delete this motivation?');">
             {% csrf_token %}
             <input type="hidden" name="action" value="del_motivation">

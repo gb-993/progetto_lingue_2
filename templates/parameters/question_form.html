@@ -78,7 +78,7 @@
         <div class="actions" style="margin-top:.75rem;">
           <a class="btn" href="{% url 'motivations_manage' %}" target="_blank" rel="noopener"
              aria-label="Open motivation manager in a new tab">
-            Manage motivations
+            Edit motivations
           </a>
         </div>
       </div>
@@ -86,7 +86,7 @@
     </div>
 
     <div class="actions" style="margin-top:.75rem;">
-      <button class="btn btn--primary" type="submit">{% if is_create %}Create{% else %}Save{% endif %}</button>
+      <button class="btn btn--primary" type="submit">{% if is_create %}Add{% else %}Save{% endif %}</button>
       <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Back</a>
     </div>
   </form>
