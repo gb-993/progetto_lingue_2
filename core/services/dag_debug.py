@@ -1,4 +1,3 @@
-# core/services/dag_debug.py  [NUOVO FILE]
 from __future__ import annotations
 from typing import Dict, Tuple, List, Optional, Set
 from django.db.models import QuerySet
@@ -96,7 +95,7 @@ def diagnostics_for_language(lang: Language) -> List[dict]:
         cond_true: Optional[bool] = None
         note_parts: List[str] = []
 
-        # Pretty per segnalare errori di sintassi (qui può sollevare)
+        # Pretty per segnalare errori di sintassi 
         if not raw:
             pretty = "—"
             # Nessuna condizione: il DAG copia l'orig; il Check è, per convenzione, True.
@@ -113,13 +112,11 @@ def diagnostics_for_language(lang: Language) -> List[dict]:
                 try:
                     cond_true = bool(evaluate_with_parser(raw, cond_values_eval))
                 except Exception as e:
-                    # evaluate_with_parser è già robusto; ramo prudenziale
                     cond_true = None
                     note_parts.append(f"Eval error: {e!s}")
 
-                # Se la cond è FALSE ma rileviamo che mancano alcune referenze in cond_values_eval,
-                # annotiamo per chiarezza che il FALSE potrebbe derivare da refs ignote (eval mancante).
-                # Heuristica: token citati non presenti in cond_values_eval.
+                # Se la cond è FALSE ma rileva che mancano alcune referenze in cond_values_eval,
+                # annota per chiarezza che il FALSE potrebbe derivare da refs ignote (eval mancante).
                 missing_refs = _missing_eval_refs(raw, cond_values_eval)
                 if missing_refs:
                     note_parts.append(f"Missing eval for: {', '.join(sorted(missing_refs))}")

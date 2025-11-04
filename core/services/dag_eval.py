@@ -47,7 +47,7 @@ def _build_graph_active_scope(active_ids: Set[str]) -> Dict[str, List[str]]:
     for p in qs:
         cond = p.implicational_condition or ""
         if not cond.strip():
-            continue  # nessuna condizione => nessun arco in entrata
+            continue  # nessuna condizione -> nessun arco in entrata
 
         refs = _extract_refs(cond)
         if not refs:
@@ -116,7 +116,7 @@ def _ensure_eval_row(lang: Language, pid: str, lp_id: int | None) -> LanguagePar
 @transaction.atomic
 def run_dag_for_language(language_id: str) -> DagReport:
     """
-    Nuove regole (nessuna propagazione automatica dello '0'):
+    (nessuna propagazione automatica dello '0'):
     - Valuta SEMPRE la condizione con il parser, indipendentemente da eventuali ref='0'.
     - Esiti:
         * condizione VERA  → value_eval = value_orig se '+' o '-', altrimenti NULL
@@ -205,9 +205,9 @@ def run_dag_for_language(language_id: str) -> DagReport:
             parsed_ok = None
             parse_error = e
 
-        # Se il parser non può decidere (ref mancanti / parse error) → indeterminata
+        # Se il parser non può decidere (ref mancanti / parse error) -> indeterminata
         # NOTA: evaluate_with_parser ritorna False su errori; per distinguere,
-        # usiamo l'eccezione catturata.
+        # usa l'eccezione catturata.
         if parse_error is not None:
             cond_ok = None
         else:
