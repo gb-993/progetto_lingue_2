@@ -170,7 +170,11 @@
   {% block footer %}
   <footer class="site-footer" role="contentinfo">
     <div class="container">
-      <p class="muted">© {% now "Y" %} – Admin area</p>
+      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+        <p class="muted">© {% now "Y" %} – Admin area</p>
+      {% else %}
+        <p class="muted">© {% now "Y" %} – User area</p>
+      {% endif %}
     </div>
   </footer>
   {% endblock %}

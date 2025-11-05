@@ -42,7 +42,6 @@ def _build_graph(active_ids: Set[str]) -> Tuple[Dict[str, List[str]], Dict[str, 
         if not refs:
             cond_map[p.id] = cond
             continue
-        # se la condizione cita param non attivi: salta (coerente a _build_graph_active_scope)
         if not refs.issubset(active_ids):
             cond_map[p.id] = cond
             continue
@@ -127,7 +126,6 @@ def get_param_graph_payload() -> dict:
 VALUE_COLOR = {"+": "#2e7d32", "-": "#c62828", "0": "#6c757d"}
 
 from core.models import LanguageParameter, LanguageParameterEval  
-# core/services/param_graph.py  (NUOVA)
 from typing import Dict
 
 def get_param_graph_payload_for_language(lang_id: str) -> Dict:
@@ -144,7 +142,6 @@ def get_param_graph_payload_for_language(lang_id: str) -> Dict:
         .order_by("position")
     )
 
-    # FIX: interroga LPE tramite la FK 'language_parameter' e usa 'value_eval'
     evals = (
         LanguageParameterEval.objects
         .select_related("language_parameter", "language_parameter__parameter")
