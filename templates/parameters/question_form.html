@@ -53,6 +53,11 @@
         {% if form.instruction_yes.errors %}<div class="field-error">{{ form.instruction_yes.errors }}</div>{% endif %}
       </div>
 
+      <div class="form-row" style="grid-column: 1 / -1;">
+        {{ form.instruction_no.label_tag }} {{ form.instruction_no }}
+        <div class="muted">Shown to the user only if the answer is NO.</div>
+        {% if form.instruction_no.errors %}<div class="field-error">{{ form.instruction_no.errors }}</div>{% endif %}
+      </div>
 
       {% if form.is_stop_question and not form.is_stop_question.is_hidden %}
       <div class="form-row">

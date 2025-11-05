@@ -332,8 +332,25 @@
         {% for q in p.questions.all %}
           <div class="card" style="margin-bottom:.5rem">
 
-            {# --- Testo domanda + help --- #}
-            <p><strong>{{ q.id }}</strong> — {{ q.text }}</p>
+          {# --- Testo domanda + help (inline) --- #}
+          <div class="q-head">
+            <p class="q-head__text"><strong>{{ q.id }}</strong> — {{ q.text }}</p>
+            {% if q.help_info %}
+              <details class="help-info help-info--inline">
+                <summary class="help-info__summary" role="button" aria-expanded="false">
+                  <span aria-hidden="true">❓</span> More info
+                </summary>
+                <div class="help-info__panel muted">{{ q.help_info|linebreaksbr }}</div>
+              </details>
+            {% endif %}
+          </div>
+
+
+            {% if q.instruction %}
+              <div class="muted" style="margin:.25rem 0 .5rem;">
+                <strong>General instructions:</strong> {{ q.instruction|linebreaksbr }}
+              </div>
+            {% endif %}
 
             {% if q.example_yes %}
               <div class="muted" style="margin:.25rem 0 .5rem;">
@@ -341,21 +358,7 @@
               </div>
             {% endif %}
 
-            {% if q.instruction %}
-              <div class="muted" style="margin:.25rem 0 .5rem;">
-                <strong>Instructions:</strong> {{ q.instruction|linebreaksbr }}
-              </div>
-            {% endif %}
-
-            {% if q.help_info %}
-              <details class="help-info">
-                <summary><span aria-hidden="true">❓</span> More info</summary>
-                <div class="muted">{{ q.help_info|linebreaksbr }}</div>
-              </details>
-            {% endif %}
-
-
-
+            {# --- ANSWER SELECT + istruzioni dinamiche --- #}
             <div class="qa-fields">
               <div>
                 <label for="resp_{{ q.id }}">Answer</label>
@@ -371,16 +374,28 @@
                    data-qid="{{ q.id }}"
                    {% if q.ans.response_text|lower != "yes" %}style="display:none"{% endif %}>
                 <div class="muted" style="margin:.25rem 0 .5rem;">
-                  <strong>Instructions for entering the example.</strong>
+                  <strong>Instructions for entering the 'YES' example: </strong>
                   {% if q.instruction_yes %}
                     {{ q.instruction_yes|linebreaksbr }}
                   {% else %}
-                    non fornita
+                    not provided
                   {% endif %}
                 </div>
               </div>
 
-
+              {# struzioni per NO #}
+              <div class="no-instruction-block"
+                   data-qid="{{ q.id }}"
+                   {% if q.ans.response_text|lower != "no" %}style="display:none"{% endif %}>
+                <div class="muted" style="margin:.25rem 0 .5rem;">
+                  <strong>Instructions for entering the 'NO' example: </strong>
+                  {% if q.instruction_no %}
+                    {{ q.instruction_no|linebreaksbr }}
+                  {% else %}
+                    not provided
+                  {% endif %}
+                </div>
+              </div>
 
             </div>
 
@@ -546,6 +561,7 @@
   <script src="{% static 'js/submission_create.js' %}"></script>
   <script src="{% static 'js/autosize_textarea.js' %}"></script>
   <script src="{% static 'js/instruction_yes.js' %}"></script>
+  <script src="{% static 'js/instruction_no.js' %}"></script>
 
 
   <style>

@@ -984,3 +984,40 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
 .table.table--freeze.tableA tbody td:nth-child(3) {
   min-width: 20rem; /* Implicational condition(s) */
 }
+
+
+
+/* AREA RISPOSTE: domanda + more info: testo a capo, trigger fisso a destra */
+.q-head {
+  display: grid;                       
+  grid-template-columns: 1fr auto;      
+  column-gap: .6rem;                    
+  align-items: start;                   
+}
+.q-head__text {
+  margin: 0;                            
+  min-width: 0;                         
+  word-wrap: break-word;                
+}
+
+/* details inline */
+.help-info--inline {
+  display: contents;                    
+}
+.help-info__summary {
+  white-space: nowrap;                  
+  cursor: pointer;
+  font-size: .95rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.help-info__summary:focus {
+  outline: 2px solid var(--focus, #2266ff);
+  outline-offset: 2px;
+}
+
+/* pannello: va sotto a tutta larghezza (riga nuova) */
+.help-info__panel {
+  grid-column: 1 / -1;                 
+  margin-top: .35rem;
+}

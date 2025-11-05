@@ -164,6 +164,7 @@ class QuestionForm(forms.ModelForm):
             "help_info",
             "example_yes",
             "instruction_yes", 
+            "instruction_no",
             "template_type",
             "is_stop_question",
         ]
@@ -172,6 +173,7 @@ class QuestionForm(forms.ModelForm):
             "text": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "instruction": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "instruction_yes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+            "instruction_no": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "help_info": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "example_yes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "is_stop_question": forms.CheckboxInput(attrs={"class": "form-check"}),
@@ -247,6 +249,7 @@ QuestionFormSet = inlineformset_factory(
         "instruction",
         "example_yes",
         "instruction_yes",
+        "instruction_no",
         "template_type",
         "is_stop_question",
     ],
