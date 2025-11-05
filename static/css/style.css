@@ -985,6 +985,11 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   min-width: 20rem; /* Implicational condition(s) */
 }
 
+.table details > summary {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
 
 
 /* AREA RISPOSTE: domanda + more info: testo a capo, trigger fisso a destra */
