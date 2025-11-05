@@ -967,3 +967,20 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   text-align: left;
   width: 100%;
 }
+
+/* === Table A: override larghezze colonne === */
+.table.table--freeze.tableA col.w-name {
+  width: 22rem; /* rispetto a default 22rem */
+}
+.table.table--freeze.tableA col.w-implication {
+  width: 22rem; /* nuova larghezza per Implicational condition */
+}
+
+.table.table--freeze.tableA thead th:nth-child(2),
+.table.table--freeze.tableA tbody td:nth-child(2) {
+  min-width: 10rem; /* Name */
+}
+.table.table--freeze.tableA thead th:nth-child(3),
+.table.table--freeze.tableA tbody td:nth-child(3) {
+  min-width: 20rem; /* Implicational condition(s) */
+}
