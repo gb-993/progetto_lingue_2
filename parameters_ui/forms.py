@@ -140,10 +140,10 @@ class ParameterForm(forms.ModelForm):
 class QuestionForm(forms.ModelForm):
     # Scelte per la presentazione/numero degli esempi
     TEMPLATE_CHOICES = [
-        ("", "— nessun template —"),
-        ("linear", "Numerazione semplice (1, 2, 3, ...)"),
-        ("paired", "Coppie (1a, 1b, 2a, 2b, ...)"),
-        ("decimal", "Decimale (1.1, 1.2, 2.1, 2.2, ...)"),
+        ("", "— no template —"),
+        ("linear", "Simple numbering (1, 2, 3, ...)"),
+        ("paired", "Alphabetical (1a, 1b, 2a, 2b, ...)"),
+        ("decimal", "Decimal (1.1, 1.2, 2.1, 2.2, ...)"),
     ]
     template_type = forms.ChoiceField(choices=TEMPLATE_CHOICES, required=False)
 
@@ -151,8 +151,8 @@ class QuestionForm(forms.ModelForm):
         queryset=Motivation.objects.all(),
         required=False,
         widget=forms.CheckboxSelectMultiple,
-        label="Motivazioni disponibili per NO",
-        help_text="Seleziona le motivazioni che l'utente potrà scegliere quando risponde NO a questa domanda.",
+        label="Available motivations for answer NO",
+        help_text="Select the motivation(s) the user can choose when answering NO to this question.",
     )
 
     class Meta:

@@ -317,12 +317,12 @@ def parameter_deactivate(request, param_id: str):
         if refs_now:
             messages.error(
                 request,
-                "Impossibile disattivare: sono comparse nuove referenze. Ripulisci e riprova."
+                "Unable to deactivate: new references have appeared. Clean up and try again"
             )
             return redirect("parameter_edit", param_id=param.id)
 
         if not param.is_active:
-            messages.info(request, "Il parametro è già disattivato.")
+            messages.info(request, "The parameter is already deactivated.")
             return redirect("parameter_edit", param_id=param.id)
 
         param.is_active = False
@@ -331,7 +331,7 @@ def parameter_deactivate(request, param_id: str):
     reason = (form.cleaned_data.get("reason") or "").strip()
     messages.success(
         request,
-        f"Parametro {param.id} disattivato correttamente." + (f" Motivo: {reason}" if reason else "")
+        f"Parameter {param.id} successfully deactivated." + (f" Reason: {reason}" if reason else "")
     )
     return redirect("parameter_edit", param_id=param.id)
 
@@ -480,9 +480,9 @@ def question_delete(request, param_id: str, question_id: str):
         messages.error(
             request,
             (
-                f"Impossibile eliminare: trovate {counts['answers']} risposte, "
-                f"{counts['examples']} esempi e {counts['answer_motivations']} motivazioni di risposta. "
-                "Spunta 'Elimina anche i dati collegati' per forzare l'eliminazione."
+                f"Unable to delete: found {counts['answers']} answers, "
+                f"{counts['examples']} examples, and {counts['answer_motivations']} motivations. "
+                "Check 'Delete related data as well' to force deletion."
             ),
         )
         return render(

@@ -97,7 +97,7 @@ class LanguageForm(forms.ModelForm):
     def clean_position(self):
         pos = self.cleaned_data.get("position")
         if pos is None or pos < 1:
-            raise forms.ValidationError("Position deve essere un intero positivo (>= 1).")
+            raise forms.ValidationError("Position must be a positive integer (>= 1).")
         return pos
 
 
@@ -106,7 +106,7 @@ class LanguageForm(forms.ModelForm):
 
 class RejectForm(forms.Form):
     message = forms.CharField(
-        label="Messaggio (facoltativo)",
+        label="Message (optional)",
         required=False,
         widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
     )

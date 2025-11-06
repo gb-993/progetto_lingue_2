@@ -42,7 +42,7 @@ def submission_create_for_language(request, language_id):
             res = create_language_submission(lang, request.user, note=note)
         messages.success(
             request,
-            _("Submission creata per %(lang)s alle %(ts)s (pruned=%(p)d)") % {
+            _("Submission created for %(lang)s at %(ts)s (pruned=%(p)d)") % {
                 "lang": lang.id,
                 "ts": res.submission.submitted_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "p": res.pruned_count,

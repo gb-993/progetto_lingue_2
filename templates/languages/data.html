@@ -363,7 +363,7 @@
               <div>
                 <label for="resp_{{ q.id }}">Answer</label>
                 <select id="resp_{{ q.id }}" name="resp_{{ q.id }}" class="resp-select" data-qid="{{ q.id }}">
-                  <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— seleziona —</option>
+                  <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— select —</option>
                   <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
                   <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
                 </select>
@@ -469,7 +469,7 @@
                               data-exid="{{ ex.id }}"
                               {% with s=lang_status.overall %}
                                 {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                                  disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
+                                  disabled aria-disabled="true" title="Editing locked until review"
                                 {% endif %}
                               {% endwith %}>Delete</button>
                     </div>
@@ -485,7 +485,7 @@
                         data-qid="{{ q.id }}"
                         {% with s=lang_status.overall %}
                           {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                            disabled aria-disabled="true" title="Editing bloccato fino alla revisione"
+                            disabled aria-disabled="true" title="Editing locked until review"
                           {% endif %}
                         {% endwith %}>Add example</button>
               </div>
@@ -520,7 +520,7 @@
                     style="margin-left:auto;"
               {% with s=lang_status.overall %}
                 {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                  disabled aria-disabled="true" title="Editing blocked until review"
+                  disabled aria-disabled="true" title="Editing locked until review"
                 {% endif %}
               {% endwith %}>
               Save {{ p.id }}
@@ -538,7 +538,7 @@
                     style="margin-left:auto;"
               {% with s=lang_status.overall %}
                 {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                  disabled aria-disabled="true" title="Editing blocked until review"
+                  disabled aria-disabled="true" title="Editing locked until review"
                 {% endif %}
               {% endwith %}>
               Next

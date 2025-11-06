@@ -39,18 +39,18 @@ class AccountForm(forms.ModelForm):
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").strip().lower()
         if not email:
-            raise ValidationError("Email obbligatoria.")
+            raise ValidationError("Email is required.")
         qs = User.objects.all()
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.filter(email__iexact=email).exists():
-            raise ValidationError("Esiste già un utente con questa email (case-insensitive).")
+            raise ValidationError("A user with this email already exists (case-insensitive).")
         return email
 
     def clean_role(self):
         role = self.cleaned_data.get("role")
         if role not in dict(User.ROLE_CHOICES):
-            raise ValidationError("Ruolo non valido.")
+            raise ValidationError("Invalid role.")
         return role
 
     def save(self, commit=True):
@@ -89,27 +89,27 @@ class MyAccountForm(forms.ModelForm):
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").lower().strip()
         if not email:
-            raise ValidationError("Email obbligatoria.")
+            raise ValidationError("Email is required.")
         qs = User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk)
         if qs.exists():
-            raise ValidationError("Questa email è già in uso.")
+            raise ValidationError("This email is already in use.")
         return email
 
 
 class MyPasswordChangeForm(PasswordChangeForm):
 
     old_password = forms.CharField(
-        label="Password attuale",
+        label="Current password",
         strip=False,
         widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "current-password"}),
     )
     new_password1 = forms.CharField(
-        label="Nuova password",
+        label="New password",
         strip=False,
         widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
     )
     new_password2 = forms.CharField(
-        label="Conferma nuova password",
+        label="Confirm new password",
         strip=False,
         widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
     )
