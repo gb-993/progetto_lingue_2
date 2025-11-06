@@ -15,7 +15,7 @@
   <article class="card" style="margin-top:.5rem">
     <h3 class="sr-only">{% trans "Question preview" %}</h3>
     <p><strong>Id:</strong> {{ question.id }}</p>
-    <p><strong>{% trans "Text" %}:</strong> {{ question.text }}</p>
+    <p><strong>{% trans "Question Text" %}:</strong> {{ question.text }}</p>
     <p><strong>{% trans "Stop question" %}:</strong>
       {% if question.is_stop_question %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}
     </p>
