@@ -15,13 +15,6 @@
       {% endif %}
 
       <div class="grid grid-2">
-        <div class="form-group">
-          <label for="{{ form.email.id_for_label }}">Email</label>
-          {{ form.email }}
-          {% if form.email.errors %}
-            <div class="field-error" role="alert">{{ form.email.errors|striptags }}</div>
-          {% endif %}
-        </div>
 
         <div class="form-group">
           <label for="{{ form.name.id_for_label }}">Name</label>
@@ -38,11 +31,20 @@
             <div class="field-error" role="alert">{{ form.surname.errors|striptags }}</div>
           {% endif %}
         </div>
+
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <div class="field-error" role="alert">{{ form.email.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
       </div>
 
-      <div class="toolbar">
-        <a class="btn" href="{% url 'dashboard' %}">Cancel</a>
+      <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn btn--primary">Save</button>
+        <a class="btn" href="{% url 'dashboard' %}">Cancel</a>
       </div>
     </form>
   </div>
@@ -83,9 +85,9 @@
         </div>
       </div>
 
-      <div class="toolbar">
-        <a class="btn" href="{% url 'dashboard' %}">Cancel</a>
+      <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
         <button class="btn btn--primary">Update password</button>
+        <a class="btn" href="{% url 'dashboard' %}">Cancel</a>
       </div>
 
       {% if pwd_form.help_text %}
