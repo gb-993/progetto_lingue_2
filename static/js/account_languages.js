@@ -28,7 +28,7 @@
     selectedUl.innerHTML = "";
     var checked = $all('input[type="checkbox"]:checked', list);
     if (checked.length === 0) {
-      selectedUl.insertAdjacentHTML("beforeend", "No language selected.");
+      selectedUl.insertAdjacentHTML("beforeend", "No languages selected.");
       return;
     }
     checked.forEach(function (chk) {
