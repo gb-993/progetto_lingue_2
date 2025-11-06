@@ -123,7 +123,12 @@ def get_param_graph_payload() -> dict:
         }
     }
 
-VALUE_COLOR = {"+": "#2e7d32", "-": "#c62828", "0": "#6c757d"}
+VALUE_COLOR = {
+    "+": "#4CAF50",  # verde medio
+    "-": "#E53935",  # rosso medio
+    "0": "#039BE5",  # blu medio
+}
+
 
 from core.models import LanguageParameter, LanguageParameterEval  
 from typing import Dict

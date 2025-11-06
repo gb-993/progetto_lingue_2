@@ -1,83 +1,85 @@
-// static/js/param_graph.js
 (function(){
   const CY_ID = "cy";
-  const API = "/api/param-graph/";
+  const API_BASE = "/api/param-graph/";                           
   const btnReload = document.getElementById("btn-reload");
   const toggleRank = document.getElementById("toggle-rank");
   const metaBox = document.getElementById("meta");
+  const langSelect = document.getElementById("lang-select");       
 
-  // CHG: gestiamo un observer e handler globali per evitare leak tra reload
-  let ro = null;               // ResizeObserver corrente
-  let resizeHandler = null;    // listener window resize corrente
+  let ro = null;
+  let resizeHandler = null;
 
-  function toElements(payload) {
-    const nodes = payload.nodes.map(n => ({
-      data: { id: n.id, label: n.label, rank: n.rank, cond: n.cond, cond_human: n.cond_human }
+  function edgesToElements(edges) {
+    return (edges || []).map(e => ({ data: { id: e.source + "->" + e.target, source: e.source, target: e.target }}));
+  }
+
+  function normalizeElements(payload) {
+    if (payload.nodes && payload.nodes[0] && payload.nodes[0].data) {
+      return { nodes: payload.nodes, edges: edgesToElements(payload.edges) };  
+    }
+    const nodes = (payload.nodes || []).map(n => ({
+      data: {
+        id: n.id, label: n.label, rank: n.rank,
+        cond: n.cond, cond_human: n.cond_human
+      }
     }));
-    const edges = payload.edges.map(e => ({
-      data: { id: e.source + "->" + e.target, source: e.source, target: e.target }
-    }));
-    return { nodes, edges };
+    return { nodes, edges: edgesToElements(payload.edges) };
   }
 
   function layoutFor(cy, layered) {
     if (!layered) return cy.layout({ name: "cose", animate: true, fit: true });
     return cy.layout({
-      name: "breadthfirst",
-      directed: true,
-      padding: 30,
-      avoidOverlap: true,
-      spacingFactor: 1.2,
-      animate: true,
+      name: "breadthfirst", directed: true, padding: 30,
+      avoidOverlap: true, spacingFactor: 1.2, animate: true,
       roots: cy.nodes().filter(n => n.indegree() === 0).map(n => n.id()),
     });
   }
 
-  // CHG: piccolo debounce per resize/observer
-  function debounce(fn, wait) {
-    let t; return function(){ clearTimeout(t); t = setTimeout(fn, wait); };
+  function debounce(fn, wait){ let t; return () => { clearTimeout(t); t=setTimeout(fn,wait); }; }
+
+  function endpointForCurrentLang() {
+    const lang = langSelect && langSelect.value ? langSelect.value.trim() : "";
+    return lang ? `${API_BASE}lang/${encodeURIComponent(lang)}/` : API_BASE;
   }
 
   async function render() {
-    // CHG: sgancia observer/handler precedenti per reload pulito
-    if (ro) { try { ro.disconnect(); } catch(e) {} ro = null; }
+    if (ro) { try{ ro.disconnect(); }catch{} ro = null; }
     if (resizeHandler) { window.removeEventListener("resize", resizeHandler); resizeHandler = null; }
 
     metaBox.textContent = "Loading…";
-    const resp = await fetch(API, { headers: { "Accept": "application/json" } });
-    if (!resp.ok) { metaBox.textContent = "Errore nel caricamento del grafo."; return; }
+    const url = endpointForCurrentLang();                            
+    const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+    if (!resp.ok) { metaBox.textContent = "Error loading graph."; return; }
     const payload = await resp.json();
-    metaBox.textContent = `${payload.meta.active_count} parametri attivi • ${payload.meta.has_edges ? 'con' : 'senza'} relazioni`;
 
     const container = document.getElementById(CY_ID);
     container.innerHTML = "";
 
-    const { nodes, edges } = toElements(payload);
+
+    const { nodes, edges } = normalizeElements(payload);
 
     const cy = cytoscape({
       container,
       elements: { nodes, edges },
       wheelSensitivity: 0.2,
+      pixelRatio: 1, 
       style: [
         { selector: "node", style: {
             "label": "data(label)",
             "text-valign": "center",
-            "color": "var(--text)",
-            "background-color": "var(--surface-strong, #556)",
-            "border-color": "var(--border, #999)",
-            "border-width": 1,
-            "width": "label",
-            "height": "label",
-            "padding": "6px",
-            "shape": "round-rectangle",
+            "color": "#222",                                
+            "background-color": "data(color)",            
+            "border-color": "#999", "border-width": 1,
+            "width": "label", "height": "label",
+            "padding": "6px", "shape": "round-rectangle",
             "font-size": 12
         }},
+        { selector: "node[!color]", style: { "background-color": "#999" } },  
         { selector: "edge", style: {
             "curve-style": "bezier",
             "target-arrow-shape": "triangle",
-            "target-arrow-color": "var(--border, #999)",
-            "line-color": "var(--border, #999)",
-            "width": 1.2
+            "target-arrow-color": "#999",
+            "line-color": "#999", "width": 1.2
         }},
         { selector: "node.highlight", style: { "background-color": "#f39c12" }},
         { selector: "edge.highlight-in",  style: { "line-color": "#3498db", "target-arrow-color": "#3498db", "width": 1.6 }},
@@ -87,33 +89,60 @@
       ]
     });
 
-    // CHG: fit iniziale robusto (dopo layout + dopo paint)
-    const doFit = () => { cy.resize(); cy.fit(cy.elements(), 30); }; // 30px padding
-    cy.once("layoutstop", doFit);
-    const layout = layoutFor(cy, toggleRank.checked);
-    layout.run();
-    requestAnimationFrame(doFit);
+    if (payload.meta && payload.meta.language) {
+      const c = payload.meta.counts || {};
+      metaBox.textContent = `${payload.meta.language.id} — ${c["+"]||0}\n “+”, ${c["-"]||0}\n “–”, ${c["0"]||0} \n“0”, ${c.unset||0} unset`;
+    } else if (payload.meta) {
+      metaBox.textContent = `${payload.meta.active_count} active parameters • ${payload.meta.has_edges ? 'with' : 'no'} relations`;
+    } else {
+      metaBox.textContent = "";
+    }
 
-    // CHG: fit automatico su resize finestra e cambi dimensione contenitore
-    resizeHandler = debounce(doFit, 120);
-    window.addEventListener("resize", resizeHandler);
+    const doFit = () => { cy.resize(); cy.fit(cy.elements(), 30); };
+    cy.once("layoutstop", () => setTimeout(doFit, 0));
+    layoutFor(cy, toggleRank.checked).run();
+    requestAnimationFrame(doFit);
+    setTimeout(doFit, 0);
+
+    const onResize = debounce(doFit, 120);
+    window.addEventListener("resize", onResize);
+    resizeHandler = onResize;
     if (window.ResizeObserver) {
-      ro = new ResizeObserver(resizeHandler);
+      ro = new ResizeObserver(onResize);
       ro.observe(container);
     }
 
-    // Interazioni
-    cy.on("tap", "node", (evt) => {
-      const n = evt.target;
-      const cond = n.data("cond_human") || n.data("cond") || "(no condition)";
-      cy.elements().removeClass("highlight highlight-in highlight-out");
-      n.addClass("highlight");
-      n.outgoers("edge").addClass("highlight-out");
-      n.outgoers("node").addClass("highlight-out");
-      n.incomers("edge").addClass("highlight-in");
-      n.incomers("node").addClass("highlight-in");
-      metaBox.textContent = `${n.id()} — ${cond}`;
-    });
+cy.on("tap", "node", (evt) => {
+  const n = evt.target;
+  const cond = n.data("cond_human") || n.data("cond") || "(no condition)";
+  const hasLang = !!(payload.meta && payload.meta.language);
+
+  if (!hasLang) {
+    cy.elements().removeClass("highlight highlight-in highlight-out");
+    n.addClass("highlight");
+    n.outgoers("edge").addClass("highlight-out");
+    n.outgoers("node").addClass("highlight-out");
+    n.incomers("edge").addClass("highlight-in");
+    n.incomers("node").addClass("highlight-in");
+  } else {
+    cy.elements().removeClass("highlight highlight-in highlight-out");
+  }
+
+  const val = n.data("value");
+  if (hasLang) {
+    metaBox.innerText = `${n.id()} — value: ${val || "unset"}`;
+  } else {
+    const fmt = (node) => node.id();
+    const uniqSort = (arr) => Array.from(new Set(arr)).sort();
+    const incoming = uniqSort(n.incomers("node").map(fmt));
+    const outgoing = uniqSort(n.outgoers("node").map(fmt));
+    const fromTxt = incoming.length ? incoming.join(", ") : "—";
+    const toTxt   = outgoing.length ? outgoing.join(", ") : "—";
+    metaBox.innerText = `${n.id()} — ${cond}\n← from: ${fromTxt}\n→ to: ${toTxt}`;
+  }
+});
+
+
 
     cy.on("dbltap", "node", (evt) => {
       const n = evt.target;
@@ -121,14 +150,16 @@
       n.closedNeighborhood().addClass("highlight");
     });
 
-    // Controls
-    btnReload.onclick = () => render();
+    btnReload.onclick = render;
     toggleRank.onchange = () => {
       const l = layoutFor(cy, toggleRank.checked);
-      cy.once("layoutstop", doFit); // CHG: rifit dopo cambio layout
+      cy.once("layoutstop", doFit);
       l.run();
     };
   }
 
-  document.addEventListener("DOMContentLoaded", render);
+  document.addEventListener("DOMContentLoaded", () => {
+    render();
+    if (langSelect) langSelect.addEventListener("change", render);  
+  });
 })();
