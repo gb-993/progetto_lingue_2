@@ -1290,7 +1290,7 @@ def language_list_export_xlsx(request):
             max_len = max(max_len, len(str(val)))
         ws.column_dimensions[col_letter].width = min(max_len + 2, 60)
 
-    ts = timezone.localtime(timezone.now()).strftime("%Y%m%d_%H%M")  
+    ts = timezone.localtime(timezone.now()).strftime("%Y%m%d")  
     filename = f"PCM_languages_{ts}.xlsx"
     resp = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     resp["Content-Disposition"] = f'attachment; filename="{filename}"'
