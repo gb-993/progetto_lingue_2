@@ -1,11 +1,6 @@
-/* parameter_edit.js
-   Controllo del pulsante "Save":
-   - Se NON ci sono modifiche (né interne né esterne) -> il bottone resta abilitato sempre.
-     (Nessuna nota richiesta, perché non stai cambiando niente.)
-   - Se CI SONO modifiche (campi del parametro cambiati oppure externalDirty=true),
-     allora la nota di modifica (change_note) diventa obbligatoria:
-        - finché la nota è vuota -> bottone Save disabilitato
-        - quando la nota è compilata -> bottone Save abilitato
+/*
+   - Se NON ci sono modifiche (né interne né esterne) -> Save abilitato.
+   - Se CI SONO modifiche o externalDirty=true -> change_note obbligatoria, Save disabilitato finché vuota.
 */
 
 (function () {
@@ -21,36 +16,93 @@
   var noteEl = form.elements[changeNoteName] || $("#id_change_note");
   var hint = $("#changeNoteHint");
 
-  // elenco campi tracciati dal parametro
-  var trackedAttr = form.getAttribute("data-tracked") || "[]";
-  var tracked;
-  try { tracked = JSON.parse(trackedAttr); } catch (e) { tracked = []; }
-
-  // flag esterno (domande/motivations modificate)
+  // external dirty (domande/motivations)
   var externalDirty = form.getAttribute("data-external-dirty") === "true";
 
-  function getValByName(name) {
-    var els = form.elements[name];
-    if (!els) return null;
-    var el = (typeof els.length === "number") ? els[0] : els;
-    if (!el) return null;
-    if (el.type === "checkbox") return el.checked;
-    return el.value;
+  // --- Helper: normalizzazione valori per confronto robusto ---
+  function norm(val) {
+    if (Array.isArray(val)) return JSON.stringify(val.slice().sort());
+    if (val === true || val === false || val === null || val === undefined) return String(val);
+    // normalizza numeri rappresentati come stringhe "10" vs 10
+    if (typeof val === "number") return String(val);
+    return String(val);
   }
 
-  // Snapshot iniziale dei campi del parametro
+  // Ritorna tutti gli elementi con lo stesso name (NodeList -> Array)
+  function allByName(name) {
+    var list = form.querySelectorAll('[name="' + CSS.escape(name) + '"]');
+    return Array.prototype.slice.call(list);
+  }
+
+  // Valore logico di un "gruppo" di controlli con lo stesso name
+  function getValueByName(name) {
+    var group = allByName(name);
+    if (!group.length) return null;
+
+    var type = (group[0].type || "").toLowerCase();
+    var tag = (group[0].tagName || "").toLowerCase();
+
+    // Radio group -> valore della radio selezionata o null
+    if (type === "radio") {
+      var checked = group.find(function (r) { return r.checked; });
+      return checked ? checked.value : null;
+    }
+
+    // Checkbox: due casi
+    // 1) una sola checkbox -> boolean
+    // 2) più checkbox con stesso name -> array dei valori spuntati
+    if (type === "checkbox") {
+      if (group.length === 1) return !!group[0].checked;
+      return group.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+    }
+
+    // Select (one/multiple)
+    if (tag === "select") {
+      var sel = group[0];
+      if (sel.multiple) {
+        return Array.prototype.filter.call(sel.options, function (o) { return o.selected; })
+          .map(function (o) { return o.value; });
+      }
+      return sel.value;
+    }
+
+    // Input/textarea generici
+    return group[0].value;
+  }
+
+  // --- Costruzione elenco dei nomi da monitorare ---
+  var names = [];
+  (function buildNames() {
+    var trackedAttr = form.getAttribute("data-tracked") || "[]";
+    var tracked = [];
+    try { tracked = JSON.parse(trackedAttr); } catch (e) { tracked = []; }
+
+    if (Array.isArray(tracked) && tracked.length) {
+      names = tracked.slice();
+    } else {
+      // fallback: tutti i controlli con name, esclusa la change_note
+      var all = form.querySelectorAll("input[name], select[name], textarea[name]");
+      names = Array.prototype.slice.call(all)
+        .map(function (el) { return el.name; })
+        .filter(function (n) { return n && n !== changeNoteName; });
+      // de-duplica
+      names = Array.from(new Set(names));
+    }
+  })();
+
+  // Snapshot iniziale
   var initial = {};
-  tracked.forEach(function (n) {
-    initial[n] = getValByName(n);
-  });
+  names.forEach(function (n) { initial[n] = norm(getValueByName(n)); });
 
   function hasInternalChanges() {
-    return tracked.some(function (n) {
-      return getValByName(n) !== initial[n];
-    });
+    for (var i = 0; i < names.length; i++) {
+      var n = names[i];
+      var curr = norm(getValueByName(n));
+      if (curr !== initial[n]) return true;
+    }
+    return false;
   }
 
-  // Pagina "dirty" = qualcosa è cambiato e quindi serve la nota prima di poter salvare
   function pageIsDirty() {
     return externalDirty || hasInternalChanges();
   }
@@ -59,12 +111,10 @@
     if (!saveBtn) return;
 
     var dirty = pageIsDirty();
-
-    // nota mancante = devo bloccare il salvataggio
     var noteText = (noteEl && noteEl.value) ? noteEl.value.trim() : "";
     var missingNote = requiresNote && dirty && !noteText;
 
-    // stato aria / visivo / reale
+    // Stato visivo + accessibile
     saveBtn.disabled = !!missingNote;
     saveBtn.setAttribute("aria-disabled", missingNote ? "true" : "false");
 
@@ -79,10 +129,10 @@
     }
   }
 
-  // Ogni volta che cambia un campo tracciato, ricalcoliamo dirty e quindi se la nota diventa obbligatoria
-  form.addEventListener("input", updateSaveState);
-  form.addEventListener("change", updateSaveState);
+  // Event delegation: copre text, number, checkbox, radio, select(one/multiple), textarea
+  form.addEventListener("input", updateSaveState, true);
+  form.addEventListener("change", updateSaveState, true);
 
-  // Init immediata: se arrivo da una modifica esterna (q_changed=1) il pulsante partirà già disabilitato
+  // Stato iniziale coerente (abilitato se nessuna modifica; disabilitato se dirty senza nota)
   updateSaveState();
 })();

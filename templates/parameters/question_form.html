@@ -15,11 +15,17 @@
     {% endif %}
 
     <div class="grid grid-2">
-      <div class="form-row">
-        <label>Id</label>
+    <div class="form-row">
+      <label for="{{ form.id.id_for_label }}">Id</label>
+      {% if is_create %}
+        {{ form.id }}  {# editabile #}
+      {% else %}
         <input class="form-control" value="{{ form.instance.id }}" readonly>
-        {{ form.id.as_hidden }}
-      </div>
+        {{ form.id.as_hidden }} 
+      {% endif %}
+      {% if form.id.errors %}<div class="field-error">{{ form.id.errors }}</div>{% endif %}
+    </div>
+
 
       <div class="form-row">
         {{ form.template_type.label_tag }} {{ form.template_type }}
@@ -81,8 +87,7 @@
         </div>
 
         <div class="actions" style="margin-top:.75rem; text-align: right;">
-          <a class="btn" href="{% url 'motivations_manage' %}" target="_blank" rel="noopener"
-             aria-label="Open motivation manager in a new tab">
+          <a class="btn" href="{% url 'motivations_manage' %}">
             Edit motivations
           </a>
         </div>

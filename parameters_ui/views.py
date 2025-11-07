@@ -359,7 +359,7 @@ def question_add(request, param_id: str):
             messages.success(request, "Question created.")
             return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
-            messages.error(request, "Correggi gli errori nella domanda.")
+            messages.error(request, "Please fix the errors in the question.")
             return render(
                 request,
                 "parameters/question_form.html",
