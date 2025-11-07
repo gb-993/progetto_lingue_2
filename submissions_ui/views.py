@@ -51,15 +51,18 @@ def submission_create_for_language(request, language_id):
         return redirect(_safe_next_url(request))
     return render(request, "submissions/confirm_create.html", {"language": lang})
 
+from django.core.paginator import Paginator
+from django.db.models import OuterRef, Subquery, IntegerField, Prefetch, Q  
 
 @login_required
 @user_passes_test(_is_admin)
 def submissions_list(request):
     qs = Submission.objects.select_related("language", "submitted_by").order_by("-submitted_at", "-id")
 
-    language_id = (request.GET.get("language") or "").strip()
-    if language_id:
-        qs = qs.filter(language_id=language_id)
+    q = (request.GET.get("q") or "").strip()  
+    if q:
+        # match su id lingua (parziale, case-insensitive) OR su full name (parziale)
+        qs = qs.filter(Q(language__id__icontains=q) | Q(language__name_full__icontains=q))
 
     submitted_by = (request.GET.get("submitted_by") or "").strip()
     if submitted_by.isdigit():
@@ -81,13 +84,12 @@ def submissions_list(request):
         "submissions/list.html",
         {
             "page": page,
-            "language_id": language_id,
+            "q": q,  
             "submitted_by": submitted_by,
             "date_from": date_from,
             "date_to": date_to,
         },
     )
-
 
 @login_required
 @user_passes_test(_is_admin)

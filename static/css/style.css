@@ -969,6 +969,10 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
 }
 
 /* === Table A: override larghezze colonne === */
+.table.table--freeze.tableA .col-sticky-left {
+  width: 5rem;
+  min-width: 5rem;
+}
 .table.table--freeze.tableA col.w-name {
   width: 22rem; /* rispetto a default 22rem */
 }
