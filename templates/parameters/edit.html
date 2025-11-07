@@ -63,19 +63,20 @@
     {% endif %}
 
     <div style="display: flex; gap: 1rem; align-items: flex-end;">
-      <div class="form-row" style="flex: 0 0 60%;">
+
+      <div class="form-row">
         <label for="{{ form.label.id_for_label }}">{{ form.label.label }}</label>
         {{ form.label }}
         {% if form.label.errors %}<div class="form-error">{{ form.label.errors }}</div>{% endif %}
       </div>
 
-      <div class="form-row" style="flex: 0 0 10rem;">
+      <div class="form-row">
         <label for="{{ form.position.id_for_label }}">{{ form.position.label }}</label>
         {{ form.position }}
         {% if form.position.errors %}<div class="form-error">{{ form.position.errors }}</div>{% endif %}
       </div>
 
-      <div class="form-row" style="flex: 0 0 auto;">
+      <div class="form-row">
         <label for="{{ form.is_active.id_for_label }}">Active</label>
         {% if form.instance.is_active and not can_deactivate %}
           <input
@@ -91,21 +92,23 @@
         {% endif %}
         {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
       </div>
-    </div>
 
-    <div class="form-row">
-      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-      {{ form.name }}
-      {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
+
+
     </div>
 
 
-    <div class="form-row">
-      <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
-      {{ form.short_description }}
-      {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
-    </div>
+      <div class="form-row">
+        <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
+      </div>
 
+      <div class="form-row">
+        <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
+        {{ form.short_description }}
+        {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
+      </div>
 
 
     <div style="display: flex; gap: 1rem;">
@@ -123,8 +126,7 @@
     </div>
 
     <div class="actions" style="margin:.5rem 0 .25rem; text-align: right;">
-      <a class="btn" href="{% url 'param_lookups_manage' %}" target="_blank" rel="noopener"
-         aria-label="Open Schema/Type manager in a new tab">
+      <a class="btn" href="{% url 'param_lookups_manage' %}">
         Edit schema & type
       </a>
     </div>
