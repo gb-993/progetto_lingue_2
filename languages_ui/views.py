@@ -1181,16 +1181,19 @@ def toggle_review_flag(request, lang_id: str, param_id: str):
 
 
        
+from datetime import datetime, time
+from django.utils import timezone
+from django.db.models import Max, Q
 
 @login_required
 @require_http_methods(["GET"])
 def language_list_export_xlsx(request):
     """
-    Esporta in Excel tutte le lingue visibili all'utente corrente, con TUTTI
-    gli attributi del modello Language. Rispetta i filtri della lista (q)
-    e la visibilità (admin vede tutto; utenti vedono solo le proprie/assegnate).
+    Excel export for Languages: fixed, explicit columns in a site-coherent order.
+    - Removes 'position'
+    - Serializes assigned user (full name + email)
+    - Adds 'data last change' from answers' last update
     """
-    from django.db.models import Max, Q
     q = (request.GET.get("q") or "").strip()
     user = request.user
     is_admin = _is_admin(user)
@@ -1199,84 +1202,84 @@ def language_list_export_xlsx(request):
         Language.objects
         .select_related("assigned_user")
         .annotate(last_change=Max("answers__updated_at"))
-        .order_by("position")
+        .order_by("position")  
     )
-    if not is_admin:
-        qs = qs.filter(Q(assigned_user=user) | Q(users=user))
-
     if q:
-        filt = (
-            Q(id__icontains=q)
-            | Q(name_full__icontains=q)
-            | Q(isocode__icontains=q)
-            | Q(glottocode__icontains=q)
-            | Q(grp__icontains=q)
-            | Q(informant__icontains=q)
-            | Q(supervisor__icontains=q)
-            | Q(family__icontains=q)
-            | Q(top_level_family__icontains=q)
-            | Q(source__icontains=q)
+        qs = qs.filter(
+            Q(id__icontains=q) |
+            Q(name_full__icontains=q) |
+            Q(top_level_family__icontains=q) |
+            Q(family__icontains=q) |
+            Q(grp__icontains=q) |
+            Q(isocode__icontains=q) |
+            Q(glottocode__icontains=q) |
+            Q(source__icontains=q)
         )
-        ql = q.lower()
-        if ql in {"hist", "stor", "storica", "storico", "true", "yes"}:
-            filt |= Q(historical_language=True)
-        if ql in {"false", "no"}:
-            filt |= Q(historical_language=False)
-        if is_admin:
-            filt |= Q(assigned_user__email__icontains=q)
-        qs = qs.filter(filt)
+
+    if not is_admin:
+        qs = qs.filter(Q(assigned_user=user) | Q(users=user)).distinct()
 
     def _xlsx_sanitize(v):
         if v is None:
             return ""
+        if isinstance(v, bool):
+            return "Yes" if v else "No"
         if isinstance(v, datetime):
             if timezone.is_aware(v):
                 v = timezone.localtime(v)
             return v.replace(tzinfo=None)
         if isinstance(v, time):
-            if v.tzinfo is not None:
-                return v.replace(tzinfo=None)
-            return v
-        if isinstance(v, (list, tuple, set)):
-            return ", ".join(str(x) for x in v)
+            return v.replace(tzinfo=None) if v.tzinfo else v
         return v
 
-    # Campi concreti del modello 
-    lang_fields = []
-    fk_extras = []
-    m2m_extras = []
+    def _full_name(u):
+        if not u:
+            return ""
+        nm = f"{(u.name or '').strip()} {(u.surname or '').strip()}".strip()
+        return nm or (u.email or "")
 
-    for f in Language._meta.get_fields():
-        if getattr(f, "concrete", False) and not getattr(f, "auto_created", False):
-            if getattr(f, "many_to_many", False):
-                continue
-            lang_fields.append(f.name)
+    def _email(u):
+        return "" if not u else (u.email or "")
 
-    fk_extras.append(("assigned_user_email", lambda L: getattr(getattr(L, "assigned_user", None), "email", "")))
-    m2m_extras.append(("users_emails", lambda L: ", ".join(sorted({u.email for u in getattr(L, "users").all()})) if hasattr(L, "users") else ""))
-    extra_annot = [("last_change", lambda L: L.last_change)]
-
-    headers = lang_fields + [name for name, _ in fk_extras] + [name for name, _ in m2m_extras] + [name for name, _ in extra_annot]
+    HEADERS = [
+        "ID",
+        "Name",
+        "Top-level family",
+        "Family",
+        "Group",
+        "Glottocode",
+        "ISO code",
+        "Historical",
+        "Source",
+        "Assigned user",
+        "Email",
+        "Date last change",
+    ]
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Languages"
 
-    ws.append(headers)
+    ws.append(HEADERS)
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
-    # applica sanificazione cella per cella
+    # rows
     for L in qs.iterator():
-        row = []
-        for fname in lang_fields:
-            row.append(_xlsx_sanitize(getattr(L, fname, None)))
-        for _, fn in fk_extras:
-            row.append(_xlsx_sanitize(fn(L)))
-        for _, fn in m2m_extras:
-            row.append(_xlsx_sanitize(fn(L)))
-        for _, fn in extra_annot:
-            row.append(_xlsx_sanitize(fn(L)))
+        row = [
+            _xlsx_sanitize(L.id),
+            _xlsx_sanitize(L.name_full),
+            _xlsx_sanitize(L.top_level_family),
+            _xlsx_sanitize(L.family),
+            _xlsx_sanitize(L.grp),
+            _xlsx_sanitize(L.glottocode),
+            _xlsx_sanitize(L.isocode),
+            _xlsx_sanitize(L.historical_language),
+            _xlsx_sanitize(L.source),
+            _xlsx_sanitize(_full_name(L.assigned_user)),
+            _xlsx_sanitize(_email(L.assigned_user)),
+            _xlsx_sanitize(L.last_change),
+        ]
         ws.append(row)
 
     from openpyxl.utils import get_column_letter
@@ -1290,9 +1293,12 @@ def language_list_export_xlsx(request):
             max_len = max(max_len, len(str(val)))
         ws.column_dimensions[col_letter].width = min(max_len + 2, 60)
 
-    ts = timezone.localtime(timezone.now()).strftime("%Y%m%d")  
+    ts = timezone.localtime(timezone.now()).strftime("%Y%m%d")
     filename = f"PCM_languages_{ts}.xlsx"
-    resp = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
     resp["Content-Disposition"] = f'attachment; filename="{filename}"'
     wb.save(resp)
     return resp
+
