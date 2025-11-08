@@ -29,63 +29,63 @@
     <button id="reloadBtn" class="btn btn--secondary" type="button">Reload</button>
 
     <div class="legend" aria-hidden="true">
+      {# colori per valori parametri (usati anche nel grafo) #}
       <span class="badge b-plus">+</span>
       <span class="badge b-minus">–</span>
       <span class="badge b-zero">0</span>
       <span class="badge b-unset">unset</span>
       <span class="sep"></span>
+      {# legenda implicazioni: valida solo quando nessuna lingua è selezionata #}
       <span class="badge b-focus">selected</span>
       <span class="badge b-up">implicants</span>
       <span class="badge b-down">implicated</span>
     </div>
   </div>
 
-<div id="graph-mode"
-     class="graph-layout"
-     {% if preselect %}hidden{% endif %}
-     style="display:flex; flex-direction:column; gap:.75rem;">
+  <div id="graph-mode"
+       class="graph-layout"
+       {# NEW: graph sempre visibile, niente hidden in base a preselect #}
+       style="display:flex; flex-direction:column; gap:.75rem;">
 
-  <!-- Grafo in alto -->
-  <div id="cy-container"
-       aria-label="Parameters graph"
-       role="application"
-       style="width:100%;
-              height:640px;
-              min-height:420px;
-              border:1px solid var(--border,#ddd);
-              border-radius:8px;
-              background:var(--surface,#fff);
-              position:relative;
-              overflow:hidden;">
-  </div>
-
-  <!-- Box Selection sotto -->
-  <aside class="graph-recap"
-         aria-live="polite"
-         style="border:1px solid var(--border,#ddd);
+    <!-- Grafo in alto -->
+    <div id="cy-container"
+         aria-label="Parameters graph"
+         role="application"
+         style="width:100%;
+                height:640px;
+                min-height:420px;
+                border:1px solid var(--border,#ddd);
                 border-radius:8px;
-                padding:.75rem;
-                background:var(--surface-2,var(--surface,#fff));
-                max-height:240px;
-                overflow:auto;">
-    <h3 style="margin:0 0 .5rem;">Selection</h3>
-    <div style="margin-bottom:.5rem;"><strong>Parameter:</strong> <span id="recap-name">None</span></div>
-    <div style="margin-bottom:.5rem;">
-      <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicants (inputs)</h4>
-      <ul id="recap-up" style="margin:0; padding-left:1rem;"></ul>
+                background:var(--surface,#fff);
+                position:relative;
+                overflow:hidden;">
     </div>
-    <div>
-      <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicated (outputs)</h4>
-      <ul id="recap-down" style="margin:0; padding-left:1rem;"></ul>
-    </div>
-    <p class="muted"
-       style="color:var(--muted,#666); font-size:.85rem;">
-       Tip: click a node. Tab/Enter works.
-    </p>
-  </aside>
-</div>
 
-
+    <!-- Box Selection sotto -->
+    <aside class="graph-recap"
+           aria-live="polite"
+           style="border:1px solid var(--border,#ddd);
+                  border-radius:8px;
+                  padding:.75rem;
+                  background:var(--surface-2,var(--surface,#fff));
+                  max-height:240px;
+                  overflow:auto;">
+      <h3 style="margin:0 0 .5rem;">Selection</h3>
+      <div style="margin-bottom:.5rem;"><strong>Parameter:</strong> <span id="recap-name">None</span></div>
+      <div style="margin-bottom:.5rem;">
+        <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicants (inputs)</h4>
+        <ul id="recap-up" style="margin:0; padding-left:1rem;"></ul>
+      </div>
+      <div>
+        <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicated (outputs)</h4>
+        <ul id="recap-down" style="margin:0; padding-left:1rem;"></ul>
+      </div>
+      <p class="muted"
+         style="color:var(--muted,#666); font-size:.85rem;">
+         Tip: click a node. Tab/Enter works.
+      </p>
+    </aside>
+  </div>
 
   <!-- MODE B: LANGUAGE SELECTED -> cards grid -->
   <div id="lang-mode" {% if not preselect %}hidden{% endif %}>
@@ -102,5 +102,6 @@
     <div id="param-grid" role="list" aria-label="Parameters list"
          style="display:grid;gap:.5rem;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));"></div>
   </div>
+
 </section>
 {% endblock %}

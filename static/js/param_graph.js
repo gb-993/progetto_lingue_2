@@ -5,26 +5,124 @@
   const modeLang = document.getElementById("lang-mode");
   if (!modeGraph) return;
 
-  function swapMode(useLang) {
-    modeGraph.hidden = !!useLang;
-    modeLang.hidden = !useLang;
-  }
-  swapMode(!!langSelect.value);
-
-  langSelect.addEventListener("change", () => {
-    const hasLang = !!langSelect.value;
-    swapMode(hasLang);
-    if (hasLang) window.ParamLangView.load(langSelect.value);
-  });
-  reloadBtn.addEventListener("click", () => {
-    if (langSelect.value) window.ParamLangView.load(langSelect.value, true);
-    else fetchGraph(true);
-  });
-
   const recapName = document.getElementById("recap-name");
   const recapUp = document.getElementById("recap-up");
   const recapDown = document.getElementById("recap-down");
+
   let cy;
+  // lingua attualmente selezionata (null = nessuna lingua)
+  let currentLangId = langSelect && langSelect.value ? langSelect.value : null;
+  // valori della lingua corrente, usati per colorare i nodi
+  let latestLangValues = null;
+
+  // pulisce gli highlight implicazionali
+  function clearHL() {
+    if (!cy) return;
+    cy.elements().removeClass("focus up down dimmed");
+  }
+
+  // aggiorna pannello "Selection"
+  function updateRecap(title, upIds, downIds) {
+    if (!recapName || !recapUp || !recapDown) return;
+    recapName.textContent = title || "None";
+    recapUp.innerHTML = "";
+    recapDown.innerHTML = "";
+    const add = (ul, id) => {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = "#";
+      a.textContent = id;
+      a.className = "recap-link";
+      a.addEventListener("click", e => {
+        e.preventDefault();
+        if (!cy) return;
+        const n = cy.getElementById(id);
+        if (n.nonempty()) {
+          cy.center(n);
+          cy.animate({ fit: { eles: n, padding: 60 }, duration: 250 });
+          selectNode(n);
+        }
+      });
+      li.appendChild(a);
+      ul.appendChild(li);
+    };
+    upIds.forEach(id => add(recapUp, id));
+    downIds.forEach(id => add(recapDown, id));
+  }
+
+  // carica i valori per una lingua e applica i colori ai nodi
+  function loadLangValues(langId) {
+    if (!langId) return;
+    fetch(`/graphs/api/lang-values.json?lang=${encodeURIComponent(langId)}`, {
+      credentials: "same-origin",
+    })
+      .then(r => r.json())
+      .then(payload => {
+        latestLangValues = payload.values || [];
+        applyLangColors();
+      })
+      .catch(console.error);
+  }
+
+  // applica le classi colore ai nodi in base a latestLangValues
+  function applyLangColors() {
+    if (!cy) return;
+
+    cy.nodes().removeClass("val-plus val-minus val-zero val-unset");
+
+    if (!currentLangId || !latestLangValues) {
+      // nessuna lingua selezionata -> nessun colore speciale
+      return;
+    }
+
+    const map = Object.create(null);
+    latestLangValues.forEach(v => {
+      map[v.id] = v.final || "";
+    });
+
+    cy.nodes().forEach(n => {
+      const v = map[n.id()] || "";
+      if (v === "+") n.addClass("val-plus");
+      else if (v === "-") n.addClass("val-minus");
+      else if (v === "0") n.addClass("val-zero");
+      else n.addClass("val-unset");
+    });
+  }
+
+  // cambio lingua: aggiorna visibilità card + colori grafico
+  langSelect.addEventListener("change", () => {
+    const hasLang = !!langSelect.value;
+    currentLangId = hasLang ? langSelect.value : null;
+
+    // mostra/nasconde la griglia a card sotto
+    if (modeLang) modeLang.hidden = !hasLang;
+
+    // reset highlight implicazionale
+    clearHL();
+    updateRecap("None", [], []);
+
+    if (hasLang) {
+      if (window.ParamLangView) {
+        window.ParamLangView.load(currentLangId);
+      }
+      loadLangValues(currentLangId);
+    } else {
+      latestLangValues = null;
+      applyLangColors(); // rimuove val-*
+    }
+  });
+
+  // pulsante reload
+  reloadBtn.addEventListener("click", () => {
+    if (currentLangId) {
+      if (window.ParamLangView) {
+        window.ParamLangView.load(currentLangId, true);
+      }
+      loadLangValues(currentLangId);
+    } else {
+      fetchGraph(true);
+    }
+  });
 
   function fetchGraph(force) {
     if (cy && !force) return;
@@ -37,7 +135,10 @@
   function initCytoscape(data) {
     const container = document.getElementById("cy-container");
     if (!container) return;
-    if (cy) { cy.destroy(); cy = null; }
+    if (cy) {
+      cy.destroy();
+      cy = null;
+    }
 
     cy = cytoscape({
       container,
@@ -47,8 +148,10 @@
       layout: { name: "breadthfirst", directed: true, spacingFactor: 1.2, padding: 20 },
 
       style: [
-        { selector: "node", style: {
-            "background-color": "#90a4ae",
+        {
+          selector: "node",
+          style: {
+            "background-color": "#90a4ae",      // default (nessuna lingua)
             "label": "data(label)",
             "text-wrap": "wrap",
             "text-max-width": 120,
@@ -62,64 +165,104 @@
             "shape": "round-rectangle",
             "border-width": 1,
             "border-color": "#455a64",
-        }},
-        { selector: "edge", style: {
+          },
+        },
+        {
+          selector: "edge",
+          style: {
             "line-color": "#90a4ae",
             "target-arrow-color": "#90a4ae",
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
-            "width": 1.5
-        }},
+            "width": 1.5,
+          },
+        },
+
+        // colori per i valori parametrici della lingua selezionata
+        { selector: ".val-plus",  style: { "background-color": "#b7e3c0" } }, // +
+        { selector: ".val-minus", style: { "background-color": "#f2b6b3" } }, // –
+        { selector: ".val-zero",  style: { "background-color": "#cfd6e0" } }, // 0
+        { selector: ".val-unset", style: { "background-color": "#eeeeee" } }, // unset
+
+        // highlight implicazionale (solo quando non c'è lingua selezionata)
         { selector: ".focus",  style: { "background-color": "#ffdd66", "border-color": "#b18a00" } },
         { selector: ".up",     style: { "background-color": "#8bb6ff", "border-color": "#2c6bed" } },
         { selector: ".down",   style: { "background-color": "#ffcaa6", "border-color": "#e57a2e" } },
-        { selector: ".dimmed", style: { "opacity": 0.2 } }
-      ]
+        { selector: ".dimmed", style: { "opacity": 0.2 } },
+      ],
     });
 
     const ro = new ResizeObserver(() => cy.resize());
     ro.observe(container);
 
-    function clearHL() { cy.elements().removeClass("focus up down dimmed"); }
-    function updateRecap(title, upIds, downIds) {
-      recapName.textContent = title || "None";
-      recapUp.innerHTML = "";
-      recapDown.innerHTML = "";
-      const add = (ul, id) => {
-        const li = document.createElement("li");
-        const a = document.createElement("a");
-        a.href = "#"; a.textContent = id; a.className = "recap-link";
-        a.addEventListener("click", e => {
-          e.preventDefault();
-          const n = cy.getElementById(id);
-          if (n.nonempty()) { cy.center(n); cy.animate({ fit: { eles: n, padding: 60 }, duration: 250 }); selectNode(n); }
-        });
-        li.appendChild(a); ul.appendChild(li);
-      };
-      upIds.forEach(id => add(recapUp, id));
-      downIds.forEach(id => add(recapDown, id));
-    }
-
     function selectNode(node) {
       clearHL();
+
+      if (currentLangId) {
+        // con lingua selezionata: niente implicants/implicated,
+        // solo il parametro nel pannello selection
+        updateRecap(node.id(), [], []);
+        return;
+      }
+
       const up = node.incomers("node");
       const down = node.outgoers("node");
-      node.addClass("focus"); up.addClass("up"); down.addClass("down");
+      node.addClass("focus");
+      up.addClass("up");
+      down.addClass("down");
       const others = cy.nodes().not(up).not(down).not(node);
       others.addClass("dimmed");
       cy.edges().forEach(e => {
-        const src = e.source(), trg = e.target();
-        if (!(src.hasClass("focus") || src.hasClass("up") || src.hasClass("down")
-           || trg.hasClass("focus") || trg.hasClass("up") || trg.hasClass("down"))) e.addClass("dimmed");
+        const src = e.source(),
+          trg = e.target();
+        if (
+          !(
+            src.hasClass("focus") ||
+            src.hasClass("up") ||
+            src.hasClass("down") ||
+            trg.hasClass("focus") ||
+            trg.hasClass("up") ||
+            trg.hasClass("down")
+          )
+        )
+          e.addClass("dimmed");
       });
-      updateRecap(node.id(), up.map(n=>n.id()).sort(), down.map(n=>n.id()).sort());
+      updateRecap(
+        node.id(),
+        up.map(n => n.id()).sort(),
+        down.map(n => n.id()).sort()
+      );
     }
 
     cy.on("tap", "node", evt => selectNode(evt.target));
-    cy.on("tap", evt => { if (evt.target === cy) { clearHL(); updateRecap("None", [], []); }});
+    cy.on("tap", evt => {
+      if (evt.target === cy) {
+        clearHL();
+        updateRecap("None", [], []);
+      }
+    });
 
-    cy.fit(undefined, 5);              // usa quasi tutto il canvas
-    cy.zoom(cy.zoom() * 1.6);    }
+    cy.fit(undefined, 5);
+    cy.zoom(cy.zoom() * 1.6);
 
+    // se c'è già una lingua selezionata (preselect da querystring), applica subito i colori
+    if (currentLangId && latestLangValues) {
+      applyLangColors();
+    }
+  }
+
+  // inizializza:
+  // - grafo
+  // - eventuale lingua pre-selezionata
   fetchGraph(false);
+
+  if (currentLangId) {
+    if (modeLang) modeLang.hidden = false;
+    if (window.ParamLangView) {
+      window.ParamLangView.load(currentLangId);
+    }
+    loadLangValues(currentLangId);
+  } else {
+    if (modeLang) modeLang.hidden = true;
+  }
 })();

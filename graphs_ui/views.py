@@ -90,32 +90,72 @@ def api_lang_values(request: HttpRequest):
         return HttpResponseBadRequest("Invalid lang")
 
     # Recupera tutti i parametri; 'is_active' è il campo reale
-    params = list(ParameterDef.objects.all().values("id", "name", "is_active"))
+    params = list(
+        ParameterDef.objects.all().values("id", "name", "is_active")
+    )
 
-    # Integra col tuo motore: se presente usa evaluate_language, fallback = "unset"
     results: Dict[str, Dict[str, Any]] = {}
-    try:
-        from core.services.dag_eval import evaluate_language  # type: ignore
-        eval_res = evaluate_language(language)
-        for k, v in (eval_res or {}).items():
-            final_val = v.get("final") or v.get("value_eval") or "unset"
-            results[k] = {"final": str(final_val)}
-    except Exception:
-        results = {}
 
+    try:
+        from core.services.dag_eval import evaluate_language  
+    except ImportError:
+        evaluate_language = None  
+
+    if evaluate_language is not None:  
+        try:
+            eval_res = evaluate_language(language)
+        except Exception as e:
+            # Non silenziare completamente: logga, ma continua a restituire "unset"
+            import logging
+            logging.getLogger(__name__).exception(
+                "evaluate_language() failed for language %s", language
+            )
+            eval_res = None
+
+        if isinstance(eval_res, dict):
+            for k, v in eval_res.items():
+                pid_key = str(k)
+
+                if isinstance(v, dict):
+                    final_val = (
+                        v.get("final")
+                        or v.get("final_value")
+                        or v.get("value_eval")
+                        or v.get("value")
+                        or v.get("raw")
+                        or v.get("answer")
+                    )
+                else:
+                    final_val = v
+
+                if final_val is None or final_val == "":
+                    final_str = "unset"
+                else:
+                    final_str = str(final_val)
+
+                results[pid_key] = {"final": final_str}
+
+    # Costruzione payload in uscita
     payload: List[Dict[str, Any]] = []
     for p in params:
         pid = p["id"]
-        final_val = (results.get(pid, {}) or {}).get("final", "unset")
+        final_val = (results.get(str(pid), {}) or {}).get("final", "unset")
         label = f'{p["id"]} — {p["name"]}' if p.get("name") else p["id"]
-        payload.append({
-            "id": pid,
-            "label": label,
-            "final": final_val,              # "+", "-", "0", "unset"
-            "active": bool(p["is_active"]),  # nome campo reale
-        })
+        payload.append(
+            {
+                "id": pid,
+                "label": label,
+                "final": final_val,           
+                "active": bool(p["is_active"]),  
+            }
+        )
 
     return JsonResponse(
-        {"language": {"id": language.id, "name": getattr(language, "name_full", str(language.id))},
-         "values": payload}
+        {
+            "language": {
+                "id": language.id,
+                "name": getattr(language, "name_full", str(language.id)),
+            },
+            "values": payload,
+        }
     )
