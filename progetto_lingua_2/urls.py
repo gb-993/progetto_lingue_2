@@ -14,6 +14,7 @@ urlpatterns = [
     path("languages/", include("languages_ui.urls")),
     path("parameters/", include("parameters_ui.urls")),
     path("glossary/", include("glossary_ui.urls")),
+    path("graphs/", include("graphs_ui.urls")),
     path("table-a/", include("tablea_ui.urls")),
     path("submissions/", include("submissions_ui.urls")),
     path("queries/", include("queries.urls")),

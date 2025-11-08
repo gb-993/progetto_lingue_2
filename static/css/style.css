@@ -270,6 +270,14 @@ a:hover{text-decoration:underline}
   margin: 0 auto;
   padding: 2.5rem 1.5rem;
 }
+
+body.page-graph .card {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
 .main-title{ font-size:var(--fs-5); margin:0 0 var(--sp-4); }
 .muted{ color:var(--text-muted) }
 .nowrap{ white-space:nowrap }
@@ -1030,3 +1038,20 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   grid-column: 1 / -1;                 
   margin-top: .35rem;
 }
+
+/* ... tuo CSS esistente ... */
+
+/* Graphs */
+.graph-layout { display:grid; grid-template-columns: 1fr minmax(260px,320px); gap:1rem; align-items:start; }
+@media (max-width: 900px){ .graph-layout { grid-template-columns:1fr; } }
+.param-card { border:1px solid var(--border,#ddd); border-radius:8px; padding:.5rem .75rem; background:var(--surface,#fff); }
+.card-plus { background:#e8f7ec; }
+.card-minus { background:#fde8e7; }
+.card-zero { background:#eef1f5; }
+.card-unset { background:#f8f8f8; }
+.card-inactive { background:repeating-linear-gradient(45deg,#f8f8f8,#f8f8f8 6px,#eee 6px,#eee 12px); }
+.legend .badge { display:inline-block; padding:.125rem .375rem; border-radius:4px; border:1px solid var(--border,#ddd); }
+.legend .sep { display:inline-block; width:.75rem; }
+.b-plus { background:#e8f7ec; } .b-minus { background:#fde8e7; } .b-zero { background:#eef1f5; } .b-unset { background:#f8f8f8; }
+.b-focus { background:#fff6da; border-color:#eed68a; }
+.b-up { background:#e5efff; } .b-down { background:#fff0e5; }

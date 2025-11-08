@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "languages_ui",
     "parameters_ui",
     "glossary_ui",
+    "graphs_ui",
     "tablea_ui",
     "submissions_ui",
     "queries",

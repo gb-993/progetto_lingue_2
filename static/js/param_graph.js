@@ -1,165 +1,125 @@
-(function(){
-  const CY_ID = "cy";
-  const API_BASE = "/api/param-graph/";                           
-  const btnReload = document.getElementById("btn-reload");
-  const toggleRank = document.getElementById("toggle-rank");
-  const metaBox = document.getElementById("meta");
-  const langSelect = document.getElementById("lang-select");       
+(function () {
+  const langSelect = document.getElementById("lang-select");
+  const reloadBtn = document.getElementById("reloadBtn");
+  const modeGraph = document.getElementById("graph-mode");
+  const modeLang = document.getElementById("lang-mode");
+  if (!modeGraph) return;
 
-  let ro = null;
-  let resizeHandler = null;
+  function swapMode(useLang) {
+    modeGraph.hidden = !!useLang;
+    modeLang.hidden = !useLang;
+  }
+  swapMode(!!langSelect.value);
 
-  function edgesToElements(edges) {
-    return (edges || []).map(e => ({ data: { id: e.source + "->" + e.target, source: e.source, target: e.target }}));
+  langSelect.addEventListener("change", () => {
+    const hasLang = !!langSelect.value;
+    swapMode(hasLang);
+    if (hasLang) window.ParamLangView.load(langSelect.value);
+  });
+  reloadBtn.addEventListener("click", () => {
+    if (langSelect.value) window.ParamLangView.load(langSelect.value, true);
+    else fetchGraph(true);
+  });
+
+  const recapName = document.getElementById("recap-name");
+  const recapUp = document.getElementById("recap-up");
+  const recapDown = document.getElementById("recap-down");
+  let cy;
+
+  function fetchGraph(force) {
+    if (cy && !force) return;
+    fetch("/graphs/api/graph.json", { credentials: "same-origin" })
+      .then(r => r.json())
+      .then(initCytoscape)
+      .catch(console.error);
   }
 
-  function normalizeElements(payload) {
-    if (payload.nodes && payload.nodes[0] && payload.nodes[0].data) {
-      return { nodes: payload.nodes, edges: edgesToElements(payload.edges) };  
-    }
-    const nodes = (payload.nodes || []).map(n => ({
-      data: {
-        id: n.id, label: n.label, rank: n.rank,
-        cond: n.cond, cond_human: n.cond_human
-      }
-    }));
-    return { nodes, edges: edgesToElements(payload.edges) };
-  }
+  function initCytoscape(data) {
+    const container = document.getElementById("cy-container");
+    if (!container) return;
+    if (cy) { cy.destroy(); cy = null; }
 
-  function layoutFor(cy, layered) {
-    if (!layered) return cy.layout({ name: "cose", animate: true, fit: true });
-    return cy.layout({
-      name: "breadthfirst", directed: true, padding: 30,
-      avoidOverlap: true, spacingFactor: 1.2, animate: true,
-      roots: cy.nodes().filter(n => n.indegree() === 0).map(n => n.id()),
-    });
-  }
-
-  function debounce(fn, wait){ let t; return () => { clearTimeout(t); t=setTimeout(fn,wait); }; }
-
-  function endpointForCurrentLang() {
-    const lang = langSelect && langSelect.value ? langSelect.value.trim() : "";
-    return lang ? `${API_BASE}lang/${encodeURIComponent(lang)}/` : API_BASE;
-  }
-
-  async function render() {
-    if (ro) { try{ ro.disconnect(); }catch{} ro = null; }
-    if (resizeHandler) { window.removeEventListener("resize", resizeHandler); resizeHandler = null; }
-
-    metaBox.textContent = "Loading…";
-    const url = endpointForCurrentLang();                            
-    const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-    if (!resp.ok) { metaBox.textContent = "Error loading graph."; return; }
-    const payload = await resp.json();
-
-    const container = document.getElementById(CY_ID);
-    container.innerHTML = "";
-
-
-    const { nodes, edges } = normalizeElements(payload);
-
-    const cy = cytoscape({
+    cy = cytoscape({
       container,
-      elements: { nodes, edges },
-      wheelSensitivity: 0.2,
-      pixelRatio: 1, 
+      elements: { nodes: data.nodes, edges: data.edges },
+      wheelSensitivity: 0.15,
+      pixelRatio: 1,
+      layout: { name: "breadthfirst", directed: true, spacingFactor: 1.2, padding: 20 },
+
       style: [
         { selector: "node", style: {
+            "background-color": "#90a4ae",
             "label": "data(label)",
+            "text-wrap": "wrap",
+            "text-max-width": 120,
+            "font-size": 12,
             "text-valign": "center",
-            "color": "#222",                                
-            "background-color": "data(color)",            
-            "border-color": "#999", "border-width": 1,
-            "width": "label", "height": "label",
-            "padding": "6px", "shape": "round-rectangle",
-            "font-size": 12
+            "text-halign": "center",
+            "color": "#000",
+            "width": "label",
+            "height": "label",
+            "padding": "8px",
+            "shape": "round-rectangle",
+            "border-width": 1,
+            "border-color": "#455a64",
         }},
-        { selector: "node[!color]", style: { "background-color": "#999" } },  
         { selector: "edge", style: {
-            "curve-style": "bezier",
+            "line-color": "#90a4ae",
+            "target-arrow-color": "#90a4ae",
             "target-arrow-shape": "triangle",
-            "target-arrow-color": "#999",
-            "line-color": "#999", "width": 1.2
+            "curve-style": "bezier",
+            "width": 1.5
         }},
-        { selector: "node.highlight", style: { "background-color": "#f39c12" }},
-        { selector: "edge.highlight-in",  style: { "line-color": "#3498db", "target-arrow-color": "#3498db", "width": 1.6 }},
-        { selector: "node.highlight-in",  style: { "background-color": "#3498db" }},
-        { selector: "edge.highlight-out", style: { "line-color": "#e67e22", "target-arrow-color": "#e67e22", "width": 1.6 }},
-        { selector: "node.highlight-out", style: { "background-color": "#e67e22" }},
+        { selector: ".focus",  style: { "background-color": "#ffdd66", "border-color": "#b18a00" } },
+        { selector: ".up",     style: { "background-color": "#8bb6ff", "border-color": "#2c6bed" } },
+        { selector: ".down",   style: { "background-color": "#ffcaa6", "border-color": "#e57a2e" } },
+        { selector: ".dimmed", style: { "opacity": 0.2 } }
       ]
     });
 
-    if (payload.meta && payload.meta.language) {
-      const c = payload.meta.counts || {};
-      metaBox.textContent = `${payload.meta.language.id} — ${c["+"]||0}\n “+”, ${c["-"]||0}\n “–”, ${c["0"]||0} \n“0”, ${c.unset||0} unset`;
-    } else if (payload.meta) {
-      metaBox.textContent = `${payload.meta.active_count} active parameters • ${payload.meta.has_edges ? 'with' : 'no'} relations`;
-    } else {
-      metaBox.textContent = "";
+    const ro = new ResizeObserver(() => cy.resize());
+    ro.observe(container);
+
+    function clearHL() { cy.elements().removeClass("focus up down dimmed"); }
+    function updateRecap(title, upIds, downIds) {
+      recapName.textContent = title || "None";
+      recapUp.innerHTML = "";
+      recapDown.innerHTML = "";
+      const add = (ul, id) => {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = "#"; a.textContent = id; a.className = "recap-link";
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          const n = cy.getElementById(id);
+          if (n.nonempty()) { cy.center(n); cy.animate({ fit: { eles: n, padding: 60 }, duration: 250 }); selectNode(n); }
+        });
+        li.appendChild(a); ul.appendChild(li);
+      };
+      upIds.forEach(id => add(recapUp, id));
+      downIds.forEach(id => add(recapDown, id));
     }
 
-    const doFit = () => { cy.resize(); cy.fit(cy.elements(), 30); };
-    cy.once("layoutstop", () => setTimeout(doFit, 0));
-    layoutFor(cy, toggleRank.checked).run();
-    requestAnimationFrame(doFit);
-    setTimeout(doFit, 0);
-
-    const onResize = debounce(doFit, 120);
-    window.addEventListener("resize", onResize);
-    resizeHandler = onResize;
-    if (window.ResizeObserver) {
-      ro = new ResizeObserver(onResize);
-      ro.observe(container);
+    function selectNode(node) {
+      clearHL();
+      const up = node.incomers("node");
+      const down = node.outgoers("node");
+      node.addClass("focus"); up.addClass("up"); down.addClass("down");
+      const others = cy.nodes().not(up).not(down).not(node);
+      others.addClass("dimmed");
+      cy.edges().forEach(e => {
+        const src = e.source(), trg = e.target();
+        if (!(src.hasClass("focus") || src.hasClass("up") || src.hasClass("down")
+           || trg.hasClass("focus") || trg.hasClass("up") || trg.hasClass("down"))) e.addClass("dimmed");
+      });
+      updateRecap(node.id(), up.map(n=>n.id()).sort(), down.map(n=>n.id()).sort());
     }
 
-cy.on("tap", "node", (evt) => {
-  const n = evt.target;
-  const cond = n.data("cond_human") || n.data("cond") || "(no condition)";
-  const hasLang = !!(payload.meta && payload.meta.language);
+    cy.on("tap", "node", evt => selectNode(evt.target));
+    cy.on("tap", evt => { if (evt.target === cy) { clearHL(); updateRecap("None", [], []); }});
 
-  if (!hasLang) {
-    cy.elements().removeClass("highlight highlight-in highlight-out");
-    n.addClass("highlight");
-    n.outgoers("edge").addClass("highlight-out");
-    n.outgoers("node").addClass("highlight-out");
-    n.incomers("edge").addClass("highlight-in");
-    n.incomers("node").addClass("highlight-in");
-  } else {
-    cy.elements().removeClass("highlight highlight-in highlight-out");
-  }
+    cy.fit(undefined, 5);              // usa quasi tutto il canvas
+    cy.zoom(cy.zoom() * 1.6);    }
 
-  const val = n.data("value");
-  if (hasLang) {
-    metaBox.innerText = `${n.id()} — value: ${val || "unset"}`;
-  } else {
-    const fmt = (node) => node.id();
-    const uniqSort = (arr) => Array.from(new Set(arr)).sort();
-    const incoming = uniqSort(n.incomers("node").map(fmt));
-    const outgoing = uniqSort(n.outgoers("node").map(fmt));
-    const fromTxt = incoming.length ? incoming.join(", ") : "—";
-    const toTxt   = outgoing.length ? outgoing.join(", ") : "—";
-    metaBox.innerText = `${n.id()} — ${cond}\n← from: ${fromTxt}\n→ to: ${toTxt}`;
-  }
-});
-
-
-
-    cy.on("dbltap", "node", (evt) => {
-      const n = evt.target;
-      cy.elements().removeClass("highlight highlight-in highlight-out");
-      n.closedNeighborhood().addClass("highlight");
-    });
-
-    btnReload.onclick = render;
-    toggleRank.onchange = () => {
-      const l = layoutFor(cy, toggleRank.checked);
-      cy.once("layoutstop", doFit);
-      l.run();
-    };
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    render();
-    if (langSelect) langSelect.addEventListener("change", render);  
-  });
+  fetchGraph(false);
 })();

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body_class %}page-graph{% endblock %}
+{% block title %}Parameters DAG{% endblock %}
+{% block breadcrumb %}Graphs / Parameters{% endblock %}
+
+{% block extra_head %}
+  <script defer src="{% static 'vendor/cytoscape.min.js' %}"></script>
+  <script defer src="{% static 'js/param_graph.js' %}"></script>
+  <script defer src="{% static 'js/param_lang_views.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<header class="dashboard-hero">
+  <h1>Graph</h1>
+</header>
+
+<section class="card" style="padding:1rem;">
+  <div class="toolbar" style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
+    <label for="lang-select" class="visually-hidden">Language</label>
+    <select id="lang-select" name="lang" style="min-width:14rem;">
+      <option value="">No language selected</option>
+      {% for l in languages %}
+        <option value="{{ l.id }}" {% if preselect and preselect == l.id|stringformat:"s" %}selected{% endif %}>
+          {{ l.id }} — {{ l.name_full }}
+        </option>
+      {% endfor %}
+    </select>
+    <button id="reloadBtn" class="btn btn--secondary" type="button">Reload</button>
+
+    <div class="legend" aria-hidden="true">
+      <span class="badge b-plus">+</span>
+      <span class="badge b-minus">–</span>
+      <span class="badge b-zero">0</span>
+      <span class="badge b-unset">unset</span>
+      <span class="sep"></span>
+      <span class="badge b-focus">selected</span>
+      <span class="badge b-up">implicants</span>
+      <span class="badge b-down">implicated</span>
+    </div>
+  </div>
+
+<div id="graph-mode"
+     class="graph-layout"
+     {% if preselect %}hidden{% endif %}
+     style="display:flex; flex-direction:column; gap:.75rem;">
+
+  <!-- Grafo in alto -->
+  <div id="cy-container"
+       aria-label="Parameters graph"
+       role="application"
+       style="width:100%;
+              height:640px;
+              min-height:420px;
+              border:1px solid var(--border,#ddd);
+              border-radius:8px;
+              background:var(--surface,#fff);
+              position:relative;
+              overflow:hidden;">
+  </div>
+
+  <!-- Box Selection sotto -->
+  <aside class="graph-recap"
+         aria-live="polite"
+         style="border:1px solid var(--border,#ddd);
+                border-radius:8px;
+                padding:.75rem;
+                background:var(--surface-2,var(--surface,#fff));
+                max-height:240px;
+                overflow:auto;">
+    <h3 style="margin:0 0 .5rem;">Selection</h3>
+    <div style="margin-bottom:.5rem;"><strong>Parameter:</strong> <span id="recap-name">None</span></div>
+    <div style="margin-bottom:.5rem;">
+      <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicants (inputs)</h4>
+      <ul id="recap-up" style="margin:0; padding-left:1rem;"></ul>
+    </div>
+    <div>
+      <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicated (outputs)</h4>
+      <ul id="recap-down" style="margin:0; padding-left:1rem;"></ul>
+    </div>
+    <p class="muted"
+       style="color:var(--muted,#666); font-size:.85rem;">
+       Tip: click a node. Tab/Enter works.
+    </p>
+  </aside>
+</div>
+
+
+
+  <!-- MODE B: LANGUAGE SELECTED -> cards grid -->
+  <div id="lang-mode" {% if not preselect %}hidden{% endif %}>
+    <header class="lang-head" style="display:flex; align-items:center; gap:1rem; justify-content:space-between; margin:.5rem 0 1rem;">
+      <h3 id="lang-title">—</h3>
+      <div class="lang-legend" aria-hidden="true">
+        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#b7e3c0;"></span> +
+        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#f2b6b3;"></span> –
+        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#cfd6e0;"></span> 0
+        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#eee;"></span> unset
+        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:repeating-linear-gradient(45deg,#eee,#eee 6px,#ddd 6px,#ddd 12px);"></span> inactive
+      </div>
+    </header>
+    <div id="param-grid" role="list" aria-label="Parameters list"
+         style="display:grid;gap:.5rem;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));"></div>
+  </div>
+</section>
+{% endblock %}
