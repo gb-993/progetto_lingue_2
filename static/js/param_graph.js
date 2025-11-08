@@ -164,13 +164,12 @@
             "padding": "8px",
             "shape": "round-rectangle",
             "border-width": 1,
-            "border-color": "#607D8B",       
+            "border-color": "#000000",       
           },
         },
         {
           selector: "edge",
           style: {
-            // edge più leggibili sullo sfondo chiaro
             "line-color": "#90A4AE",
             "target-arrow-color": "#90A4AE",
             "target-arrow-shape": "triangle",
@@ -190,13 +189,10 @@
           },
         },
 
-        // colori per i valori parametrici della lingua selezionata
-        // colori per i valori parametrici della lingua selezionata
-        // sfondi scuri + testo bianco per massimo contrasto
         { 
           selector: ".val-plus",
           style: {
-            "background-color": "#1B5E20",   // verde scuro (value +)
+            "background-color": "#1B5E20",   
             "border-color": "#0B3D13",
             "color": "#FFFFFF"
           }
@@ -204,7 +200,7 @@
         {
           selector: ".val-minus",
           style: {
-            "background-color": "#B71C1C",   // rosso scuro (value -)
+            "background-color": "#B71C1C",  
             "border-color": "#7F0000",
             "color": "#FFFFFF"
           }
@@ -212,7 +208,7 @@
         {
           selector: ".val-zero",
           style: {
-            "background-color": "#0D47A1",   // blu scuro (value 0)
+            "background-color": "#0D47A1",  
             "border-color": "#002171",
             "color": "#FFFFFF"
           }
@@ -220,18 +216,17 @@
         {
           selector: ".val-unset",
           style: {
-            "background-color": "#FAFAFA",   // quasi bianco (unset)
+            "background-color": "#FAFAFA",   
             "border-color": "#BDBDBD",
             "color": "#000000"
           }
         },
 
         // highlight implicazionale (solo quando non c'è lingua selezionata)
-        // colori più vivi, ma con sufficiente contrasto con testo e fondo
         {
           selector: ".focus",
           style: {
-            "background-color": "#FFEB3B",   // giallo acceso per il nodo selezionato
+            "background-color": "#FFEB3B",   
             "border-color": "#F57F17",
             "color": "#000000"
           }
@@ -239,7 +234,7 @@
         {
           selector: ".up",
           style: {
-            "background-color": "#4CAF50",   // verde per implicanti
+            "background-color": "#4CAF50",   
             "border-color": "#1B5E20",
             "color": "#FFFFFF"
           }
@@ -247,7 +242,7 @@
         {
           selector: ".down",
           style: {
-            "background-color": "#FF9800",   // arancione per implicati
+            "background-color": "#FF9800",   
             "border-color": "#EF6C00",
             "color": "#FFFFFF"
           }
@@ -268,7 +263,6 @@
 
       if (currentLangId) {
         // con lingua selezionata: niente implicants/implicated,
-        // solo il parametro nel pannello selection
         updateRecap(node.id(), [], []);
         return;
       }
@@ -313,7 +307,7 @@
     cy.fit(undefined, 5);
     cy.zoom(cy.zoom() * 1.6);
 
-    // se c'è già una lingua selezionata (preselect da querystring), applica subito i colori
+    // se c'è già una lingua selezionata applica subito i colori
     if (currentLangId && latestLangValues) {
       applyLangColors();
     }
