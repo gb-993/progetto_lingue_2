@@ -1,4 +1,3 @@
-# tablea/views.py — SOSTITUISCI INTERO FILE
 
 from __future__ import annotations
 from io import BytesIO
@@ -79,8 +78,6 @@ def tablea_index(request):
 
     languages = [l for l in languages_all if _match(l)]
 
-    # Prepara indici delle colonne scelte per filtrare anche i valori nelle righe
-    # export_rows = [label, name, implication, <val0>, <val1>, ...] in ordine languages_all
     idx_map = [i for i, l in enumerate(languages_all) if l in languages]
 
     rows_for_template = []
@@ -96,7 +93,6 @@ def tablea_index(request):
         "languages": languages,
         "parameters": parameters,
         "rows": rows_for_template,
-        # per i filtri
         "families": families,
         "selected_family": selected_family,
         "selected_historical": selected_historical,
@@ -106,16 +102,27 @@ def tablea_index(request):
 
 @login_required
 def tablea_export_csv(request):
-    # Costruisci i dati COMPLETI (nessun filtro per export)
-    headers, export_rows, *_ = _build_tablea_matrix()
+
+    headers, export_rows, languages, parameters = _build_tablea_matrix() 
+
+    transposed_header = ["Language"] + [p.id for p in parameters]  
+
+
+    transposed_rows = []
+    for lang_index, lang in enumerate(languages):
+        row_values_for_params = [
+            export_rows[param_idx][3 + lang_index] 
+            for param_idx in range(len(parameters))
+        ]
+        transposed_rows.append([lang.id] + row_values_for_params)  
 
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="tableA.csv"'
-    response.write("\ufeff")  # BOM per Excel/Windows
+    response.write("\ufeff") 
 
     writer = csv.writer(response, delimiter=",", quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(headers)
-    writer.writerows(export_rows)
+    writer.writerow(transposed_header)  
+    writer.writerows(transposed_rows)   
     return response
 
 
