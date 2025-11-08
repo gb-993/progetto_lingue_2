@@ -352,11 +352,15 @@
               </div>
             {% endif %}
 
+            {# data.html — NUOVA VERSIONE #}
             {% if q.example_yes %}
               <div class="muted" style="margin:.25rem 0 .5rem;">
-                <strong>Example YES:</strong> {{ q.example_yes|linebreaksbr }}
+                <strong>Example YES:</strong>
+                {# testo attaccato al tag, nessun newline/spazio prima del primo carattere #}
+                <div class="example-yes-text" style="white-space: pre-wrap; margin-top:.25rem;">{{ q.example_yes }}</div>
               </div>
             {% endif %}
+
 
             {# --- ANSWER SELECT + istruzioni dinamiche --- #}
             <div class="qa-fields">
