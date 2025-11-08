@@ -215,7 +215,7 @@ def parameter_edit(request, param_id: str):
                 return redirect("parameter_edit", param_id=param.id)
 
         else:
-            messages.error(request, "Please fix the highlighted errors.")
+            messages.error(request, "Please add a recap of the external changes.")
 
         questions = (
             param.questions
@@ -359,7 +359,7 @@ def question_add(request, param_id: str):
             messages.success(request, "Question created.")
             return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
-            messages.error(request, "Please fix the errors in the question.")
+            messages.error(request, "Please add a recap of the external changes.")
             return render(
                 request,
                 "parameters/question_form.html",
