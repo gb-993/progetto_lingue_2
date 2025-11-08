@@ -8,7 +8,56 @@
   <script defer src="{% static 'vendor/cytoscape.min.js' %}"></script>
   <script defer src="{% static 'js/param_graph.js' %}"></script>
   <script defer src="{% static 'js/param_lang_views.js' %}"></script>
+
+  <style>
+    .page-graph .legend .badge {
+      border-radius: 999px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.85rem;
+      border: 1px solid transparent;
+    }
+
+    /* valori parametrici */
+    .page-graph .badge.b-plus {
+      background-color: #1B5E20;
+      color: #FFFFFF;
+      border-color: #0B3D13;
+    }
+    .page-graph .badge.b-minus {
+      background-color: #B71C1C;
+      color: #FFFFFF;
+      border-color: #7F0000;
+    }
+    .page-graph .badge.b-zero {
+      background-color: #0D47A1;
+      color: #FFFFFF;
+      border-color: #002171;
+    }
+    .page-graph .badge.b-unset {
+      background-color: #FAFAFA;
+      color: #000000;
+      border-color: #BDBDBD;
+    }
+
+    /* (quando nessuna lingua è selezionata) */
+    .page-graph .badge.b-focus {
+      background-color: #FFEB3B;
+      color: #000000;
+      border-color: #F57F17;
+    }
+    .page-graph .badge.b-up {
+      background-color: #4CAF50;
+      color: #FFFFFF;
+      border-color: #1B5E20;
+    }
+    .page-graph .badge.b-down {
+      background-color: #FF9800;
+      color: #FFFFFF;
+      border-color: #EF6C00;
+    }
+  </style>
 {% endblock %}
+
 
 {% block content %}
 <header class="dashboard-hero">
@@ -47,7 +96,7 @@
        {# NEW: graph sempre visibile, niente hidden in base a preselect #}
        style="display:flex; flex-direction:column; gap:.75rem;">
 
-    <!-- Grafo in alto -->
+    <!-- Grafo -->
     <div id="cy-container"
          aria-label="Parameters graph"
          role="application"
@@ -61,47 +110,40 @@
                 overflow:hidden;">
     </div>
 
-    <!-- Box Selection sotto -->
+<!-- Box Selection -->
     <aside class="graph-recap"
            aria-live="polite"
            style="border:1px solid var(--border,#ddd);
                   border-radius:8px;
                   padding:.75rem;
                   background:var(--surface-2,var(--surface,#fff));
-                  max-height:240px;
-                  overflow:auto;">
+                  width:100%;
+                  align-self:stretch;
+                  margin-top:.25rem;">
       <h3 style="margin:0 0 .5rem;">Selection</h3>
-      <div style="margin-bottom:.5rem;"><strong>Parameter:</strong> <span id="recap-name">None</span></div>
+
       <div style="margin-bottom:.5rem;">
-        <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicants (inputs)</h4>
-        <ul id="recap-up" style="margin:0; padding-left:1rem;"></ul>
+        <strong>Parameter:</strong> <span id="recap-name">None</span>
       </div>
-      <div>
-        <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicated (outputs)</h4>
-        <ul id="recap-down" style="margin:0; padding-left:1rem;"></ul>
+
+      <div style="margin-bottom:.5rem; display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start;">
+        <div style="min-width:12rem; flex:1 1 0;">
+          <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicants (inputs)</h4>
+          <ul id="recap-up" style="margin:0; padding-left:1rem;"></ul>
+        </div>
+        <div style="min-width:12rem; flex:1 1 0;">
+          <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">Implicated (outputs)</h4>
+          <ul id="recap-down" style="margin:0; padding-left:1rem;"></ul>
+        </div>
       </div>
+
       <p class="muted"
          style="color:var(--muted,#666); font-size:.85rem;">
-         Tip: click a node. Tab/Enter works.
+         Tip: click a node.
       </p>
     </aside>
   </div>
 
-  <!-- MODE B: LANGUAGE SELECTED -> cards grid -->
-  <div id="lang-mode" {% if not preselect %}hidden{% endif %}>
-    <header class="lang-head" style="display:flex; align-items:center; gap:1rem; justify-content:space-between; margin:.5rem 0 1rem;">
-      <h3 id="lang-title">—</h3>
-      <div class="lang-legend" aria-hidden="true">
-        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#b7e3c0;"></span> +
-        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#f2b6b3;"></span> –
-        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#cfd6e0;"></span> 0
-        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:#eee;"></span> unset
-        <span style="display:inline-block;width:14px;height:14px;border:1px solid var(--border,#ccc);margin:0 .25rem 0 .75rem;background:repeating-linear-gradient(45deg,#eee,#eee 6px,#ddd 6px,#ddd 12px);"></span> inactive
-      </div>
-    </header>
-    <div id="param-grid" role="list" aria-label="Parameters list"
-         style="display:grid;gap:.5rem;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));"></div>
-  </div>
 
 </section>
 {% endblock %}

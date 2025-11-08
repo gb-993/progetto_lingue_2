@@ -6,8 +6,12 @@ from django.http import JsonResponse, HttpRequest, HttpResponseBadRequest
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
-# Modelli REALI (vedi core/models.py)
-from core.models import ParameterDef, Language  # NOTA: nessun modello Implication nel tuo schema
+from core.models import (
+    ParameterDef,
+    Language,
+    LanguageParameter,
+    LanguageParameterEval,  # NEW: usato per leggere value_eval
+)
 
 
 # --------- Helpers ---------
@@ -81,72 +85,54 @@ def api_lang_values(request: HttpRequest):
     Valori finali post-eval per tutti i parametri (attivi e non), per una lingua.
     Output: {"language": {...}, "values": [{"id","label","final","+/-/0/unset","active":bool}]}
     """
-    lang = request.GET.get("lang")
-    if not lang:
+    lang_id = request.GET.get("lang")
+    if not lang_id:
         return HttpResponseBadRequest("Missing lang")
+
     try:
-        language = Language.objects.get(id=lang)
+        language = Language.objects.get(id=lang_id)
     except Language.DoesNotExist:
         return HttpResponseBadRequest("Invalid lang")
 
-    # Recupera tutti i parametri; 'is_active' è il campo reale
+    # 1) Recupera tutti i parametri (attivi e non, come prima)
     params = list(
         ParameterDef.objects.all().values("id", "name", "is_active")
     )
+    param_ids = [p["id"] for p in params]
 
-    results: Dict[str, Dict[str, Any]] = {}
+    # 2) Mappa param_id -> value_eval leggendo i risultati del DAG
+    #    (LanguageParameterEval collegato a LanguageParameter per quella lingua)
+    eval_map: Dict[str, str | None] = {}
+    eval_qs = (
+        LanguageParameterEval.objects
+        .filter(language_parameter__language=language,
+                language_parameter__parameter_id__in=param_ids)
+        .values_list("language_parameter__parameter_id", "value_eval")
+    )
+    for pid, val in eval_qs:
+        # val è '+', '-', '0' oppure None
+        eval_map[str(pid)] = val
 
-    try:
-        from core.services.dag_eval import evaluate_language  
-    except ImportError:
-        evaluate_language = None  
-
-    if evaluate_language is not None:  
-        try:
-            eval_res = evaluate_language(language)
-        except Exception as e:
-            # Non silenziare completamente: logga, ma continua a restituire "unset"
-            import logging
-            logging.getLogger(__name__).exception(
-                "evaluate_language() failed for language %s", language
-            )
-            eval_res = None
-
-        if isinstance(eval_res, dict):
-            for k, v in eval_res.items():
-                pid_key = str(k)
-
-                if isinstance(v, dict):
-                    final_val = (
-                        v.get("final")
-                        or v.get("final_value")
-                        or v.get("value_eval")
-                        or v.get("value")
-                        or v.get("raw")
-                        or v.get("answer")
-                    )
-                else:
-                    final_val = v
-
-                if final_val is None or final_val == "":
-                    final_str = "unset"
-                else:
-                    final_str = str(final_val)
-
-                results[pid_key] = {"final": final_str}
-
-    # Costruzione payload in uscita
+    # 3) Costruzione payload: se non c'è value_eval → "unset"
     payload: List[Dict[str, Any]] = []
     for p in params:
-        pid = p["id"]
-        final_val = (results.get(str(pid), {}) or {}).get("final", "unset")
+        pid = str(p["id"])
+        raw_val = eval_map.get(pid)
+
+        if raw_val in ("+", "-", "0"):
+            final_val = raw_val
+        else:
+            # None o altro ⇒ trattato come "unset" nel grafo
+            final_val = "unset"
+
         label = f'{p["id"]} — {p["name"]}' if p.get("name") else p["id"]
+
         payload.append(
             {
-                "id": pid,
+                "id": p["id"],
                 "label": label,
-                "final": final_val,           
-                "active": bool(p["is_active"]),  
+                "final": final_val,                 # usato da JS per i colori
+                "active": bool(p["is_active"]),     # info su parametro attivo
             }
         )
 

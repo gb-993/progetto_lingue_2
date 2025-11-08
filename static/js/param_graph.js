@@ -151,22 +151,34 @@
         {
           selector: "node",
           style: {
-            "background-color": "#90a4ae",      // default (nessuna lingua)
+            "background-color": "#ECEFF1",      // default (nessuna lingua)
             "label": "data(label)",
             "text-wrap": "wrap",
             "text-max-width": 120,
-            "font-size": 12,
+            "font-size": 14,
             "text-valign": "center",
             "text-halign": "center",
-            "color": "#000",
+            "color": "#000000",               
             "width": "label",
             "height": "label",
             "padding": "8px",
             "shape": "round-rectangle",
             "border-width": 1,
-            "border-color": "#455a64",
+            "border-color": "#607D8B",       
           },
         },
+        {
+          selector: "edge",
+          style: {
+            // edge più leggibili sullo sfondo chiaro
+            "line-color": "#90A4AE",
+            "target-arrow-color": "#90A4AE",
+            "target-arrow-shape": "triangle",
+            "curve-style": "bezier",
+            "width": 1.5,
+          },
+        },
+
         {
           selector: "edge",
           style: {
@@ -179,16 +191,72 @@
         },
 
         // colori per i valori parametrici della lingua selezionata
-        { selector: ".val-plus",  style: { "background-color": "#b7e3c0" } }, // +
-        { selector: ".val-minus", style: { "background-color": "#f2b6b3" } }, // –
-        { selector: ".val-zero",  style: { "background-color": "#cfd6e0" } }, // 0
-        { selector: ".val-unset", style: { "background-color": "#eeeeee" } }, // unset
+        // colori per i valori parametrici della lingua selezionata
+        // sfondi scuri + testo bianco per massimo contrasto
+        { 
+          selector: ".val-plus",
+          style: {
+            "background-color": "#1B5E20",   // verde scuro (value +)
+            "border-color": "#0B3D13",
+            "color": "#FFFFFF"
+          }
+        },
+        {
+          selector: ".val-minus",
+          style: {
+            "background-color": "#B71C1C",   // rosso scuro (value -)
+            "border-color": "#7F0000",
+            "color": "#FFFFFF"
+          }
+        },
+        {
+          selector: ".val-zero",
+          style: {
+            "background-color": "#0D47A1",   // blu scuro (value 0)
+            "border-color": "#002171",
+            "color": "#FFFFFF"
+          }
+        },
+        {
+          selector: ".val-unset",
+          style: {
+            "background-color": "#FAFAFA",   // quasi bianco (unset)
+            "border-color": "#BDBDBD",
+            "color": "#000000"
+          }
+        },
 
         // highlight implicazionale (solo quando non c'è lingua selezionata)
-        { selector: ".focus",  style: { "background-color": "#ffdd66", "border-color": "#b18a00" } },
-        { selector: ".up",     style: { "background-color": "#8bb6ff", "border-color": "#2c6bed" } },
-        { selector: ".down",   style: { "background-color": "#ffcaa6", "border-color": "#e57a2e" } },
-        { selector: ".dimmed", style: { "opacity": 0.2 } },
+        // colori più vivi, ma con sufficiente contrasto con testo e fondo
+        {
+          selector: ".focus",
+          style: {
+            "background-color": "#FFEB3B",   // giallo acceso per il nodo selezionato
+            "border-color": "#F57F17",
+            "color": "#000000"
+          }
+        },
+        {
+          selector: ".up",
+          style: {
+            "background-color": "#4CAF50",   // verde per implicanti
+            "border-color": "#1B5E20",
+            "color": "#FFFFFF"
+          }
+        },
+        {
+          selector: ".down",
+          style: {
+            "background-color": "#FF9800",   // arancione per implicati
+            "border-color": "#EF6C00",
+            "color": "#FFFFFF"
+          }
+        },
+        {
+          selector: ".dimmed",
+          style: { "opacity": 0.2 }
+        },
+
       ],
     });
 
