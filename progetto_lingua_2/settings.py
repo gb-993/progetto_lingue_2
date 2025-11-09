@@ -1,6 +1,4 @@
-"""
-Django settings for progetto_lingua_2 project.
-"""
+
 from pathlib import Path
 import os
 
@@ -20,10 +18,13 @@ def env_list(key, default=""):
     raw = os.environ.get(key, default)
     return [x.strip() for x in raw.split(",") if x.strip()]
 
+LOG_LEVEL = env("DJANGO_LOG_LEVEL", "INFO")
+
 # ---------------------- Base / Security ----------------------
 SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-change-me")
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ENV = env("ENV", "dev")  # "dev" | "prod"
+
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 # CSRF: accetta host espliciti + derivati da ALLOWED_HOSTS
@@ -41,9 +42,15 @@ CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf_from_env + _auto))  # dedup
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", ENV == "prod")
 SESSION_COOKIE_SECURE = ENV == "prod"
 CSRF_COOKIE_SECURE = ENV == "prod"
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
 # Se Nginx termina TLS e inoltra:
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
 
 # ---------------------- Apps ----------------------
 INSTALLED_APPS = [
@@ -144,6 +151,16 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 anno
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -169,3 +186,57 @@ if ENV == "prod":
     SECURE_HSTS_SECONDS = int(env("DJANGO_SECURE_HSTS_SECONDS", 60 * 60 * 24 * 7))  
     SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", True)
     SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", True)
+
+# ---------------------- Logging ----------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "[{levelname}] {asctime} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "core": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": True,
+        },
+        "languages_ui": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": True,
+        },
+        "parameters_ui": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": True,
+        },
+        "submissions_ui": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": True,
+        },
+    },
+}
