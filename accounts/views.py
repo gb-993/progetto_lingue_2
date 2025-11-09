@@ -75,7 +75,7 @@ def accounts_add(request):
             lang_ids = request.POST.getlist("lang_ids") if HAS_LANGUAGE else []
             langs = Language.objects.filter(id__in=lang_ids) if HAS_LANGUAGE else []
 
-            # Conflict detection
+            
             conflicts = []
             if HAS_LANGUAGE:
                 for l in langs:

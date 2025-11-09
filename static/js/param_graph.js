@@ -10,21 +10,21 @@
   const recapDown = document.getElementById("recap-down");
 
   let cy;
-  // lingua attualmente selezionata (null = nessuna lingua)
+  
   let currentLangId = langSelect && langSelect.value ? langSelect.value : null;
-  // valori della lingua corrente, usati per colorare i nodi
+  
   let latestLangValues = null;
 
 
 
-  // pulisce gli highlight implicazionali
+  
   function clearHL() {
     if (!cy) return;
     cy.elements().removeClass("focus up down dimmed");
   }
 
-  // NEW: dato un id di parametro, restituisce il suo simbolo di valore ("+","-","0","unset")
-  // per la lingua corrente, oppure null se non disponibile
+  
+  
   function getValueSymbolForId(id) {
     if (!currentLangId || !latestLangValues) return null;
     const nid = String(id);
@@ -32,17 +32,17 @@
       const v = latestLangValues[i];
       if (String(v.id) === nid) {
         if (v.final === null || v.final === undefined || v.final === "") return null;
-        return String(v.final); // "+", "-", "0" oppure "unset"
+        return String(v.final); 
       }
     }
     return null;
   }
 
-  // aggiorna pannello "Selection"
+  
   function updateRecap(title, upIds, downIds) {
     if (!recapName || !recapUp || !recapDown) return;
 
-    // il titolo viene già passato pronto (label + eventuale valore)
+    
     recapName.textContent = title || "None";
     recapUp.innerHTML = "";
     recapDown.innerHTML = "";
@@ -52,7 +52,7 @@
       const a = document.createElement("a");
       a.href = "#";
 
-      // label leggibile: uso il dato del nodo se disponibile, altrimenti l'id grezzo
+      
       let label = id;
       if (cy) {
         const n = cy.getElementById(id);
@@ -61,7 +61,7 @@
         }
       }
 
-      // se c'è una lingua selezionata e un valore, lo aggiungo tra parentesi
+      
       const sym = getValueSymbolForId(id);
       if (sym) {
         label = `${label} (${sym})`;
@@ -91,7 +91,7 @@
   }
 
 
-  // carica i valori per una lingua e applica i colori ai nodi
+  
   function loadLangValues(langId) {
     if (!langId) return;
     fetch(`/graphs/api/lang-values.json?lang=${encodeURIComponent(langId)}`, {
@@ -105,14 +105,14 @@
       .catch(console.error);
   }
 
-  // applica le classi colore ai nodi in base a latestLangValues
+  
   function applyLangColors() {
     if (!cy) return;
 
     cy.nodes().removeClass("val-plus val-minus val-zero val-unset");
 
     if (!currentLangId || !latestLangValues) {
-      // nessuna lingua selezionata -> nessun colore speciale
+      
       return;
     }
 
@@ -130,15 +130,15 @@
     });
   }
 
-  // cambio lingua: aggiorna visibilità card + colori grafico
+  
   langSelect.addEventListener("change", () => {
     const hasLang = !!langSelect.value;
     currentLangId = hasLang ? langSelect.value : null;
 
-    // mostra/nasconde la griglia a card sotto
+    
     if (modeLang) modeLang.hidden = !hasLang;
 
-    // reset highlight implicazionale
+    
     clearHL();
     updateRecap("None", [], []);
 
@@ -149,11 +149,11 @@
       loadLangValues(currentLangId);
     } else {
       latestLangValues = null;
-      applyLangColors(); // rimuove val-*
+      applyLangColors(); 
     }
   });
 
-  // pulsante reload
+  
   reloadBtn.addEventListener("click", () => {
     if (currentLangId) {
       if (window.ParamLangView) {
@@ -263,7 +263,7 @@
           }
         },
 
-        // highlight implicazionale (solo quando non c'è lingua selezionata)
+        
         {
           selector: ".focus",
           style: {
@@ -299,14 +299,14 @@
     const ro = new ResizeObserver(() => cy.resize());
     ro.observe(container);
 
-    // NEW: helper per recuperare il valore del parametro per il nodo selezionato
+    
     function getLangValueForNodeId(nodeId) {
       if (!latestLangValues) return null;
       const nid = String(nodeId);
       for (let i = 0; i < latestLangValues.length; i++) {
         const v = latestLangValues[i];
         if (String(v.id) === nid) {
-          return v; // {id, label, final, active}
+          return v; 
         }
       }
       return null;
@@ -315,17 +315,17 @@
     function selectNode(node) {
       clearHL();
 
-      // vicini implicanti / implicati, sempre calcolati
+      
       const up = node.incomers("node");
       const down = node.outgoers("node");
 
       if (currentLangId) {
-        // CON lingua selezionata:
-        // - il grafo resta colorato solo per valori (+/-/0/unset)
-        // - niente classi focus/up/down/dimmed
-        // - nella Selection mostro:
-        //   - titolo: label del parametro + valore tra parentesi
-        //   - liste Implicants / Implicated con label + valore tra parentesi
+        
+        
+        
+        
+        
+        
 
         const baseLabel = node.data("label") || node.id();
         let title = baseLabel;
@@ -341,7 +341,7 @@
         return;
       }
 
-      // SENZA lingua selezionata: comportamento vecchio, solo highlight implicazionale
+      
       node.addClass("focus");
       up.addClass("up");
       down.addClass("down");
@@ -384,15 +384,15 @@
     cy.fit(undefined, 5);
     cy.zoom(cy.zoom() * 1.6);
 
-    // se c'è già una lingua selezionata applica subito i colori
+    
     if (currentLangId && latestLangValues) {
       applyLangColors();
     }
   }
 
-  // inizializza:
-  // - grafo
-  // - eventuale lingua pre-selezionata
+  
+  
+  
   fetchGraph(false);
 
   if (currentLangId) {

@@ -38,7 +38,7 @@ from .forms import (
 # -------------------------------
 
 def _is_admin(user) -> bool:
-    # Semplice guard: staff o role=admin
+    
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
 # token tipo +FGM, -SCO, 0ABC: segno e ID senza spazi
@@ -99,7 +99,7 @@ def parameter_list(request):
     qs = (
         ParameterDef.objects
         .order_by("position")
-        # .select_related("schema", "param_type")  # <-- RIMOSSO: ora sono CharField
+        
     )
     if q:
         qs = qs.filter(

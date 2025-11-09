@@ -1,7 +1,4 @@
-/* account_languages.js
-   - filtro client-side sulle checkbox delle lingue
-   - aggiornamento in tempo reale del riepilogo selezionati
-*/
+
 (function () {
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -24,7 +21,7 @@
 
   function refreshSelected() {
     if (!list || !selectedUl) return;
-    // ricostruisce la lista
+    
     selectedUl.innerHTML = "";
     var checked = $all('input[type="checkbox"]:checked', list);
     if (checked.length === 0) {
@@ -50,10 +47,10 @@
     });
   }
 
-  // inizializza all'apertura
+  
   if (list) {
     filter();
-    // refreshSelected solo se esiste già una selezione pre-render
+    
     refreshSelected();
   }
 })();

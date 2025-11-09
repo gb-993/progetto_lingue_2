@@ -22,9 +22,9 @@ class LanguageForm(forms.ModelForm):
             "historical_language",
         ]
 
-        # 1. Etichette leggibili e coerenti con list.html / data.html
+        
         labels = {
-            "id": "Id",  # come in Language list
+            "id": "Id",  
             "name_full": "Name",
             "position": "Position",
             "top_level_family": "Top-level family",
@@ -38,7 +38,7 @@ class LanguageForm(forms.ModelForm):
             "historical_language": "Historical language",
         }
 
-        # 2. Widget + placeholder coerente con cosa vedono negli altri template
+        
         widgets = {
             "id": forms.TextInput(attrs={
                 "class": "form-control",
@@ -90,7 +90,7 @@ class LanguageForm(forms.ModelForm):
             }),
             "historical_language": forms.CheckboxInput(attrs={
                 "class": "",
-                # niente placeholder per checkbox, inutile/accessibilità
+                
             }),
         }
 

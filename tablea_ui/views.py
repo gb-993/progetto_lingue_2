@@ -9,7 +9,7 @@ from django.shortcuts import render
 
 from core.models import Language, ParameterDef, LanguageParameterEval
 
-# ---------- Utility condivisa ----------
+
 
 def _build_tablea_matrix():
     """
@@ -19,7 +19,7 @@ def _build_tablea_matrix():
       - rows: lista di righe, ognuna lista [label, name, implication, val1, val2, ...]
       - languages, parameters: queryset valutati (per il template)
     """
-    # Colonne (lingue) e righe (parametri)
+    
     languages = list(
         Language.objects.order_by("position").only("id", "name_full", "position", "top_level_family", "historical_language")
     )
@@ -29,7 +29,7 @@ def _build_tablea_matrix():
         .only("id", "name", "implicational_condition", "position")
     )
 
-    # Mappa (param_id, lang_id) -> value_eval ('+','-','0') dalla tabella di eval
+    
     eval_rows = LanguageParameterEval.objects.values(
         "language_parameter__language_id",
         "language_parameter__parameter_id",
@@ -40,10 +40,10 @@ def _build_tablea_matrix():
         for row in eval_rows
     }
 
-    # Header pieno
+    
     headers = ["Label", "Name", "Implication"] + [lang.id for lang in languages]
 
-    # Righe per export (liste pure, utili sia per CSV che XLSX)
+    
     export_rows = []
     for p in parameters:
         cells = [px.get((p.id, lang.id), "") for lang in languages]
@@ -52,21 +52,21 @@ def _build_tablea_matrix():
     return headers, export_rows, languages, parameters
 
 
-# ---------- Views ----------
+
 
 @login_required
 def tablea_index(request):
     headers, export_rows, languages_all, parameters = _build_tablea_matrix()
 
-    # --- Filtri SOLO per visualizzazione ---
+    
     selected_family = request.GET.get("family", "").strip()
-    selected_historical = request.GET.get("historical", "all").strip()  # 'all' | 'yes' | 'no'
+    selected_historical = request.GET.get("historical", "all").strip()  
 
-    # Opzioni per select family (distinte, ordinate)
+    
     families_qs = Language.objects.values_list("top_level_family", flat=True).distinct().order_by("top_level_family")
     families = [f for f in families_qs]
 
-    # Filtra l'elenco delle lingue (colonne) da visualizzare
+    
     def _match(lang):
         if selected_family and (lang.top_level_family or "") != selected_family:
             return False
@@ -138,19 +138,19 @@ def tablea_export_xlsx(request):
     ws = wb.active
     ws.title = "Table A"
 
-    # Header
+    
     ws.append(headers)
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
-    # Dati
+    
     for row in export_rows:
         ws.append(row)
 
-    # Freeze header
+    
     ws.freeze_panes = "A2"
 
-    # Larghezza colonne: un minimo per leggibilità
+    
     for col_idx, header in enumerate(headers, start=1):
         col_letter = get_column_letter(col_idx)
         ws.column_dimensions[col_letter].width = max(8, min(40, len(str(header)) + 2))

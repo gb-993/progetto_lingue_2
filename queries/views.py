@@ -17,14 +17,14 @@ from .forms import (
     ParamPickForm, ParamNeutralizationForm, LangOnlyForm, LangPairForm
 )
 
-# ------------- Accesso (linguists/admin) -------------
+
 def _is_linguist_or_admin(u) -> bool:
     if not u.is_authenticated:
         return False
     role = getattr(u, "role", "")
     return u.is_staff or role in {"admin", "linguist"}
 
-# ------------- Token extractor per cond implicazionali (+FGM, -SCO, 0ABC) -------------
+
 TOKEN_RE = re.compile(r'([+\-0])([A-Za-z][A-Za-z0-9_]*)')
 
 def extract_tokens(expr: str) -> List[Tuple[str, str]]:
@@ -40,7 +40,7 @@ def safe_pretty(expr: str) -> str:
         return (expr or "")
 
 
-# ------------- Helper dati “finali” (+/-/0/None) -------------
+
 @dataclass
 class FinalValue:
     value: str | None  
@@ -74,7 +74,7 @@ def final_map_for_language(lang: Language) -> Dict[str, str | None]:
         out.setdefault(lp.parameter_id, lp.value_orig)
     return out
 
-# ------------- Query #1 e #2: implicati/implicanti e distribuzione lingue -------------
+
 def implicated_and_implicating(parameter: ParameterDef) -> Tuple[Set[str], Set[str]]:
 
     refs_in_param = {tok for _, tok in extract_tokens(parameter.implicational_condition or "")}
@@ -118,7 +118,7 @@ def language_distribution_for_param(parameter: ParameterDef) -> Dict[str, List[L
 
     return {"+": plus, "-": minus, "0": zero}
 
-# ------------- Query #3: perché neutralizzato (condizioni non soddisfatte) -------------
+
 @dataclass
 class UnsatisfiedLiteral:
     sign: str  
@@ -127,16 +127,16 @@ class UnsatisfiedLiteral:
 
 def explain_neutralization(language: Language, parameter: ParameterDef) -> Dict:
 
-    final_map = final_map_for_language(language)  # param -> '+','-','0',None
+    final_map = final_map_for_language(language)  
     cond = (parameter.implicational_condition or "").strip()
     tokens = extract_tokens(cond)
 
-    # 1) zero upstream?
+    
     refs = [t for (_, t) in tokens]
     zero_refs = [p for p in refs if final_map.get(p) == "0"]
     derived_by_zero = bool(zero_refs)
 
-    # 2) prova a valutare la condizione (dando al parser '+','-' e '0')
+    
     values = {k: v for k, v in final_map.items() if v in {"+", "-", "0"}}
     cond_true = evaluate_with_parser(cond, values)
 
@@ -159,7 +159,7 @@ def explain_neutralization(language: Language, parameter: ParameterDef) -> Dict:
         "unsatisfied": unsatisfied,
     }
 
-# ------------- Query #7: parametri confrontabili -------------
+
 def comparable_params_for(lang_a: Language, lang_b: Language) -> List[Tuple[ParameterDef, str, str]]:
     """
     Parametri con valore finale determinato (+/-) in **entrambe** le lingue.
@@ -176,7 +176,7 @@ def comparable_params_for(lang_a: Language, lang_b: Language) -> List[Tuple[Para
             rows.append((p, va, vb))
     return rows
 
-# ------------- VIEW: una pagina con 7 tab -------------
+
 @login_required
 @user_passes_test(_is_linguist_or_admin)
 def home(request):
@@ -195,7 +195,7 @@ def home(request):
         "q1": None, "q2": None, "q3": None, "q4": None, "q5": None, "q6": None, "q7": None,
     }
 
-    # -------- Q1: Per ogni parametro, elenco implicanti/implicati --------
+    
     if ctx["form_q1"].is_bound and ctx["form_q1"].is_valid():
         p = ctx["form_q1"].cleaned_data["parameter"]
         refs_in_param, targets_using_param = implicated_and_implicating(p)
@@ -205,13 +205,13 @@ def home(request):
             "implicati": ParameterDef.objects.filter(pk__in=targets_using_param).order_by("position"),
         }
 
-    # -------- Q2: Per parametro -> lingue + / - / neutralizzate --------
+    
     if ctx["form_q2"].is_bound and ctx["form_q2"].is_valid():
         p = ctx["form_q2"].cleaned_data["parameter"]
         dist = language_distribution_for_param(p)
         ctx["q2"] = {"parameter": p, "plus": dist.get("+", []), "minus": dist.get("-", []), "zero": dist.get("0", [])}
 
-    # -------- Q3: Per parametro neutralizzato in una lingua -> condizioni non soddisfatte --------
+    
     if ctx["form_q3"].is_bound and ctx["form_q3"].is_valid():
         lang = ctx["form_q3"].cleaned_data["language"]
         p = ctx["form_q3"].cleaned_data["parameter"]
@@ -228,7 +228,7 @@ def home(request):
                 "unsatisfied": detail["unsatisfied"],
             }
 
-    # -------- Q4/Q5/Q6: Per lingua -> param fissati a + / - / neutralizzati --------
+    
     for tab, want in (("q4", "+"), ("q5", "-"), ("q6", "0")):
         form = ctx[f"form_{tab}"]
         if form.is_bound and form.is_valid():
@@ -250,7 +250,7 @@ def home(request):
             else:
                 ctx[tab] = {"language": lang, "params": params}
 
-    # -------- Q7: Coppia lingue -> param confrontabili (+/-) --------
+    
     if ctx["form_q7"].is_bound and ctx["form_q7"].is_valid():
         a = ctx["form_q7"].cleaned_data["language_a"]
         b = ctx["form_q7"].cleaned_data["language_b"]

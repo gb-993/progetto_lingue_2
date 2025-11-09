@@ -1,4 +1,4 @@
-# submissions_ui/services.py
+
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable
@@ -11,7 +11,7 @@ from core.models import (
     LanguageParameter, LanguageParameterEval, ParameterDef, Question
 )
 
-# Legge da settings con default sicuro
+
 MAX_PER_LANGUAGE = getattr(settings, "SUBMISSIONS_MAX_PER_LANGUAGE", 10)
 
 @dataclass
@@ -35,10 +35,10 @@ def create_language_submission(language: Language, submitted_by: User, note: str
             submitted_by=submitted_by,
             submitted_at=now,
             note=note or "",
-            # opzionale: riempi versioni/hash se li hai a portata qui
+            
         )
 
-        # Prefetch risposte complete per limitare query
+        
         answers = (
             Answer.objects
             .filter(language=language)
@@ -46,7 +46,7 @@ def create_language_submission(language: Language, submitted_by: User, note: str
             .prefetch_related("answer_motivations__motivation", "examples")
         )
 
-        # --- Answers
+        
         sub_answers = []
         for a in answers:
             sub_answers.append(SubmissionAnswer(
@@ -57,7 +57,7 @@ def create_language_submission(language: Language, submitted_by: User, note: str
             ))
         SubmissionAnswer.objects.bulk_create(sub_answers, ignore_conflicts=False)
 
-        # --- Answer Motivations
+        
         sub_mots = []
         for a in answers:
             for am in a.answer_motivations.all():
@@ -69,7 +69,7 @@ def create_language_submission(language: Language, submitted_by: User, note: str
         if sub_mots:
             SubmissionAnswerMotivation.objects.bulk_create(sub_mots, ignore_conflicts=False)
 
-        # --- Examples
+        
         sub_ex = []
         for a in answers:
             for ex in a.examples.all():
@@ -85,8 +85,8 @@ def create_language_submission(language: Language, submitted_by: User, note: str
         if sub_ex:
             SubmissionExample.objects.bulk_create(sub_ex, ignore_conflicts=False)
 
-        # --- Params (orig/eval)
-        #   Notare: value_orig in LanguageParameter può essere NULL; nel SubmissionParam DEVE ACCETTARE NULL
+        
+        
         lparams = (
             LanguageParameter.objects
             .filter(language=language)
@@ -99,7 +99,7 @@ def create_language_submission(language: Language, submitted_by: User, note: str
             sub_params.append(SubmissionParam(
                 submission=sub,
                 parameter_id=lp.parameter_id,
-                value_orig=lp.value_orig,                # può essere None
+                value_orig=lp.value_orig,                
                 warning_orig=lp.warning_orig,
                 value_eval=(eval_obj.value_eval if eval_obj else "0"),
                 warning_eval=(eval_obj.warning_eval if eval_obj else False),
@@ -108,7 +108,7 @@ def create_language_submission(language: Language, submitted_by: User, note: str
         if sub_params:
             SubmissionParam.objects.bulk_create(sub_params, ignore_conflicts=False)
 
-        # --- Pruning: tieni solo le ultime MAX_PER_LANGUAGE submissions per lingua
+        
         pruned = 0
         if MAX_PER_LANGUAGE and MAX_PER_LANGUAGE > 0:
             qs_old = (Submission.objects

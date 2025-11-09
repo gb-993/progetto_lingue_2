@@ -1,9 +1,9 @@
-// static/js/change_queries.js
+
 (function () {
   function disableGroup(groupEl, disabled) {
-    // disabilita/enabled tutti i controlli nel gruppo
+    
     groupEl.querySelectorAll('input, select, textarea, button').forEach(el => {
-      // non disabilitare il pulsante "Cerca"/"Reset" che NON sono dentro i fieldset
+      
       el.disabled = !!disabled;
     });
     groupEl.hidden = !!disabled;
@@ -20,7 +20,7 @@
       disableGroup(g, !isActive);
     });
 
-    // azzera la pagina a 1 (evita di restare su pagine alte cambiando filtri)
+    
     const pageInput = formEl.querySelector('input[name="page"]');
     if (pageInput) pageInput.value = '1';
   }
@@ -32,10 +32,10 @@
     const datasetSelect = form.querySelector('select[name="dataset"]');
     if (!datasetSelect) return;
 
-    // Inizializza lo stato attivo in base al valore corrente
+    
     onDatasetChange(form, datasetSelect);
 
-    // Al cambio dataset: aggiorna i gruppi (no submit, no reload)
+    
     datasetSelect.addEventListener('change', function () {
       onDatasetChange(form, datasetSelect);
     });

@@ -1,4 +1,4 @@
-// static/js/messages.js
+
 (function(){
   document.addEventListener('click', function(e){
     if (e.target.matches('.alert-close')) {

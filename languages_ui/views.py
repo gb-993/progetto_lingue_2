@@ -373,7 +373,7 @@ def parameter_save(request, lang_id, param_id):
         response_text = (request.POST.get(f"resp_{q.id}") or "").strip().lower()
         comments = (request.POST.get(f"com_{q.id}") or "").strip()
 
-        # Se nessuna risposta selezionata, NON creare/aggiornare Answer
+        
         if response_text not in ("yes", "no"):
             continue
 
@@ -382,7 +382,7 @@ def parameter_save(request, lang_id, param_id):
         except Answer.DoesNotExist:
             answer = Answer(language=lang, question=q)
 
-        # --- raccolta deletes ---
+        
         del_ids = []
         for key, val in request.POST.items():
             if key.startswith("del_ex_") and (val or "").strip() == "1":
@@ -391,7 +391,7 @@ def parameter_save(request, lang_id, param_id):
                 except ValueError:
                     pass
 
-        # --- raccolta update textarea esistenti ---
+        
         updated_textareas = {}
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
@@ -404,7 +404,7 @@ def parameter_save(request, lang_id, param_id):
             if field == "textarea":
                 updated_textareas[ex_id] = (val or "").strip()
 
-        # --- nuovi esempi ---
+        
         prefix = f"newex_{q.id}_"
         buckets = {}
         for key, val in request.POST.items():
@@ -419,7 +419,7 @@ def parameter_save(request, lang_id, param_id):
                 continue
             buckets.setdefault(uid, {})[field] = (val or "").strip()
 
-        # Validazione YES
+        
         if response_text == "yes":
             has_textarea_final = False
             existing_qs = Example.objects.filter(answer__language=lang, answer__question=q)
@@ -440,13 +440,13 @@ def parameter_save(request, lang_id, param_id):
                 messages.error(request, _t("If you answer YES, you must provide at least one example with a non-empty text."))
                 return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{param.id}")
 
-        # Applica Answer
+        
         answer.response_text = response_text
         answer.comments = comments
         answer.save()
         saved_count += 1
 
-        # Motivazioni (solo allowed)
+        
         try:
             target_ids = {int(x) for x in request.POST.getlist(f"mot_{q.id}")}
         except ValueError:
@@ -466,11 +466,11 @@ def parameter_save(request, lang_id, param_id):
         if to_del:
             AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-        # Esempi: delete
+        
         if del_ids:
             Example.objects.filter(answer=answer, id__in=del_ids).delete()
 
-        # Esempi: update
+        
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
                 continue
@@ -484,7 +484,7 @@ def parameter_save(request, lang_id, param_id):
             cleaned = (val or "").strip()
             Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
 
-        # Esempi: create
+        
         if buckets:
             to_create = []
             for uid, data in buckets.items():
@@ -510,7 +510,7 @@ def parameter_save(request, lang_id, param_id):
             if to_create:
                 Example.objects.bulk_create(to_create, ignore_conflicts=True)
 
-    # Flag Save/Next
+    
     action = (request.POST.get("action") or "save").strip().lower()
     try:
         if action == "next":

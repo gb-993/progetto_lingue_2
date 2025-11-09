@@ -110,12 +110,12 @@ DATABASES = {
         "PASSWORD": env("POSTGRES_PASSWORD"),
         "HOST": env("POSTGRES_HOST", "db"),
         "PORT": env("POSTGRES_PORT", "5432"),
-        "CONN_MAX_AGE": 60,  # pooling semplice
+        "CONN_MAX_AGE": 60,  
     }
 }
 
 # ---------------------- Auth ----------------------
-AUTH_USER_MODEL = "core.User"   # custom user (email)
+AUTH_USER_MODEL = "core.User"   
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
@@ -135,20 +135,20 @@ USE_TZ = True
 # ---------------------- Static / Media ----------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# abilita solo se esiste la cartella "static"
+
 if (BASE_DIR / "static").exists():
     STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# WhiteNoise (ok anche con Nginx; utile per fallback e hashing)
+
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---------------------- Email / Password reset ----------------------
-# Default: console in dev
+
 EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@example.test")
 EMAIL_SUBJECT_PREFIX = env("EMAIL_SUBJECT_PREFIX", "[PCM] ")
@@ -161,11 +161,11 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 
 # Token timeout reset password
-PASSWORD_RESET_TIMEOUT = int(env("DJANGO_PASSWORD_RESET_TIMEOUT", 60 * 60 * 3))  # default 3h
+PASSWORD_RESET_TIMEOUT = int(env("DJANGO_PASSWORD_RESET_TIMEOUT", 60 * 60 * 3))  
 
-# Hardening add-on in produzione
+
 if ENV == "prod":
-    # HSTS (puoi modulare i secondi via env se vuoi)
-    SECURE_HSTS_SECONDS = int(env("DJANGO_SECURE_HSTS_SECONDS", 60 * 60 * 24 * 7))  # 7 giorni
+    
+    SECURE_HSTS_SECONDS = int(env("DJANGO_SECURE_HSTS_SECONDS", 60 * 60 * 24 * 7))  
     SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", True)
     SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", True)
