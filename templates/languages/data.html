@@ -514,7 +514,7 @@
               You can still edit or review it later.
             </p>
             <button type="submit"
-                    class="btn btn--primary"
+                    class="btn btn--ok"
                     data-submit-action="save"
                     style="margin-left:auto;"
               {% with s=lang_status.overall %}
@@ -532,7 +532,7 @@
               Click <strong>Next</strong> if you are unsure and want to return to this parameter later.  
             </p>
             <button type="submit"
-                    class="btn"
+                    class="btn btn--bad"
                     data-submit-action="next"
                     style="margin-left:auto;"
               {% with s=lang_status.overall %}
@@ -957,6 +957,18 @@
   }
 }
 
+  .btn--ok {
+    --btn-bg: var(--ok);
+    --btn-fg: #fff;
+    --btn-bd: color-mix(in oklab, var(--ok) 75%, black);
+  }
+
+  .btn--bad {
+  --btn-bg: var(--bad);
+  --btn-fg: #fff;
+  --btn-bd: color-mix(in oklab, var(--bad) 75%, black);
+}
+</style>
 
   </style>
 {% endblock %}
