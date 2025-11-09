@@ -72,27 +72,49 @@
 
   // --- Costruzione elenco dei nomi da monitorare ---
   var names = [];
-  (function buildNames() {
-    var trackedAttr = form.getAttribute("data-tracked") || "[]";
-    var tracked = [];
-    try { tracked = JSON.parse(trackedAttr); } catch (e) { tracked = []; }
 
-    if (Array.isArray(tracked) && tracked.length) {
-      names = tracked.slice();
-    } else {
-      // fallback: tutti i controlli con name, esclusa la change_note
-      var all = form.querySelectorAll("input[name], select[name], textarea[name]");
-      names = Array.prototype.slice.call(all)
-        .map(function (el) { return el.name; })
-        .filter(function (n) { return n && n !== changeNoteName; });
-      // de-duplica
-      names = Array.from(new Set(names));
+  (function buildNames() {
+    var namesSet = new Set();
+
+    // 1) Prova a leggere dai data-attribute (se JSON valido)
+    var trackedAttr = form.getAttribute("data-tracked");
+    if (trackedAttr) {
+      try {
+        var trackedFromData = JSON.parse(trackedAttr);
+        if (Array.isArray(trackedFromData)) {
+          trackedFromData.forEach(function (n) {
+            if (typeof n === "string" && n && n !== changeNoteName) {
+              namesSet.add(n);
+            }
+          });
+        }
+      } catch (e) {
+        // se il JSON è rotto, ignora silenziosamente e passa al DOM
+      }
     }
+
+    // 2) Unione con tutti i controlli reali nel form
+    var all = form.querySelectorAll("input[name], select[name], textarea[name]");
+    Array.prototype.forEach.call(all, function (el) {
+      var n = el.name;
+      if (!n) return;
+
+      // escludi campo nota e campi tecnici che non devono triggerare "dirty"
+      if (n === changeNoteName) return;
+      if (n === "csrfmiddlewaretoken") return;
+      if (n === "had_external_changes") return;
+
+      namesSet.add(n);
+    });
+
+    names = Array.from(namesSet);
   })();
 
   // Snapshot iniziale
   var initial = {};
-  names.forEach(function (n) { initial[n] = norm(getValueByName(n)); });
+  names.forEach(function (n) {
+    initial[n] = norm(getValueByName(n));
+  });
 
   function hasInternalChanges() {
     for (var i = 0; i < names.length; i++) {
