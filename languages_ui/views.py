@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _t
 from django.views.decorators.http import require_http_methods, require_POST
@@ -87,12 +87,27 @@ def _language_status_summary(lang: Language):
     - 'rejected' se esiste almeno una rejected e nessuna waiting
     - 'pending' altrimenti (misti, presenti pending o nessuna answer)
     """
-    qs = Answer.objects.filter(language=lang).values_list("status", flat=True)
-    counts = {"pending": 0, "waiting_for_approval": 0, "approved": 0, "rejected": 0}
+    # Una query: GROUP BY status
+    rows = (
+        Answer.objects
+        .filter(language=lang)
+        .values("status")
+        .annotate(c=Count("id"))
+    )
+
+    counts = {
+        "pending": 0,
+        "waiting_for_approval": 0,
+        "approved": 0,
+        "rejected": 0,
+    }
     total = 0
-    for s in qs:
-        counts[s] = counts.get(s, 0) + 1
-        total += 1
+
+    for r in rows:
+        s = r["status"] or ""
+        if s in counts:
+            counts[s] += r["c"]
+            total += r["c"]
 
     if total == 0:
         overall = "pending"
@@ -108,30 +123,53 @@ def _language_status_summary(lang: Language):
     return {"counts": counts, "total": total, "overall": overall}
 
 
+
 def _language_overall_status(lang: Language) -> dict:
     """
     Calcola lo stato 'overall' in base agli status delle Answer.
     Priorità: WAITING > APPROVED > REJECTED > PENDING.
     """
-    qs = Answer.objects.filter(language=lang).values_list("status", flat=True)
-    seen = set(qs)
+    rows = (
+        Answer.objects
+        .filter(language=lang)
+        .values("status")
+        .annotate(c=Count("id"))
+    )
 
-    if AnswerStatus.WAITING in seen:
+    counts = {
+        "pending": 0,
+        "waiting": 0,
+        "approved": 0,
+        "rejected": 0,
+    }
+
+    # mappa status DB -> chiavi counts
+    key_map = {
+        AnswerStatus.PENDING: "pending",
+        AnswerStatus.WAITING: "waiting",
+        AnswerStatus.APPROVED: "approved",
+        AnswerStatus.REJECTED: "rejected",
+    }
+
+    seen_status = set()
+    for r in rows:
+        status = r["status"]
+        seen_status.add(status)
+        key = key_map.get(status)
+        if key:
+            counts[key] += r["c"]
+
+    if AnswerStatus.WAITING in seen_status:
         overall = AnswerStatus.WAITING
-    elif AnswerStatus.APPROVED in seen:
+    elif AnswerStatus.APPROVED in seen_status:
         overall = AnswerStatus.APPROVED
-    elif AnswerStatus.REJECTED in seen:
+    elif AnswerStatus.REJECTED in seen_status:
         overall = AnswerStatus.REJECTED
     else:
         overall = AnswerStatus.PENDING
 
-    counts = {
-        "pending":   sum(1 for s in qs if s == AnswerStatus.PENDING),
-        "waiting":   sum(1 for s in qs if s == AnswerStatus.WAITING),
-        "approved":  sum(1 for s in qs if s == AnswerStatus.APPROVED),
-        "rejected":  sum(1 for s in qs if s == AnswerStatus.REJECTED),
-    }
     return {"overall": overall, "counts": counts}
+
 
 
 def _all_questions_answered(language: Language) -> bool:

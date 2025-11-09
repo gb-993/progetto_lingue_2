@@ -424,6 +424,10 @@ class LanguageReview(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["language", "created_at"]),
+            models.Index(fields=["language", "decision", "created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.language_id} {self.decision} @ {self.created_at:%Y-%m-%d %H:%M}"
@@ -488,7 +492,7 @@ class Answer(models.Model):
                 name="ck_answer_status_modifiable",
             ),
         ]
-        indexes = [models.Index(fields=["language"]), models.Index(fields=["question"])]
+        indexes = [models.Index(fields=["language"]), models.Index(fields=["question"]), models.Index(fields=["language", "status"]),]
 
         
 class ParameterReviewFlag(models.Model):
@@ -638,6 +642,7 @@ class Submission(models.Model):
             models.Index(fields=["language"]),
             models.Index(fields=["submitted_by"]),
             models.Index(fields=["submitted_at"]),
+            models.Index(fields=["language", "submitted_at"]),
         ]
 
 
