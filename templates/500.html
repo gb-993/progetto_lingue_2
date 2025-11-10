@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Service temporarily unavailable{% endblock %}
+{% block body_class %}page-error{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .error-screen {
+      min-height: calc(100vh - 120px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1rem;
+    }
+
+    .error-screen__card {
+      max-width: 640px;
+      width: 100%;
+      background: var(--surface, #ffffff);
+      border-radius: 0.9rem;
+      padding: 2.5rem 2rem;
+      border: 1px solid var(--border, #dadde2);
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      text-align: center;
+    }
+
+    .error-screen__icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 999px;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 600;
+      background: radial-gradient(circle at 30% 0, rgba(56, 189, 248, 0.15), transparent),
+                  radial-gradient(circle at 70% 120%, rgba(129, 140, 248, 0.18), transparent);
+      color: var(--text-strong, #111827);
+    }
+
+    .error-screen__title {
+      font-size: 1.5rem;
+      line-height: 1.3;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    .error-screen__subtitle {
+      font-size: 0.98rem;
+      line-height: 1.6;
+      color: var(--text-muted, #4b5563);
+      margin-bottom: 1.25rem;
+    }
+
+    .error-screen__meta {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-muted, #6b7280);
+      margin-bottom: 1.75rem;
+    }
+
+    .error-screen__actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .btn-outline {
+      border: 1px solid var(--border, #d1d5db);
+      background: transparent;
+      color: var(--text-strong, #111827);
+    }
+
+    .btn-outline:hover {
+      background: rgba(15, 23, 42, 0.03);
+    }
+
+    @media (max-width: 640px) {
+      .error-screen__card {
+        padding: 2rem 1.5rem;
+        border-radius: 0.8rem;
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+      }
+
+      .error-screen__title {
+        font-size: 1.25rem;
+      }
+
+      .error-screen__subtitle {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="error-screen" role="alert" aria-live="assertive">
+    <div class="error-screen__card">
+      <div class="error-screen__icon" aria-hidden="true">λ</div>
+
+      <h1 class="error-screen__title">
+        Our linguistic parameters got into an argument.
+      </h1>
+
+      <p class="error-screen__subtitle">
+        We’re helping them agree again. Service will resume shortly.
+      </p>
+
+      <p class="error-screen__meta">
+        Your data is safe. If you keep seeing this page for a long time,
+        please contact the project team.
+      </p>
+
+      <div class="error-screen__actions">
+        <a href="/" class="btn btn-primary">
+          Back to home
+        </a>
+        <button type="button" class="btn btn-outline" onclick="window.location.reload()">
+          Retry
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}

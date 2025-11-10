@@ -5,6 +5,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from core import views_health  
 from django.contrib.auth import views as auth_views
+from core.views import test_500
+
 
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="dashboard", permanent=False)),
@@ -23,6 +25,7 @@ urlpatterns = [
     path("accounts/password-reset/done/", auth_views.PasswordResetDoneView.as_view(), name="password_reset_done"),
     path("accounts/reset/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
     path("accounts/reset/done/", auth_views.PasswordResetCompleteView.as_view(), name="password_reset_complete"),
+    path("test500/", test_500, name="test_500"),
 ]
 
 if settings.DEBUG:
