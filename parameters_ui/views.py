@@ -337,6 +337,141 @@ def parameter_deactivate(request, param_id: str):
 
 
 
+# --- Helpers per clonare domande + risposte/esempi -------------------------
+
+def _suggest_question_id_for_target(src_q: Question, target_param: ParameterDef) -> str:
+    """
+    Prova a costruire un nuovo id coerente col parametro di destinazione.
+    Esempio:
+      src_q.id = 'FGM_Qc', src_q.parameter_id = 'FGM', target_param.id = 'FGA'
+      -> 'FGA_Qc'
+    Se il pattern non è riconoscibile, usa 'FGA_<oldid>'.
+    Se l'id esiste già, aggiunge un suffisso numerico (_copy2, _copy3, ...).
+    """
+    src_id = (src_q.id or "").strip()
+    src_param_id = (src_q.parameter_id or "").strip()
+    dst_id = (target_param.id or "").strip()
+
+    if src_id.startswith(src_param_id + "_"):
+        suffix = src_id[len(src_param_id):]  # include underscore + resto
+        base = dst_id + suffix
+    else:
+        base = f"{dst_id}_{src_id}"
+
+    candidate = base
+    counter = 2
+    while Question.objects.filter(pk=candidate).exists():
+        candidate = f"{base}_copy{counter}"
+        counter += 1
+    return candidate
+
+
+def _clone_question_with_answers(
+    src_q: Question,
+    target_param: ParameterDef,
+    new_id: str,
+) -> tuple[Question, dict]:
+    """
+    Clona:
+      - la Question (con nuovo id e nuovo parametro)
+      - i QuestionAllowedMotivation
+      - le Answer per ogni lingua (solo contenuto, NON lo status)
+      - gli AnswerMotivation
+      - gli Example
+    Ritorna (new_question, stats_dict).
+    """
+    stats = {"answers": 0, "examples": 0, "answer_motivations": 0, "allowed_motivations": 0}
+
+    with transaction.atomic():
+        # 1) nuova question
+        new_q = Question.objects.create(
+            id=new_id,
+            parameter=target_param,
+            text=src_q.text,
+            example_yes=src_q.example_yes,
+            instruction_yes=src_q.instruction_yes,
+            instruction_no=src_q.instruction_no,
+            instruction=src_q.instruction,
+            template_type=src_q.template_type,
+            is_stop_question=src_q.is_stop_question,
+            help_info=src_q.help_info,
+        )
+
+        # 2) allowed motivations
+        qam_links = list(
+            QuestionAllowedMotivation.objects.filter(question=src_q).values(
+                "motivation_id", "position"
+            )
+        )
+        if qam_links:
+            QuestionAllowedMotivation.objects.bulk_create(
+                [
+                    QuestionAllowedMotivation(
+                        question=new_q,
+                        motivation_id=row["motivation_id"],
+                        position=row["position"],
+                    )
+                    for row in qam_links
+                ],
+                ignore_conflicts=True,
+            )
+            stats["allowed_motivations"] = len(qam_links)
+
+        # 3) answers + motivations + examples
+        answers = (
+            Answer.objects
+            .filter(question=src_q)
+            .prefetch_related("answer_motivations__motivation", "examples")
+        )
+
+        for src_ans in answers:
+            # nuove Answer: status/modifiable lasciati ai default (pending/editable)
+            new_ans = Answer.objects.create(
+                language=src_ans.language,
+                question=new_q,
+                response_text=src_ans.response_text,
+                comments=src_ans.comments,
+            )
+            stats["answers"] += 1
+
+            # AnswerMotivation
+            am_list = list(src_ans.answer_motivations.all())
+            if am_list:
+                AnswerMotivation.objects.bulk_create(
+                    [
+                        AnswerMotivation(
+                            answer=new_ans,
+                            motivation=am.motivation,
+                        )
+                        for am in am_list
+                    ],
+                    ignore_conflicts=True,
+                )
+                stats["answer_motivations"] += len(am_list)
+
+            # Examples
+            ex_list = list(src_ans.examples.all())
+            if ex_list:
+                Example.objects.bulk_create(
+                    [
+                        Example(
+                            answer=new_ans,
+                            number=ex.number,
+                            textarea=ex.textarea,
+                            gloss=ex.gloss,
+                            translation=ex.translation,
+                            transliteration=ex.transliteration,
+                            reference=ex.reference,
+                        )
+                        for ex in ex_list
+                    ]
+                )
+                stats["examples"] += len(ex_list)
+
+    return new_q, stats
+
+
+
 
 @login_required
 @user_passes_test(_is_admin)
@@ -506,6 +641,101 @@ def question_delete(request, param_id: str, question_id: str):
 
     messages.success(request, f"Question {question_id} deleted.")
     return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
+
+
+
+@login_required
+@user_passes_test(_is_admin)
+@require_http_methods(["GET", "POST"])
+def question_clone(request, param_id: str):
+    """
+    Admin: importa una question esistente (con risposte + esempi)
+    dentro il parametro di destinazione `param_id`.
+
+    POST fields:
+      - source_question_id: id della question sorgente (es. FGM_Qc)
+      - new_id (opzionale): nuovo id per la question clonata; se vuoto lo proponiamo noi.
+    """
+    target_param = get_object_or_404(ParameterDef, pk=param_id)
+
+    if request.method == "POST":
+        src_qid = (request.POST.get("source_question_id") or "").strip()
+        new_id = (request.POST.get("new_id") or "").strip()
+
+        if not src_qid:
+            messages.error(request, "Source question ID is required.")
+            return render(
+                request,
+                "parameters/question_clone.html",
+                {
+                    "parameter": target_param,
+                    "source_question_id": src_qid,
+                    "new_id": new_id,
+                },
+                status=400,
+            )
+
+        try:
+            src_q = Question.objects.select_related("parameter").get(pk=src_qid)
+        except Question.DoesNotExist:
+            messages.error(request, f"Question '{src_qid}' not found.")
+            return render(
+                request,
+                "parameters/question_clone.html",
+                {
+                    "parameter": target_param,
+                    "source_question_id": src_qid,
+                    "new_id": new_id,
+                },
+                status=404,
+            )
+
+        # se new_id vuoto, lo suggeriamo in base al parametro di destinazione
+        if not new_id:
+            new_id = _suggest_question_id_for_target(src_q, target_param)
+
+        # unicità id
+        if Question.objects.filter(pk=new_id).exists():
+            messages.error(
+                request,
+                f"A question with id '{new_id}' already exists. Please choose another id."
+            )
+            return render(
+                request,
+                "parameters/question_clone.html",
+                {
+                    "parameter": target_param,
+                    "source_question_id": src_qid,
+                    "new_id": new_id,
+                },
+                status=400,
+            )
+
+        # clonazione
+        new_q, stats = _clone_question_with_answers(src_q, target_param, new_id)
+
+        messages.success(
+            request,
+            (
+                f"Question {src_q.id} copied to parameter {target_param.id} as {new_q.id}. "
+                f"Imported {stats['answers']} answers and {stats['examples']} examples."
+            ),
+        )
+        # q_changed=1 così il parametro risulta 'sporco' per il log
+        return redirect(f"{reverse('parameter_edit', args=[target_param.id])}?q_changed=1")
+
+    # GET: mostra form vuoto
+    return render(
+        request,
+        "parameters/question_clone.html",
+        {
+            "parameter": target_param,
+            "source_question_id": "",
+            "new_id": "",
+        },
+    )
+
+
 
 
 @login_required

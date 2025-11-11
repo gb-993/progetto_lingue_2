@@ -191,9 +191,15 @@
           </div>
         </div>
 
-        <div class="actions" style="margin-bottom: .5rem; text-align: right;">
-          <a class="btn btn--primary" href="{% url 'question_add' parameter.id %}">Add a new question</a>
+        <div class="actions" style="margin-bottom: .5rem; text-align: right; display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap;">
+          <a class="btn" href="{% url 'question_clone' parameter.id %}">
+            Import question from another parameter
+          </a>
+          <a class="btn btn--primary" href="{% url 'question_add' parameter.id %}">
+            Add a new question
+          </a>
         </div>
+
     {% endif %}
 
     {% if not is_create %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Import question{% endblock %}
+{% block breadcrumb %}Parameters / {{ parameter.id }} / Import question{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Import question into parameter {{ parameter.id }}</h2>
+
+  <p class="muted">
+    This tool copies an existing question (and its answers/examples) into this parameter.
+    The cloned question will behave like an independent question.
+  </p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="form-row">
+      <label for="id_source_question_id">Source question ID</label>
+      <input
+        id="id_source_question_id"
+        name="source_question_id"
+        class="form-control"
+        required
+        value="{{ source_question_id }}">
+      <div class="muted">
+        Insert the code of the question you want to import (e.g. FGM_Qc).
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label for="id_new_id">New question ID (optional)</label>
+      <input
+        id="id_new_id"
+        name="new_id"
+        class="form-control"
+        value="{{ new_id }}">
+      <div class="muted">
+        Leave empty to auto-generate an id based on parameter {{ parameter.id }}.
+      </div>
+    </div>
+
+    <div class="toolbar" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem;">
+      <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Cancel</a>
+      <button type="submit" class="btn btn--primary">Import question</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
