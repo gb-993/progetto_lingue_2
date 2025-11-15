@@ -34,15 +34,8 @@ PY
 then
     # esegui seed_from_csv per importare utenti, parametri, lingue, ecc.
     python manage.py seed_from_csv
+    python manage.py import_language_from_excel --file data/Database_Chioggia.xlsx --language-name "Chioggia"
 
-    # esegui import_language_from_excel per ogni file Excel denormalizzato nella cartella data
-    for f in data/Database_*.xlsx; do
-        if [ -f "$f" ]; then
-            echo "Importing data from $f"
-            # puoi aggiungere --language-name se serve imporre una lingua specifica
-            python manage.py import_language_from_excel --file "$f" || echo "Errore durante l'import di $f"
-        fi
-    done
 fi
 
 
