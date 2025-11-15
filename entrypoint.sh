@@ -22,6 +22,30 @@ done
 # Apply database migrations
 python manage.py migrate --noinput
 
+# SEED INIZIALE — esegui solo se non esistono ancora utenti o risposte
+if ! python - <<'PY'
+import django
+django.setup()
+from core.models import User, Answer
+import sys
+# restituisce 0 (exit code 0) se il DB ha già dati => seed non eseguito
+sys.exit(0 if (User.objects.exists() or Answer.objects.exists()) else 1)
+PY
+then
+    # esegui seed_from_csv per importare utenti, parametri, lingue, ecc.
+    python manage.py seed_from_csv
+
+    # esegui import_language_from_excel per ogni file Excel denormalizzato nella cartella data
+    for f in data/Database_*.xlsx; do
+        if [ -f "$f" ]; then
+            echo "Importing data from $f"
+            # puoi aggiungere --language-name se serve imporre una lingua specifica
+            python manage.py import_language_from_excel --file "$f" || echo "Errore durante l'import di $f"
+        fi
+    done
+fi
+
+
 # Collect static assets into /app/staticfiles
 python manage.py collectstatic --noinput
 
