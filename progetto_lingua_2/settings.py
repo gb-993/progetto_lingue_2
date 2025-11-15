@@ -46,18 +46,22 @@ for h in ALLOWED_HOSTS:
     _auto += [f"http://{h}", f"https://{h}"]
 CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf_from_env + _auto))  # dedup
 
-SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", ENV == "prod")
-SESSION_COOKIE_SECURE = ENV == "prod"
-CSRF_COOKIE_SECURE = ENV == "prod"
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", False)
+
+# Cookie "secure" controllati da env (di default False: sei su HTTP)
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", False)
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", False)
+
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
-# Se Nginx termina TLS e inoltra:
+# Se in futuro Nginx termina TLS e inoltra, questi header funzionano
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
+
 
 # ---------------------- Apps ----------------------
 INSTALLED_APPS = [
