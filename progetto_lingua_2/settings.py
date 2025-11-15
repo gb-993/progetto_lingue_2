@@ -21,17 +21,24 @@ def env_list(key, default=""):
 LOG_LEVEL = env("DJANGO_LOG_LEVEL", "INFO")
 
 # ---------------------- Base / Security ----------------------
-SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-change-me")
-DEBUG = env_bool("DJANGO_DEBUG", False)
 ENV = env("ENV", "dev")  # "dev" | "prod"
 
 
+if ENV == "prod":
+    SECRET_KEY = env("DJANGO_SECRET_KEY")
+else:
+    SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-change-me")
+
+DEBUG = env_bool("DJANGO_DEBUG", False)
+
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+
 # CSRF: accetta host espliciti + derivati da ALLOWED_HOSTS
 _csrf_from_env = env_list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
     "http://localhost,http://127.0.0.1,http://localhost:8000,http://127.0.0.1:8000"
 )
+
 _auto = []
 for h in ALLOWED_HOSTS:
     if not h:
@@ -150,7 +157,6 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 anno
 
 STORAGES = {
