@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r /a
 # Copy project code into the container
 COPY . /app
 
+# Copy data files into the container
+COPY data/ /app/data/
+
 # Copy entrypoint script and mark it as executable
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
