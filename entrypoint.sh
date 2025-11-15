@@ -34,7 +34,6 @@ PY
 then
     # esegui seed_from_csv per importare utenti, parametri, lingue, ecc.
     python manage.py seed_from_csv
-    python manage.py import_language_from_excel --file data/Database_Chioggia.xlsx --language-name "Chioggia"
 
 fi
 
