@@ -1,3 +1,4 @@
+# PROGETTO_LINGUA_2/compose.yml
 version: "3.8"
 
 services:
@@ -14,15 +15,14 @@ services:
   web:
     build:
       context: .
-      dockerfile: Docker/web/Dockerfile  
+      dockerfile: Docker/web/Dockerfile
     depends_on:
       - db
     env_file:
       - .env
     volumes:
-      # DEV: monti il codice host dentro il container
-      # In produzione valuta di rimuovere questa riga.
-      - ./:/app                           # ATTENZIONE: solo per sviluppo
+      # Rimuovere in produzione la bind‑mount del codice locale
+      # - ./:/app  # solo per sviluppo locale
       - staticfiles:/app/staticfiles
       - media:/app/media
     expose:
@@ -32,15 +32,13 @@ services:
   nginx:
     build:
       context: .
-      dockerfile: Docker/nginx/Dockerfile 
+    # Il Dockerfile è automaticamente individuato in Docker/nginx/Dockerfile
     depends_on:
       - web
     ports:
       - "80:80"
     volumes:
-      # Serve collected static files agli utenti
       - staticfiles:/static
-      # Serve uploaded media files agli utenti
       - media:/media
     restart: unless-stopped
 
