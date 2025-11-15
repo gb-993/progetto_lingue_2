@@ -1,6 +1,4 @@
 # PROGETTO_LINGUA_2/compose.yml
-version: "3.8"
-
 services:
   db:
     image: postgres:16
@@ -22,7 +20,7 @@ services:
       - .env
     volumes:
       # Rimuovere in produzione la bind‑mount del codice locale
-      # - ./:/app  # solo per sviluppo locale
+      - ./:/app  # solo per sviluppo locale
       - staticfiles:/app/staticfiles
       - media:/app/media
     expose:
@@ -32,7 +30,7 @@ services:
   nginx:
     build:
       context: .
-    # Il Dockerfile è automaticamente individuato in Docker/nginx/Dockerfile
+      dockerfile: Docker/nginx/Dockerfile    
     depends_on:
       - web
     ports:
