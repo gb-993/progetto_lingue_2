@@ -32,18 +32,12 @@ import sys
 sys.exit(0 if (User.objects.exists() or Answer.objects.exists()) else 1)
 PY
 then
-    # 1) seed base (come prima)
     python manage.py seed_from_csv
-
-    # 2) IMPORT DA EXCEL (NOVITÀ)
-    #    - controlla che il file esista *nel container* (es. copiato in /app/data)
-    #    - se il comando fallisce NON facciamo fallire l'entrypoint (|| ...).
-    if [ -f "data/Database_Chioggia.xlsx" ]; then
-        echo "Importing language 'Chioggia' from Excel..."
-        python manage.py import_language_from_excel --file data/Database_Chioggia.xlsx --language-name "Chioggia" || echo "WARN: import_language_from_excel failed, check logs but continuing startup."
-    else
-        echo "WARN: data/Database_Chioggia.xlsx not found, skipping Excel import."
-    fi
+    # dopo il seed importo lingue extra: ciclo sui file desiderati
+    for f in data/Database_*.xlsx; do
+        # deduco il nome lingua dal file o passo --language-name se serve
+        python manage.py import_language_from_excel --file "$f" || echo "Errore su $f"
+    done
 fi
 
 
