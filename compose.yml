@@ -20,7 +20,7 @@ services:
       - .env
     volumes:
       # Rimuovere in produzione la bind‑mount del codice locale
-      - ./:/app  # solo per sviluppo locale
+      #- ./:/app  # solo per sviluppo locale
       - staticfiles:/app/staticfiles
       - media:/app/media
     expose:
@@ -34,7 +34,8 @@ services:
     depends_on:
       - web
     ports:
-      - "80:80"
+    - "80:80"
+    #- "8080:80"
     volumes:
       - staticfiles:/static
       - media:/media
