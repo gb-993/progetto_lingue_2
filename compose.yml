@@ -16,7 +16,8 @@ services:
       dockerfile: docker/web/Dockerfile
     depends_on:
       - db
-
+    env_file:
+      - .env
     volumes:
       # Rimuovere in produzione la bind‑mount del codice locale
       #- ./:/app  # solo per sviluppo locale
