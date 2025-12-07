@@ -33,8 +33,6 @@ sys.exit(0 if (User.objects.exists() or Answer.objects.exists()) else 1)
 PY
 then
     python manage.py seed_from_csv
-    python manage.py import_language_from_excel --file data/Database_Trieste.xlsx
-    python manage.py import_language_from_excel --file data/Database_Chioggia.xlsx
 fi
 
 

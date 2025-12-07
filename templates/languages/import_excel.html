@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Import language data from Excel{% endblock %}
+{% block breadcrumb %}Languages / Import from Excel{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2 class="h3">Import language data from Excel</h2>
+
+    <p class="muted">
+      Select an Excel file (.xlsx) containing language data.  
+      The import will use the same rules as the existing <code>import_language_from_excel</code> command.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      <div class="form-row">
+        <label for="id_file">Excel file</label>
+        <input type="file"
+               id="id_file"
+               name="file"
+               accept=".xlsx,.xlsm,.xltx,.xltm"
+               class="form-control"
+               required>
+      </div>
+
+      <div class="toolbar" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem;">
+        <a class="btn" href="{% url 'language_list' %}">Cancel</a>
+        <button type="submit" class="btn btn--primary">
+          Import
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

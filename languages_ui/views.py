@@ -1,9 +1,16 @@
 
 from __future__ import annotations
 
+from __future__ import annotations
+
 from types import SimpleNamespace
+import os
+import tempfile  
+
+from django.conf import settings  
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.management import call_command  
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q, Prefetch, Count
@@ -21,6 +28,7 @@ from django.urls import reverse
 from datetime import datetime, time, date  
 from django.utils import timezone   
 from .forms import LanguageForm 
+
 
 from core.models import (
     Language,
@@ -1340,3 +1348,55 @@ def language_list_export_xlsx(request):
     wb.save(resp)
     return resp
 
+
+# NEW: import manuale dati lingua da file Excel (solo admin)
+@login_required
+@require_http_methods(["GET", "POST"])
+def language_import_excel(request):
+    if not _is_admin(request.user):
+        messages.error(request, _t("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    if request.method == "POST":
+        upload = request.FILES.get("file")
+        if not upload:
+            messages.error(request, _t("You must select an Excel file to import."))
+            return redirect("language_import_excel")
+
+        filename = (upload.name or "").lower()
+        if not filename.endswith((".xlsx", ".xlsm", ".xltx", ".xltm")):
+            messages.error(request, _t("Unsupported file type. Please upload an .xlsx file."))
+            return redirect("language_import_excel")
+
+        tmp_path = None
+        try:
+            # Salva su file temporaneo
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                for chunk in upload.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+
+            # Invoca il management command esistente
+            # equiv. a: python manage.py import_language_from_excel --file <tmp_path>
+            call_command("import_language_from_excel", file=tmp_path)
+
+            messages.success(request, _t("Language data imported successfully from Excel."))
+            return redirect("language_list")
+
+        except Exception as e:
+            messages.error(
+                request,
+                _t("Import failed: %(err)s") % {"err": str(e)},
+            )
+            return redirect("language_import_excel")
+
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    # se fallisce la rimozione, non bloccare l'utente
+                    pass
+
+    # GET: mostra form di upload
+    return render(request, "languages/import_excel.html", {})

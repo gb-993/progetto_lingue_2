@@ -19,6 +19,14 @@
   <a class="btn" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">
     Export .xlsx
   </a>
+
+    {% if is_admin %}
+    <a class="btn" href="{% url 'language_import_excel' %}">
+      Import from Excel
+    </a>
+  {% endif %}
+</div>
+
 </div>
 
 <div class="table-responsive">
