@@ -6,10 +6,35 @@
 
 <header class="dashboard-hero">
   <h1>Table A</h1>
+
+  {# SWITCH tra TableA per parametri e TableA per questions #}
+  <div class="view-switch" style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+    {# calcoliamo la vista corrente; se 'view' manca, default = params #}
+    {% with current_view=view|default:"params" %}
+      {# link alla vista parametri: mantiene i filtri attuali #}
+      <a
+        class="btn {% if current_view == 'params' %}btn-primary{% else %}btn-secondary{% endif %}"
+        href="{% url 'tablea_index' %}?view=params{% if selected_family %}&family={{ selected_family|urlencode }}{% endif %}{% if selected_historical %}&historical={{ selected_historical|urlencode }}{% endif %}"
+      >
+        Parameters view
+      </a>
+
+      {# link alla vista questions: una question per riga, valori YES/NO #}
+      <a
+        class="btn {% if current_view == 'questions' %}btn-primary{% else %}btn-secondary{% endif %}"
+        href="{% url 'tablea_index' %}?view=questions{% if selected_family %}&family={{ selected_family|urlencode }}{% endif %}{% if selected_historical %}&historical={{ selected_historical|urlencode }}{% endif %}"
+      >
+        Questions view
+      </a>
+    {% endwith %}
+  </div>
 </header>
 
   <div class="toolbar" role="region" aria-label="Azioni tabella">
     <form method="get" class="filters-form" aria-label="Filters">
+      {# Manteniamo la vista corrente quando si applicano i filtri #}
+      <input type="hidden" name="view" value="{{ view|default:'params' }}">
+
       <div style="display: flex; gap: 2rem;">
         <div>
           <label for="family" class="visually-hidden">Top-level family</label>
@@ -25,38 +50,51 @@
         <div>
           <label for="historical" class="visually-hidden">Historical</label>
           <select id="historical" name="historical">
-            <option value="all" {% if selected_historical == "all" %}selected{% endif %}>Both historical and non-historical languages</option>
-            <option value="yes" {% if selected_historical == "yes" %}selected{% endif %}>Historical languages only</option>
-            <option value="no"  {% if selected_historical == "no"  %}selected{% endif %}>Non-historical languages only</option>
+            <option value="all" {% if selected_historical == "all" %}selected{% endif %}>
+              Both historical and non-historical languages
+            </option>
+            <option value="yes" {% if selected_historical == "yes" %}selected{% endif %}>
+              Historical languages only
+            </option>
+            <option value="no"  {% if selected_historical == "no"  %}selected{% endif %}>
+              Non-historical languages only
+            </option>
           </select>
         </div>
       </div>
+
       <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
         <button class="btn" type="submit">Apply</button>
         {% if selected_family or selected_historical != "all" %}
-          <a class="btn" href="{% url 'tablea_index' %}">Reset</a>
+          <a class="btn" href="{% url 'tablea_index' %}?view={{ view|default:'params' }}">
+            Reset
+          </a>
         {% endif %}
       </div>
     </form>
 
     <div class="row-actions">
-      <a class="btn" href="{% url 'tablea_export_xlsx' %}">Export .xlsx</a>
-      <a class="btn" href="{% url 'tablea_export_csv' %}">Export transposed .csv</a>
+      {# Export usa la vista corrente per generare il foglio parametri o questions #}
+      <a class="btn" href="{% url 'tablea_export_xlsx' %}?view={{ view|default:'params' }}">
+        Export .xlsx
+      </a>
+      <a class="btn" href="{% url 'tablea_export_csv' %}?view={{ view|default:'params' }}">
+        Export transposed .csv
+      </a>
     </div>
   </div>
 
   <div class="card table-container">
     {% if rows %}
       <div class="table-scroll" role="region"
-          aria-label="Table A – scroll horizontally to see all languages"
-          tabindex="0">
+           aria-label="Table A – scroll horizontally to see all languages"
+           tabindex="0">
         <table class="table table--freeze tableA" aria-describedby="tablea-desc">
           <colgroup>
             <col class="w-label" />
             <col class="w-name" />
             <col class="w-implication" />
           </colgroup>
-
 
           <thead>
             <tr>
