@@ -20,14 +20,16 @@
     Export .xlsx
   </a>
 
-    {% if is_admin %}
+  {% if is_admin %}
+    <a class="btn" href="{% url 'language_export_all_zip' %}">
+      Export all languages (.zip)
+    </a>
     <a class="btn" href="{% url 'language_import_excel' %}">
       Import from Excel
     </a>
   {% endif %}
 </div>
 
-</div>
 
 <div class="table-responsive">
   <table class="table">

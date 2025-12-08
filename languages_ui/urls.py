@@ -29,4 +29,6 @@ urlpatterns = [
     path("<str:lang_id>/review-flags/<str:param_id>/toggle/", views.toggle_review_flag, name="toggle_review_flag"),
 
     path("export.xlsx", views.language_list_export_xlsx, name="language_list_export_xlsx"),
+    path("export-all.zip", views.language_export_all_zip, name="language_export_all_zip"),
+
 ]
