@@ -85,6 +85,8 @@ INSTALLED_APPS = [
     "tablea_ui",
     "submissions_ui",
     "queries",
+    "instruction_ui",
+
 ]
 SUBMISSIONS_MAX_PER_LANGUAGE = 10
 

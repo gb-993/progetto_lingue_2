@@ -1380,8 +1380,18 @@ def language_import_excel(request):
             # equiv. a: python manage.py import_language_from_excel --file <tmp_path>
             call_command("import_language_from_excel", file=tmp_path)
 
+            # Messaggio globale (verrà comunque mostrato se il template li rende)
             messages.success(request, _t("Language data imported successfully from Excel."))
-            return redirect("language_list")
+
+            # NON redirect immediato: mostriamo una schermata di conferma molto chiara
+            return render(
+                request,
+                "languages/import_excel.html",
+                {
+                    "import_done": True,
+                    "uploaded_filename": upload.name,
+                },
+            )
 
         except Exception as e:
             messages.error(
@@ -1398,5 +1408,5 @@ def language_import_excel(request):
                     # se fallisce la rimozione, non bloccare l'utente
                     pass
 
-    # GET: mostra form di upload
+    # GET: mostra form di upload (stato iniziale, nessun import_done)
     return render(request, "languages/import_excel.html", {})

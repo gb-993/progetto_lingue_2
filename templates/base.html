@@ -50,6 +50,14 @@
           </li>
 
           <li>
+            {% if urln == 'instruction' %}
+              <span class="btn is-current" aria-current="page" aria-disabled="true">Instruction</span>
+            {% else %}
+              <a class="btn" href="{% url 'instruction' %}">Instruction</a>
+            {% endif %}
+          </li>
+          
+          <li>
             {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}
               <span class="btn is-current" aria-current="page" aria-disabled="true">Languages</span>
             {% else %}

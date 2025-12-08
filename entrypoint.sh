@@ -40,4 +40,4 @@ fi
 python manage.py collectstatic --noinput
 
 # Start the Gunicorn application server
-exec gunicorn progetto_lingua_2.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60
+exec gunicorn progetto_lingua_2.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300
