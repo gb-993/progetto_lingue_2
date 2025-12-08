@@ -999,6 +999,9 @@ def language_reopen(request, lang_id):
         messages.success(request, _t(f"Reopened: {changed} answers set to pending."))
     return redirect("language_data", lang_id=lang.id)
 
+
+
+
 @login_required
 def language_export_xlsx(request, lang_id: str):
     lang = get_object_or_404(Language, pk=lang_id)
@@ -1007,6 +1010,7 @@ def language_export_xlsx(request, lang_id: str):
 
     is_admin = _is_admin(request.user)
 
+    # Parametri attivi
     params = (
         ParameterDef.objects
         .filter(is_active=True)
@@ -1014,7 +1018,7 @@ def language_export_xlsx(request, lang_id: str):
     )
 
     # Domande per parametro
-    qs_by_param = {}
+    qs_by_param: dict[str, list[Question]] = {}
     for q in (
         Question.objects
         .select_related("parameter")
@@ -1030,20 +1034,21 @@ def language_export_xlsx(request, lang_id: str):
     )
     ans_by_qid = {a.question_id: a for a in answers}
 
-    # Motivazioni in mappa id->label
+    # Motivazioni in mappa id->label (per foglio Answers, come prima)
     mot_map = {m.id: getattr(m, "label", getattr(m, "text", "")) for m in Motivation.objects.all()}
 
     # --- Esempi per lingua: indicizzati per question_id e ordinati ---
-    ex_by_qid = {}
+    ex_by_qid: dict[str, list[Example]] = {}
     examples = (
         Example.objects
-        .select_related("answer")                
+        .select_related("answer")
         .filter(answer__language_id=lang.id)
     )
     for ex in examples:
         qid = ex.answer.question_id
         ex_by_qid.setdefault(qid, []).append(ex)
 
+    # Ordinamento per "number" numerico quando possibile
     for arr in ex_by_qid.values():
         def _as_int(v):
             try:
@@ -1070,14 +1075,30 @@ def language_export_xlsx(request, lang_id: str):
     # === Workbook ===
     wb = Workbook()
 
-    # Header fogli
+    # Header fogli esistenti
     ans_header = [
         "Language ID", "Parameter Label", "Question ID", "Question",
-        "Question status", "Answer", "Parameter value", "Motivation", "Comments"
+        "Question status", "Answer", "Parameter value", "Motivation", "Comments",
     ]
     ex_header = [
         "Language ID", "Question ID", "Example #",
-        "Example text", "Transliteration", "Gloss", "English translation", "Reference"
+        "Example text", "Transliteration", "Gloss", "English translation", "Reference",
+    ]
+
+    # NEW: header per foglio compatibile con import_language_from_excel
+    upload_header = [
+        "Language",
+        "Parameter_Label",
+        "Question_ID",
+        "Question",
+        "Question_Examples_YES",
+        "Question_Intructions_Comments",
+        "Language_Answer",
+        "Language_Comments",
+        "Language_Examples",
+        "Language_Example_Gloss",
+        "Language_Example_Translation",
+        "Language_References",
     ]
 
     bold_white = Font(bold=True, color="FFFFFF")
@@ -1091,14 +1112,14 @@ def language_export_xlsx(request, lang_id: str):
         tbl.tableStyleInfo = TableStyleInfo(
             name="TableStyleMedium2",
             showFirstColumn=False, showLastColumn=False,
-            showRowStripes=True, showColumnStripes=False
+            showRowStripes=True, showColumnStripes=False,
         )
         ws.add_table(tbl)
         ws.freeze_panes = "A2"
         widths = (
             [14, 18, 12, 36, 18, 10, 16, 28, 26]  # Answers
             if name == "Answers"
-            else [14, 12, 12, 36, 20, 20, 26, 24]  # Examples
+            else [14, 12, 12, 36, 20, 20, 26, 24]  # Examples / Upload (riuso)
         )
         for idx, w in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(idx)].width = w
@@ -1116,8 +1137,8 @@ def language_export_xlsx(request, lang_id: str):
                 ws_examples.append([
                     lang.id,
                     q.id,
-                    getattr(ex, "number", ""),             
-                    getattr(ex, "textarea", ""),           
+                    getattr(ex, "number", ""),
+                    getattr(ex, "textarea", ""),
                     getattr(ex, "transliteration", ""),
                     getattr(ex, "gloss", ""),
                     getattr(ex, "translation", ""),
@@ -1125,9 +1146,81 @@ def language_export_xlsx(request, lang_id: str):
                 ])
     _style_table(ws_examples, "Examples")
 
-    # === Foglio Answers: solo per admin ===
+    # === Fogli aggiuntivi solo per admin ===
     if is_admin:
-        ws_answers = wb.create_sheet("Answers", 0)  # Answers come primo foglio
+        # ----------------------------
+        # NEW: foglio Database_model (compatibile con l'IMPORT)
+        # ----------------------------
+        ws_upload = wb.create_sheet("Database_model", 0)  # lo metto per primo
+        ws_upload.append(upload_header)
+        for col_idx in range(1, len(upload_header) + 1):
+            ws_upload.cell(row=1, column=col_idx).font = bold_white
+
+        # Costruzione righe nel formato atteso da import_language_from_excel
+        for p in params:
+            p_label = p.id
+            for q in qs_by_param.get(p.id, []):
+                a = ans_by_qid.get(q.id)
+
+                # Language_Answer: YES / NO / vuoto
+                if a and a.response_text == "yes":
+                    lang_answer = "YES"
+                elif a and a.response_text == "no":
+                    lang_answer = "NO"
+                else:
+                    lang_answer = ""
+
+                lang_comments = getattr(a, "comments", "") if a else ""
+
+                # Aggregazione esempi in celle multilinea
+                ex_list = ex_by_qid.get(q.id, [])
+                examples_lines: list[str] = []
+                gloss_lines: list[str] = []
+                transl_lines: list[str] = []
+                ref_lines: list[str] = []
+
+                for idx_ex, ex in enumerate(ex_list):
+                    num = (getattr(ex, "number", "") or "").strip()
+                    if not num:
+                        num = str(idx_ex + 1)
+                    text = getattr(ex, "textarea", "") or ""
+                    if text:
+                        examples_lines.append(f"{num}. {text}")
+                    else:
+                        examples_lines.append(num)
+
+                    gloss_lines.append(getattr(ex, "gloss", "") or "")
+                    transl_lines.append(getattr(ex, "translation", "") or "")
+                    ref_lines.append(getattr(ex, "reference", "") or "")
+
+                cell_examples = "\n".join(examples_lines) if examples_lines else ""
+                cell_gloss = "\n".join(gloss_lines) if gloss_lines else ""
+                cell_transl = "\n".join(transl_lines) if transl_lines else ""
+                cell_refs = "\n".join(ref_lines) if ref_lines else ""
+
+                ws_upload.append([
+                    # Language: il comando di import cerca name_full in colonna "Language"
+                    lang.name_full,
+                    p_label,
+                    q.id,
+                    getattr(q, "text", "") or "",
+                    getattr(q, "example_yes", "") or "",
+                    getattr(q, "instruction", "") or "",
+                    lang_answer,
+                    lang_comments,
+                    cell_examples,
+                    cell_gloss,
+                    cell_transl,
+                    cell_refs,
+                ])
+
+        _style_table(ws_upload, "Upload")  # riuso widths esempi
+
+        # ----------------------------
+        # Foglio Answers: identico a prima
+        # ----------------------------
+        # NB: index=1 così l'ordine finale è: Database_model, Answers, Examples
+        ws_answers = wb.create_sheet("Answers", 1)
         ws_answers.append(ans_header)
         for i in range(1, len(ans_header) + 1):
             ws_answers.cell(row=1, column=i).font = bold_white
@@ -1163,7 +1256,7 @@ def language_export_xlsx(request, lang_id: str):
                         p_label,
                         q.id,
                         getattr(q, "text", ""),
-                        _pretty_qc_from_status(getattr(a, "status", None)), 
+                        _pretty_qc_from_status(getattr(a, "status", None)),
                         getattr(a, "response_text", ""),
                         param_value,
                         mot_text,
@@ -1177,7 +1270,7 @@ def language_export_xlsx(request, lang_id: str):
                         getattr(q, "text", ""),
                         "Not compiled",
                         "",
-                        param_value,  
+                        param_value,
                         "",
                         "",
                     ])
@@ -1187,10 +1280,13 @@ def language_export_xlsx(request, lang_id: str):
     ts = now().strftime("%Y%m%d")
     suffix = "full" if is_admin else "examples"
     filename = f"PCM_{lang.id}_{suffix}_{ts}.xlsx"
-    resp = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
     resp["Content-Disposition"] = f'attachment; filename="{filename}"'
     wb.save(resp)
     return resp
+
 
 # === API per review flag (riuso di ParameterReviewFlag) =================
 
