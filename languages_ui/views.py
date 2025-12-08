@@ -1,12 +1,13 @@
 
 from __future__ import annotations
 
-from __future__ import annotations
 
 from types import SimpleNamespace
 import os
 import tempfile  
 
+import threading          
+import logging         
 from django.conf import settings  
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -1349,7 +1350,33 @@ def language_list_export_xlsx(request):
     return resp
 
 
-# NEW: import manuale dati lingua da file Excel (solo admin)
+logger = logging.getLogger(__name__)  
+def _run_import_language_from_excel_bg(tmp_path: str, original_name: str, user_id: int | None):
+    """
+    Esegue il management command import_language_from_excel in background
+    e cancella il file temporaneo alla fine.
+    """
+    try:
+        logger.info(
+            "Starting Excel import in background: file=%s, user_id=%s",
+            original_name,
+            user_id,
+        )
+        # equiv. a: python manage.py import_language_from_excel --file <tmp_path>
+        call_command("import_language_from_excel", file=tmp_path)
+        logger.info("Excel import COMPLETED: file=%s", original_name)
+    except Exception:
+        logger.exception("Excel import FAILED: file=%s", original_name)
+    finally:
+        try:
+            os.remove(tmp_path)
+            logger.info("Temporary file deleted: %s", tmp_path)
+        except OSError:
+            logger.warning("Could not delete temporary file: %s", tmp_path)
+
+
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def language_import_excel(request):
@@ -1358,6 +1385,8 @@ def language_import_excel(request):
         return redirect("language_list")
 
     if request.method == "POST":
+        print("FILES:", request.FILES)
+        print("POST:", request.POST)
         upload = request.FILES.get("file")
         if not upload:
             messages.error(request, _t("You must select an Excel file to import."))
@@ -1368,45 +1397,49 @@ def language_import_excel(request):
             messages.error(request, _t("Unsupported file type. Please upload an .xlsx file."))
             return redirect("language_import_excel")
 
-        tmp_path = None
+        # Salva su file temporaneo e lancia il command in BACKGROUND
         try:
-            # Salva su file temporaneo
             with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
                 for chunk in upload.chunks():
                     tmp.write(chunk)
                 tmp_path = tmp.name
 
-            # Invoca il management command esistente
-            # equiv. a: python manage.py import_language_from_excel --file <tmp_path>
-            call_command("import_language_from_excel", file=tmp_path)
+            # Thread in background che esegue il command e poi cancella il file
+            t = threading.Thread(
+                target=_run_import_language_from_excel_bg,
+                args=(tmp_path, upload.name, getattr(request.user, "id", None)),
+                daemon=True,
+            )
+            t.start()
 
-            # Messaggio globale (verrà comunque mostrato se il template li rende)
-            messages.success(request, _t("Language data imported successfully from Excel."))
+            # Messaggio per l'admin: import avviato, puoi controllare più tardi
+            messages.info(
+                request,
+                _t(
+                    "Import started in background for file “%(fname)s”. "
+                    "You can go back to the Languages list and, after some time, "
+                    "reload the page to see the imported data."
+                ) % {"fname": upload.name}
+            )
 
-            # NON redirect immediato: mostriamo una schermata di conferma molto chiara
+            # Pagina di conferma con stato "import_started"
             return render(
                 request,
                 "languages/import_excel.html",
                 {
-                    "import_done": True,
+                    "import_started": True,          # NUOVO flag per il template
                     "uploaded_filename": upload.name,
                 },
             )
 
         except Exception as e:
+            # In caso di errore PRIMA di lanciare il thread (es. problemi I/O)
+            logger.exception("Error scheduling Excel import")
             messages.error(
                 request,
-                _t("Import failed: %(err)s") % {"err": str(e)},
+                _t("Import could not be started: %(err)s") % {"err": str(e)},
             )
             return redirect("language_import_excel")
 
-        finally:
-            if tmp_path and os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except Exception:
-                    # se fallisce la rimozione, non bloccare l'utente
-                    pass
-
-    # GET: mostra form di upload (stato iniziale, nessun import_done)
+    # GET: mostra form di upload (stato iniziale, nessun import_started)
     return render(request, "languages/import_excel.html", {})

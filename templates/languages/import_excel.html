@@ -5,45 +5,52 @@
 
 {% block content %}
   <div class="card">
-    {% if import_done %}
-      {# === STATO DOPO IMPORT COMPLETATO === #}
-      <h2 class="h3">Import completed</h2>
+    <h2 class="h3">Import language data from Excel</h2>
 
+    {# Stato 1: import appena AVVIATO in background #}
+    {% if import_started %}
       <p class="muted">
-        {% if uploaded_filename %}
-          The file <code>{{ uploaded_filename }}</code> has been imported successfully.
-        {% else %}
-          The language data has been imported successfully.
-        {% endif %}
+        The file
+        <strong>{{ uploaded_filename }}</strong>
+        has been queued for import and is now being processed in the background.
       </p>
 
-      <div class="toolbar" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem;">
-        <a class="btn btn--primary" href="{% url 'language_list' %}">
-          Back to languages list
+      <p>
+        You can safely leave this page.<br>
+        After some time, go back to the
+        <a href="{% url 'language_list' %}">Languages list</a>
+        and reload it: if the file was valid, the imported language data will be available.
+      </p>
+
+      <p class="muted">
+        For large files or slow servers this may take several minutes.
+        If something looks wrong, contact the administrator and check the server logs.
+      </p>
+
+      <div class="actions">
+        <a href="{% url 'language_list' %}" class="btn">
+          Back to Languages list
+        </a>
+        <a href="{% url 'language_import_excel' %}" class="btn secondary">
+          Import another file
         </a>
       </div>
 
+    {# Stato 2: GET iniziale, mostra form di upload #}
     {% else %}
-      {# === STATO NORMALE: FORM DI UPLOAD === #}
-      <h2 class="h3">Import language data from Excel</h2>
+      <p class="muted">
+        Select an Excel file (.xlsx) containing language data.
+        The import will use the same rules as the existing
+        <code>import_language_from_excel</code> command.
+      </p>
 
       <p class="muted">
-        Select an Excel file (.xlsx) containing language data.  
-        The import will use the same rules as the existing <code>import_language_from_excel</code> command.
+        Once you start the import, the file will be processed in the background.
+        You will see a confirmation message and you can then return to the
+        Languages list and reload it later to see the results.
       </p>
 
-      <p id="import-status"
-         class="muted"
-         aria-live="polite"
-         style="margin-bottom:1rem;">
-        After you click <strong>Import</strong>, the file will be uploaded and processed.
-        Please do not close or reload this page until the operation is complete.
-      </p>
-
-      <form id="excel-import-form"
-            method="post"
-            enctype="multipart/form-data"
-            novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
         <div class="form-row">
@@ -52,48 +59,15 @@
                  id="id_file"
                  name="file"
                  accept=".xlsx,.xlsm,.xltx,.xltm"
-                 class="form-control"
                  required>
         </div>
 
-        <div class="toolbar" style="display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem;">
-          <a class="btn" href="{% url 'language_list' %}">Cancel</a>
-          <button type="submit" class="btn btn--primary">
-            Import
+        <div class="form-row">
+          <button type="submit" class="btn primary">
+            Start import
           </button>
         </div>
       </form>
     {% endif %}
   </div>
 {% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  var form = document.getElementById('excel-import-form');
-  if (!form) return;
-
-  var fileInput = document.getElementById('id_file');
-  var submitBtn = form.querySelector('button[type="submit"]');
-  var statusEl = document.getElementById('import-status');
-
-  form.addEventListener('submit', function () {
-    // se non c'è file, lascia passare il validatore HTML5 (required sull'input)
-    if (fileInput && !fileInput.value) {
-      return;
-    }
-
-
-
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Import in progress…';
-    }
-    if (statusEl) {
-      statusEl.textContent = 'File uploaded. Import in progress, please wait until the page is updated.';
-    }
-  });
-});
-</script>
-{% endblock %}
-
