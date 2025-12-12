@@ -33,6 +33,8 @@ sys.exit(0 if (User.objects.exists() or Answer.objects.exists()) else 1)
 PY
 then
     python manage.py seed_from_csv
+    python manage.py seed_question_motivations
+
 fi
 
 
