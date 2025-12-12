@@ -81,6 +81,15 @@
       <a class="btn" href="{% url 'tablea_export_csv' %}?view={{ view|default:'params' }}">
         Export transposed .csv
       </a>
+      {% with current_view=view|default:"params" %}
+        {% if current_view == "params" %}
+          <a class="btn"
+            href="{% url 'tablea_export_distances_zip' %}?view=params{% if selected_family %}&family={{ selected_family|urlencode }}{% endif %}{% if selected_historical %}&historical={{ selected_historical|urlencode }}{% endif %}">
+            Export distances (.zip)
+          </a>
+        {% endif %}
+      {% endwith %}
+
     </div>
   </div>
 

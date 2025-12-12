@@ -20,7 +20,7 @@ services:
       - .env
     volumes:
       # Rimuovere in produzione la bind‑mount del codice locale
-      #- ./:/app  # da commentare per prod
+      - ./:/app  # da commentare per prod
       - staticfiles:/app/staticfiles
       - media:/app/media
     expose:

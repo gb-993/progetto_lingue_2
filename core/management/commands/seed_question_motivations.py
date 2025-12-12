@@ -158,8 +158,6 @@ class Command(BaseCommand):
             uniq_labels.append(lab)
 
         # 3) Crea/aggiorna Motivation con code MOT###
-        #    NOTA: il code è solo un identificatore tecnico; label è quello che conta in UI.
-        #    Per rendere l’operazione idempotente e stabile:
         #    - se esiste già una Motivation con lo stesso label, la riuso
         #    - altrimenti creo una nuova con prossimo code disponibile
         existing_by_label = { _norm(m.label): m for m in Motivation.objects.all() }
@@ -199,12 +197,11 @@ class Command(BaseCommand):
             created_mot += 1
 
         # 4) Risolvi le Question e aggiorna i link QuestionAllowedMotivation
-        #    “tutte e sole”: per ogni domanda, cancello i link esistenti e ricreo quelli dal file.
         linked = 0
         missing_questions = 0
 
         for q_key, mot_list in q_to_mots.items():
-            # prova: pk (Question.id), fallback: text case-insensitive
+            # prova: pk (Question.id)
             q_obj = Question.objects.filter(pk=q_key).first()
             if q_obj is None:
                 q_obj = Question.objects.filter(text__iexact=q_key).first()

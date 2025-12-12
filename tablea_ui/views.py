@@ -271,3 +271,129 @@ def tablea_export_xlsx(request):
     filename = "tableA_questions.xlsx" if view_mode == "questions" else "tableA.xlsx"
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+import io
+import zipfile
+from collections import defaultdict
+# ==========================
+# NUOVO: Export distances zip
+# ==========================
+
+def _dist_hamming(P1, P2) -> float:
+    idc = 0.0
+    dif = 0.0
+    for i in range(len(P1)):
+        if (P1[i] == P2[i] == "+") or (P1[i] == P2[i] == "-"):
+            idc += 1
+        elif (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
+            dif += 1
+    denom = dif + idc
+    return 0.0 if denom == 0 else (dif / denom)
+
+
+def _dist_jaccard(P1, P2, identity: str) -> float:
+    idc = 0.0
+    dif = 0.0
+    for i in range(len(P1)):
+        if P1[i] == P2[i] == identity:
+            idc += 1
+        elif (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
+            dif += 1
+    denom = dif + idc
+    return 0.0 if denom == 0 else (dif / denom)
+
+
+def _distance_matrix_text(dist_func, data, languages, identity: str | None = None) -> str:
+    dist = defaultdict(dict)
+    for lang1 in data:
+        for lang2 in data:
+            if identity is None:
+                v = dist_func(lang1, lang2)
+            else:
+                v = dist_func(lang1, lang2, identity)
+            dist[lang1[0]][lang2[0]] = round(v, 3)
+
+    lines = []
+    lines.append("Language\t" + "\t".join(languages))
+    for lang in languages:
+        lines.append(lang + "\t" + "\t".join(str(dist[lang][lang2]) for lang2 in languages))
+    return "\n".join(lines) + "\n"
+
+
+def _build_tablea_transposed_for_distances(request):
+    """
+    Produce i dati nello stesso "formato logico" dello script distance.py:
+    lista di righe: [LANG_ID, v1, v2, ...] con v in {+,-,0}
+    - Usa SOLO la Table A parametri.
+    - Applica gli stessi filtri (family/historical) della pagina Table A.
+    """
+    headers, export_rows, languages_all, items = _build_tablea_matrix()
+
+    selected_family = request.GET.get("family", "").strip()
+    selected_historical = request.GET.get("historical", "all").strip()
+
+    def _match(lang: Language) -> bool:
+        if selected_family and (lang.top_level_family or "") != selected_family:
+            return False
+        if selected_historical == "yes" and not lang.historical_language:
+            return False
+        if selected_historical == "no" and lang.historical_language:
+            return False
+        return True
+
+    languages = [l for l in languages_all if _match(l)]
+    idx_map = [i for i, l in enumerate(languages_all) if l in languages]
+
+    transposed = []
+    for lang_pos, lang in enumerate(languages):
+        original_lang_index = idx_map[lang_pos]
+        vals = []
+        for param_row in export_rows:
+            v = param_row[3 + original_lang_index]
+            # normalizza: vuoto -> "0" (viene ignorato dalle metriche se non +/-)
+            vals.append(v if v in {"+", "-", "0"} else "0")
+        transposed.append([lang.id] + vals)
+
+    return [l.id for l in languages], transposed
+
+
+@login_required
+def tablea_export_distances_zip(request):
+    """
+    Genera uno zip con 6 matrici di distanza (come distance.py) calcolate
+    sulla Table A parametri attualmente visualizzata (filtri inclusi).
+    """
+    view_mode = (request.GET.get("view") or "params").strip().lower()
+    if view_mode != "params":
+        # distanza definita SOLO per Table A parametri (+/-/0)
+        return HttpResponse("Distances export is available only in Parameters view.", status=400)
+
+    languages, original = _build_tablea_transposed_for_distances(request)
+
+    # Variante: 0 -> -
+    zero_to_minus = []
+    for row in original:
+        new_row = [row[0]]
+        for char in row[1:]:
+            new_row.append("-" if char == "0" else char)
+        zero_to_minus.append(new_row)
+
+    files = {
+        "hamming.txt": _distance_matrix_text(_dist_hamming, original, languages),
+        "jaccard[+].txt": _distance_matrix_text(_dist_jaccard, original, languages, identity="+"),
+        "jaccard[-].txt": _distance_matrix_text(_dist_jaccard, original, languages, identity="-"),
+        "hamming[NO_0].txt": _distance_matrix_text(_dist_hamming, zero_to_minus, languages),
+        "jaccard[+_NO_0].txt": _distance_matrix_text(_dist_jaccard, zero_to_minus, languages, identity="+"),
+        "jaccard[-_NO_0].txt": _distance_matrix_text(_dist_jaccard, zero_to_minus, languages, identity="-"),
+    }
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for name, content in files.items():
+            zf.writestr(name, content)
+
+    buf.seek(0)
+    resp = HttpResponse(buf.getvalue(), content_type="application/zip")
+    resp["Content-Disposition"] = 'attachment; filename="tableA_distances.zip"'
+    return resp
