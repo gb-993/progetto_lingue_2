@@ -407,7 +407,8 @@ def language_data(request, lang_id):
 @transaction.atomic
 def parameter_save(request, lang_id, param_id):
 
-    lang = get_object_or_404(Language, pk=lang_id)
+    # Lock della lingua per serializzare salvataggi concorrenti sulla stessa lingua
+    lang = get_object_or_404(Language.objects.select_for_update(), pk=lang_id)
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
@@ -422,16 +423,18 @@ def parameter_save(request, lang_id, param_id):
         response_text = (request.POST.get(f"resp_{q.id}") or "").strip().lower()
         comments = (request.POST.get(f"com_{q.id}") or "").strip()
 
-        
         if response_text not in ("yes", "no"):
             continue
 
-        try:
-            answer = Answer.objects.get(language=lang, question=q)
-        except Answer.DoesNotExist:
+        # Lock dell'Answer se esiste (evita corse su update concorrenti); se non esiste, la creiamo.
+        answer = (
+            Answer.objects.select_for_update()
+            .filter(language=lang, question=q)
+            .first()
+        )
+        if answer is None:
             answer = Answer(language=lang, question=q)
 
-        
         del_ids = []
         for key, val in request.POST.items():
             if key.startswith("del_ex_") and (val or "").strip() == "1":
@@ -440,7 +443,6 @@ def parameter_save(request, lang_id, param_id):
                 except ValueError:
                     pass
 
-        
         updated_textareas = {}
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
@@ -453,7 +455,6 @@ def parameter_save(request, lang_id, param_id):
             if field == "textarea":
                 updated_textareas[ex_id] = (val or "").strip()
 
-        
         prefix = f"newex_{q.id}_"
         buckets = {}
         for key, val in request.POST.items():
@@ -468,7 +469,6 @@ def parameter_save(request, lang_id, param_id):
                 continue
             buckets.setdefault(uid, {})[field] = (val or "").strip()
 
-        
         if response_text == "yes":
             has_textarea_final = False
             existing_qs = Example.objects.filter(answer__language=lang, answer__question=q)
@@ -489,13 +489,11 @@ def parameter_save(request, lang_id, param_id):
                 messages.error(request, _t("If you answer YES, you must provide at least one example with a non-empty text."))
                 return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{param.id}")
 
-        
         answer.response_text = response_text
         answer.comments = comments
         answer.save()
         saved_count += 1
 
-        
         try:
             target_ids = {int(x) for x in request.POST.getlist(f"mot_{q.id}")}
         except ValueError:
@@ -515,11 +513,9 @@ def parameter_save(request, lang_id, param_id):
         if to_del:
             AnswerMotivation.objects.filter(answer=answer, motivation_id__in=to_del).delete()
 
-        
         if del_ids:
             Example.objects.filter(answer=answer, id__in=del_ids).delete()
 
-        
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
                 continue
@@ -533,7 +529,6 @@ def parameter_save(request, lang_id, param_id):
             cleaned = (val or "").strip()
             Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
 
-        
         if buckets:
             to_create = []
             for uid, data in buckets.items():
@@ -559,7 +554,6 @@ def parameter_save(request, lang_id, param_id):
             if to_create:
                 Example.objects.bulk_create(to_create, ignore_conflicts=True)
 
-    
     action = (request.POST.get("action") or "save").strip().lower()
     try:
         if action == "next":
@@ -579,6 +573,7 @@ def parameter_save(request, lang_id, param_id):
     )
     target_id = next_param.id if next_param else param.id
     return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{target_id}")
+
 
 
 
