@@ -407,8 +407,11 @@ def language_data(request, lang_id):
 @transaction.atomic
 def parameter_save(request, lang_id, param_id):
 
-    # Lock della lingua per serializzare salvataggi concorrenti sulla stessa lingua
-    lang = get_object_or_404(Language.objects.select_for_update(), pk=lang_id)
+    try:
+        lang = Language.objects.select_for_update().get(pk=lang_id)
+    except Language.DoesNotExist:
+        messages.warning(request, _t("This language was deleted while you were saving. Your changes were not saved."))
+        return redirect("language_list")
     if not _check_language_access(request.user, lang):
         messages.error(request, _t("You don't have access to this language."))
         return redirect("language_list")
