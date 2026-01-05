@@ -74,13 +74,13 @@
           </li>
 
           {% if not request.user.is_staff and not request.user.is_superuser and request.user.role != 'admin' %}
-            <li>
-              {% if urln == 'my_account' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">My Account</span>
-              {% else %}
-                <a class="btn" href="{% url 'my_account' %}">My Account</a>
-              {% endif %}
-            </li>
+          <li>
+            {% if urln == 'my_account' %}
+              <span class="btn is-current" aria-current="page" aria-disabled="true">My Account</span>
+            {% else %}
+              <a class="btn" href="{% url 'my_account' %}">My Account</a>
+            {% endif %}
+          </li>
           {% endif %}
 
           {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}

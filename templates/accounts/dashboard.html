@@ -25,11 +25,9 @@
         <span class="dash-tile-label">Glossary</span>
       </a>
 
-      {% if not is_admin %}
-        <a class="dash-tile" href="{% url 'my_account' %}" aria-label="Open my account">
-          <span class="dash-tile-label">My Account</span>
-        </a>
-      {% endif %}
+      <a class="dash-tile" href="{% url 'my_account' %}" aria-label="Open my account">
+        <span class="dash-tile-label">My Account</span>
+      </a>
 
       {% if is_admin %}
         <a class="dash-tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
