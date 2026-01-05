@@ -43,6 +43,7 @@
             </td>
             <td class="row-actions">
               <a class="btn" href="{% url 'accounts_edit' u.id %}">Edit</a>
+              <a class="btn" href="{% url 'accounts_delete' u.id %}">Delete</a>
             </td>
           </tr>
           {% empty %}
@@ -85,6 +86,7 @@
             </td>
             <td class="row-actions">
               <a class="btn" href="{% url 'accounts_edit' u.id %}">Edit</a>
+              <a class="btn" href="{% url 'accounts_delete' u.id %}">Delete</a>
             </td>
           </tr>
           {% empty %}

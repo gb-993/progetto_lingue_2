@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import update_session_auth_hash
 from django.utils.translation import gettext as _
-from core.models import User, ParameterChangeLog
+from core.models import User, ParameterChangeLog, Submission, ParameterReviewFlag
 from .forms import AccountForm, MyAccountForm, MyPasswordChangeForm
 try:
     from core.models import Language
@@ -215,3 +215,87 @@ def my_account(request):
         "pwd_form": pwd_form,
     }
     return render(request, "accounts/my_account.html", ctx)
+
+
+@login_required
+@user_passes_test(_is_admin)
+def accounts_delete(request, user_id: int):
+  
+    user = get_object_or_404(User, pk=user_id)
+
+    #  no self-delete
+    if request.user.pk == user.pk:
+        messages.error(request, _("You cannot delete your own account."))
+        return redirect("accounts_list")
+
+    # Guardrail: no delete ultimo admin
+    target_is_admin = bool(
+        user.is_staff
+        or user.is_superuser
+        or getattr(user, "role", "") == "admin"
+    )
+
+    if target_is_admin:
+        remaining_admins = (
+            User.objects
+            .filter(Q(is_staff=True) | Q(is_superuser=True) | Q(role="admin"))
+            .exclude(pk=user.pk)
+            .count()
+        )
+        if remaining_admins == 0:
+            messages.error(request, _("You cannot delete the last administrator."))
+            return redirect("accounts_list")
+
+
+    # --- recap counts (usati sia in GET sia per messaggi finali) ---
+    assigned_lang_qs = Language.objects.filter(assigned_user=user).order_by("id") if HAS_LANGUAGE else Language.objects.none()
+    assigned_lang_count = assigned_lang_qs.count() if HAS_LANGUAGE else 0
+
+    m2m_lang_count = user.m2m_languages.count()
+    submission_count = Submission.objects.filter(submitted_by=user).count()
+    reviewflag_count = ParameterReviewFlag.objects.filter(user=user).count()
+    changelog_count = ParameterChangeLog.objects.filter(changed_by=user).count()
+
+    if request.method == "POST":
+        with transaction.atomic():
+            # 1) Unassign languages (assigned_user -> NULL)
+            if HAS_LANGUAGE and assigned_lang_count:
+                assigned_lang_qs.update(assigned_user=None)
+
+            # 2) Clear M2M languages
+            user.m2m_languages.clear()
+
+            # 3) Submission author -> NULL (esplicito, oltre a on_delete=SET_NULL)
+            if submission_count:
+                Submission.objects.filter(submitted_by=user).update(submitted_by=None)
+
+            # 4) Delete user (ReviewFlags CASCADE, ChangeLog SET_NULL, etc.)
+            user.delete()
+
+        messages.success(
+            request,
+            _("Account deleted. Unassigned languages: %(a)s. Removed M2M links: %(m)s. "
+              "Submissions anonymized: %(s)s. Review flags removed: %(r)s. "
+              "Change logs anonymized: %(c)s.") % {
+                "a": assigned_lang_count,
+                "m": m2m_lang_count,
+                "s": submission_count,
+                "r": reviewflag_count,
+                "c": changelog_count,
+            }
+        )
+        return redirect("accounts_list")
+
+    # GET: pagina recap
+    ctx = {
+        "page_title": _("Delete account"),
+        "u": user,
+        "assigned_lang_count": assigned_lang_count,
+        "assigned_lang_list": list(assigned_lang_qs[:12]) if HAS_LANGUAGE else [],
+        "m2m_lang_count": m2m_lang_count,
+        "m2m_lang_list": list(user.m2m_languages.all().order_by("id")[:12]),
+        "submission_count": submission_count,
+        "reviewflag_count": reviewflag_count,
+        "changelog_count": changelog_count,
+    }
+    return render(request, "accounts/delete_confirm.html", ctx)

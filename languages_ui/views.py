@@ -206,13 +206,25 @@ def _all_questions_answered(language: Language) -> bool:
 # List / CRUD lingua
 # -----------------------
 
+from django.db.models import Max, Q
+from django.db.models.functions import Lower
+from urllib.parse import urlencode
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
 @login_required
 def language_list(request):
-    from django.db.models import Max, Q
+
     q = (request.GET.get("q") or "").strip()
+
+    #parametri per ordinamento
+    sort_key = (request.GET.get("sort") or "").strip()   # 'id' | 'name' | 'top' | ''
+    sort_dir = (request.GET.get("dir") or "asc").strip() # 'asc' | 'desc'
+
     user = request.user
     is_admin = _is_admin(user)
 
+    #  default order = position
     qs = (
         Language.objects
         .select_related("assigned_user")
@@ -236,23 +248,72 @@ def language_list(request):
             | Q(top_level_family__icontains=q)
             | Q(source__icontains=q)
         )
-
         if q.lower() in {"hist", "stor", "storica", "storico", "true", "yes"}:
             filt |= Q(historical_language=True)
         if q.lower() in {"false", "no"}:
             filt |= Q(historical_language=False)
-
         if is_admin:
             filt |= Q(assigned_user__email__icontains=q)
         qs = qs.filter(filt)
+
+    sort_map = {
+        "id": "id",
+        "name": "name_full",
+        "top": "top_level_family",
+    }
+
+    active_sort = None
+    if sort_key in sort_map:
+        active_sort = sort_key
+
+        if sort_key == "name":
+            # case-insensitive
+            qs = qs.annotate(_name_ci=Lower("name_full"))
+            order_field = "_name_ci"
+        elif sort_key == "top":
+            # case-insensitive 
+            qs = qs.annotate(_top_ci=Lower("top_level_family"))
+            order_field = "_top_ci"
+        else:
+            order_field = sort_map[sort_key]
+
+        # stabilità: a parità di campo, tieni position
+        if sort_dir == "desc":
+            qs = qs.order_by(f"-{order_field}", "position")
+        else:
+            qs = qs.order_by(order_field, "position")
+
+
+    def _toggle_url(column: str) -> str:
+        # se clicchi la stessa colonna, alterna asc/desc; altrimenti riparti asc
+        next_dir = "desc" if (active_sort == column and sort_dir == "asc") else "asc"
+
+        params = []
+        if q:
+            params.append(("q", q))
+        params.append(("sort", column))
+        params.append(("dir", next_dir))
+        return "?" + urlencode(params)
+
+    sort_urls = {
+        "id": _toggle_url("id"),
+        "name": _toggle_url("name"),
+        "top": _toggle_url("top"),
+    }
 
     ctx = {
         "languages": qs,
         "page_obj": None,
         "q": q,
         "is_admin": is_admin,
+
+        "sort": active_sort,
+        "dir": sort_dir,
+        "sort_urls": sort_urls,
     }
     return render(request, "languages/list.html", ctx)
+
+
 
 
 

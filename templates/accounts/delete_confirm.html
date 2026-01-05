@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Delete account{% endblock %}
+{% block breadcrumb %}Accounts / Delete{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h3>{{ page_title }}</h3>
+
+    <p class="muted">
+      This will permanently delete the account.
+      Submissions will remain, but their author will become <strong>NULL</strong>.
+    </p>
+
+    <div style="margin-top: 1rem;">
+      <h4>Account</h4>
+      <ul>
+        <li><strong>Email:</strong> {{ u.email }}</li>
+        <li><strong>Name:</strong> {{ u.name }} {{ u.surname }}</li>
+        <li><strong>Role:</strong> {% if u.is_admin %}Admin{% else %}User{% endif %}</li>
+      </ul>
+    </div>
+
+    <div style="margin-top: 1rem;">
+      <h4>Linked data (recap)</h4>
+      <ul>
+        <li><strong>Assigned languages:</strong> {{ assigned_lang_count }}</li>
+        <li><strong>M2M languages:</strong> {{ m2m_lang_count }}</li>
+        <li><strong>Submissions (author → NULL):</strong> {{ submission_count }}</li>
+        <li><strong>Review flags (will be removed):</strong> {{ reviewflag_count }}</li>
+        <li><strong>Change logs (author → NULL):</strong> {{ changelog_count }}</li>
+      </ul>
+
+      {% if assigned_lang_list %}
+        <details>
+          <summary>Assigned languages (sample)</summary>
+          <ul>
+            {% for l in assigned_lang_list %}
+              <li>{{ l }}</li>
+            {% endfor %}
+          </ul>
+        </details>
+      {% endif %}
+
+      {% if m2m_lang_list %}
+        <details>
+          <summary>M2M languages (sample)</summary>
+          <ul>
+            {% for l in m2m_lang_list %}
+              <li>{{ l }}</li>
+            {% endfor %}
+          </ul>
+        </details>
+      {% endif %}
+    </div>
+
+    <form method="post" style="margin-top: 1.25rem;">
+      {% csrf_token %}
+      <button class="btn btn--primary">Confirm delete</button>
+      <a class="btn" href="{% url 'accounts_list' %}">Cancel</a>
+    </form>
+  </div>
+{% endblock %}

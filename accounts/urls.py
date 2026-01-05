@@ -9,12 +9,11 @@ urlpatterns = [
     path("", views.accounts_list, name="accounts_list"),
     path("add/", views.accounts_add, name="accounts_add"),
     path("<int:user_id>/edit/", views.accounts_edit, name="accounts_edit"),
-    path("login/", LoginView.as_view(
-        template_name="accounts/login.html",
-        authentication_form=EmailAuthForm,
-        redirect_authenticated_user=True,
-    ), name="login"),
+    path("login/", LoginView.as_view(template_name="accounts/login.html",authentication_form=EmailAuthForm,redirect_authenticated_user=True,), name="login"),
     path("logout/", LogoutView.as_view(next_page="/accounts/login/"), name="logout"),
     path("me/", views.my_account, name="my_account"),
+
+    path("<int:user_id>/delete/", views.accounts_delete, name="accounts_delete"),
+
 
 ]
