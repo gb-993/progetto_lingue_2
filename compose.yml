@@ -19,7 +19,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./:/app  # da commentare per prod
+      #- ./:/app  # da commentare per prod
       - staticfiles:/app/staticfiles
       - media:/app/media
     expose:
