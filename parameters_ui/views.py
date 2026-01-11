@@ -317,7 +317,7 @@ def parameter_deactivate(request, param_id: str):
         if refs_now:
             messages.error(
                 request,
-                "Unable to deactivate: new references have appeared. Clean up and try again"
+                "Unable to deactivate: new implicational conditions mentioning this parameter have appeared. Clean up and try again"
             )
             return redirect("parameter_edit", param_id=param.id)
 

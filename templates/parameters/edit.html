@@ -217,7 +217,7 @@
 </section>
 
 <section class="card" aria-labelledby="where-used-heading">
-  <h3 id="where-used-heading">Who references this parameter</h3>
+  <h3 id="where-used-heading">Implicational conditions mentioning this parameter</h3>
   {% if where_used and where_used|length > 0 %}
     <p class="muted">The following parameters reference this parameter in their implicational condition(s): edit their implicational condition(s) before deactivating this parameter.</p>
     <ul class="list">
@@ -229,7 +229,7 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="muted">No parameter references this parameter: you can proceed with deactivation.</p>
+    <p class="muted">No implicational conditions mentioning this parameter: you can proceed with deactivation.</p>
   {% endif %}
 </section>
 
