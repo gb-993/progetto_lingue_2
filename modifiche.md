@@ -26,7 +26,7 @@
 
 ## LINGUE DATA
 - [ ] A volte il Number degli esempi non aumenta progressivamente (a volte rimane uguale, a volte salta dei numeri)
-- [ ] A volte il numero dell'esempio è cancellato nella cella di Example text. A questo punto conviene che lo script non cerchi di associare l'esempio a un numero ma lo copi direttamente così com'è
+- [ ] A volte il numero dell'esempio è cancellato nella cella di Example text (anche se è del tipo 1.1). A questo punto conviene che lo script non cerchi di associare l'esempio a un numero ma lo copi direttamente così com'è
 - [ ] Aggiungere Save e Next visibili a destra durante lo scorrimento
 - [ ] Problema della duplicazione delle stop-questions con label Qs
 - [ ] Ristrutturazione dei pulsanti in alto
