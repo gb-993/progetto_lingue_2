@@ -45,7 +45,8 @@
 - [ ] Poter cliccare sul valore di un parametro o su YES/NO di una question e visualizzare le questions e gli esempi che hanno permesso di fissare quel parametro/risposta (solo se si riesce)
 - [ ] Poter selezionare le lingue anche per Family e per Group, oltre che per Top-level family, e i parametri per Level of Comparison
 - [ ] Poter selezionare singole lingue (oltre che con i filtri) e singoli parametri, tipo con checkbox vicino a ogni lingua/parametro per il download delle distanze e dei dendrogrammi
-- [ ] Scaricare dendrogramma UPGMA (magari con lo stesso pulsante delle distanze: Export distances and dendrograms)
+- [ ] Far scaricare solo distanze Hamming e Jaccard[+] (eliminare le altre quattro)
+- [ ] Scaricare dendrogramma UPGMA adattando dendrogram.py (magari con lo stesso pulsante delle distanze: Export distances and dendrograms)
 
 ## FILTERS
 - [ ] Inserire l'ordine alfabetico per la ricerca delle lingue anziché quello basato su position
