@@ -9,6 +9,7 @@
 - [ ] Aggiornare i nomi delle pagine (Graph -> Parameter networks, Submissions -> Saved languages, Queries -> Filters)
 - [ ] Aggiornare ordine nel menù User: Dashboard > Languages > Instructions > Glossary > My account
 - [ ] Aggiornare ordine nel menù Admin: Dashboard > Languages > Parameters > Parameter networks > Table A > Saved languages > Filters > Instructions > Glossary > My account > Accounts
+- [ ] Rendere cliccabile il breadcrumb
 
 ## HOMEPAGE
 - [ ] Creare la homepage sul modello di [ASJP](https://asjp.clld.org)
@@ -20,9 +21,17 @@
 - [ ] Info lingue e famiglie (si possono aggiornare automaticamente?)
 - [ ] Link al sito di [PCM](http://www.parametricomparison.unimore.it/site/home.html)
 
+## QUESTIONS
+- [ ] Nuova pagina "Questions" simile a "Parameters" con pulsante Search una tabella: label | testo della  question | pulsante Edit (porta alla pagina del parametro)
+- [ ] Lista delle questions con lo stesso ordine dei parametri
+
 ## LISTA LINGUE
 - [ ] Togliere l'attributo position (non serve più)
 - [ ] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua)
+- [ ] Errori "parlanti" al caricamento di un file(?)
+- [ ] Equiparare Qs a QS nello script(?)
+- [ ] Fare in modo che se nel file excel ci sono ID delle questions che non si trovano nel database, i dati di quelle questions non vengano copiati
+- [ ] Verificare che il caricamento di un foglio di una lingua sovrascriva i dati precedentemente caricati per quella lingua
 
 ## LINGUE DATA
 - [ ] A volte il Number degli esempi non aumenta progressivamente (a volte rimane uguale, a volte salta dei numeri)
@@ -30,6 +39,9 @@
 - [ ] Aggiungere Save e Next visibili a destra durante lo scorrimento
 - [ ] Problema della duplicazione delle stop-questions con label Qs
 - [ ] Ristrutturazione dei pulsanti in alto
+
+## DEBUG PARAMETRI
+- [ ] Poter modificare manualmente il valore di un parametro nel final value, segnalando che è stata fatta una modifica
 
 ## GLOSSARIO
 - [ ] Caricare voci
@@ -50,3 +62,6 @@
 
 ## FILTERS
 - [ ] Inserire l'ordine alfabetico per la ricerca delle lingue anziché quello basato su position
+- [ ] Nuovi filtri: "Questions with answer YES (per language)" e "Questions with answer NO (per language)"
+- [ ] Quando ci sono i parametri tra i risultati poter cliccare sul label ed essere reindirizzato alla pagina di Edit del paramentro
+- [ ] Quando ci sono le questions per lingua poter cliccare sul label ed essere reindirizzato alla question all'interno di Lingua data
