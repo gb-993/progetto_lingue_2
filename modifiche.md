@@ -49,8 +49,10 @@
 ## DEBUG
 - [ ] Warning in caso di risposte non date
 
-## PARAMETERS
+## PARAMETERS EDIT
 - [ ] Inserire un nuovo attributo Level of comparison con i due valori mutualmente esclusivi Canonico e Deuterocanonico
+- [ ] Inserire due altre celle di testo libero una sotto l'altra intitolate "Long description" e "Explication of the implicational condition(s)"
+- [ ] Inserire un bottone di download alla fine della pagina di edit del parametro per scaricare un pdf con tutte le informazioni di un parametro e delle sue questions
 
 ## TABLE A
 - [ ] Togliere dallo script che genera le distanze quelle che trasformano gli 0 in - ???
