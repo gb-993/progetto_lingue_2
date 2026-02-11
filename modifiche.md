@@ -62,6 +62,7 @@
 - [ ] Far scaricare solo distanze Hamming e Jaccard[+] (eliminare le altre quattro)
 - [ ] Scaricare dendrogramma UPGMA adattando dendrogram.py (magari con lo stesso pulsante delle distanze: Export distances and dendrograms)
 - [ ] Scaricare una PCA (ti metto lo script io)
+- [ ] Scaricare una heatmaps (ti metto lo script io)
 
 ## FILTERS
 - [ ] Inserire l'ordine alfabetico per la ricerca delle lingue anziché quello basato su position
