@@ -34,8 +34,10 @@ PY
 then
     python manage.py seed_from_csv
     python manage.py seed_question_motivations
-
 fi
+
+# Importa sempre il glossario (idempotente, aggiorna se necessario)
+python manage.py import_glossary
 
 
 # Collect static assets into /app/staticfiles

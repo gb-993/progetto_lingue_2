@@ -10,8 +10,8 @@ import io
 import zipfile
 import threading          
 import logging         
-from django.conf import settings  
 from django.contrib import messages
+from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.management import call_command  
 from django.core.paginator import Paginator
@@ -61,7 +61,7 @@ except Exception:
         WAITING = "waiting_for_approval"
         APPROVED = "approved"
         REJECTED = "rejected"
---
+
 from core.models import LanguageReview 
 
 from core.services.dag_eval import run_dag_for_language
@@ -218,8 +218,8 @@ def language_list(request):
     q = (request.GET.get("q") or "").strip()
 
     #parametri per ordinamento
-    sort_key = (request.GET.get("sort") or "").strip()   # 'id' | 'name' | 'top' | ''
-    sort_dir = (request.GET.get("dir") or "asc").strip() # 'asc' | 'desc'
+    sort_key = (request.GET.get("sort") or "name").strip()  # Default impostato su 'name'
+    sort_dir = (request.GET.get("dir") or "asc").strip()
 
     user = request.user
     is_admin = _is_admin(user)
@@ -229,7 +229,6 @@ def language_list(request):
         Language.objects
         .select_related("assigned_user")
         .annotate(last_change=Max("answers__updated_at"))
-        .order_by("position")
     )
 
     if not is_admin:
@@ -260,6 +259,9 @@ def language_list(request):
         "id": "id",
         "name": "name_full",
         "top": "top_level_family",
+        "family": "family",
+        "group": "grp",
+        "modified": "last_change"
     }
 
     active_sort = None
@@ -299,6 +301,9 @@ def language_list(request):
         "id": _toggle_url("id"),
         "name": _toggle_url("name"),
         "top": _toggle_url("top"),
+        "family": _toggle_url("family"),
+        "group": _toggle_url("group"),
+        "modified": _toggle_url("modified"),
     }
 
     ctx = {
@@ -595,7 +600,7 @@ def parameter_save(request, lang_id, param_id):
 
         if buckets:
             to_create = []
-            for uid, data in buckets.items():
+            for idx, (uid, data) in enumerate(buckets.items()):
                 has_payload = any([
                     data.get("textarea"),
                     data.get("transliteration"),
@@ -603,12 +608,11 @@ def parameter_save(request, lang_id, param_id):
                     data.get("translation"),
                     data.get("reference"),
                 ])
-                num = (data.get("number") or "").strip()
-                if not has_payload and not num:
+                if not has_payload:
                     continue
                 to_create.append(Example(
                     answer=answer,
-                    number=num or "1",
+                    number=str(idx + 1),
                     textarea=data.get("textarea", ""),
                     transliteration=data.get("transliteration", ""),
                     gloss=data.get("gloss", ""),
@@ -791,7 +795,7 @@ def answer_save(request, lang_id, question_id):
     # create nuovi
     if buckets:
         to_create = []
-        for uid, data in buckets.items():
+        for idx, (uid, data) in enumerate(buckets.items()):
             has_payload = any([
                 data.get("textarea"),
                 data.get("transliteration"),
@@ -799,12 +803,12 @@ def answer_save(request, lang_id, question_id):
                 data.get("translation"),
                 data.get("reference"),
             ])
-            num = (data.get("number") or "").strip()
-            if not has_payload and not num:
+
+            if not has_payload:
                 continue
             to_create.append(Example(
                 answer=answer,
-                number=num or "1",
+                num=str(idx + 1),
                 textarea=data.get("textarea", ""),
                 transliteration=data.get("transliteration", ""),
                 gloss=data.get("gloss", ""),
@@ -1246,8 +1250,6 @@ def _run_import_language_from_excel_bg(tmp_path: str, original_name: str, user_i
             logger.warning("Could not delete temporary file: %s", tmp_path)
 
 
-
-
 @login_required
 @require_http_methods(["GET", "POST"])
 def language_import_excel(request):
@@ -1256,8 +1258,6 @@ def language_import_excel(request):
         return redirect("language_list")
 
     if request.method == "POST":
-        print("FILES:", request.FILES)
-        print("POST:", request.POST)
         upload = request.FILES.get("file")
         if not upload:
             messages.error(request, _t("You must select an Excel file to import."))
@@ -1268,51 +1268,35 @@ def language_import_excel(request):
             messages.error(request, _t("Unsupported file type. Please upload an .xlsx file."))
             return redirect("language_import_excel")
 
-        # Salva su file temporaneo e lancia il command in BACKGROUND
+        tmp_path = None
         try:
+            # Salvataggio del file in una posizione temporanea sul server
             with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
                 for chunk in upload.chunks():
                     tmp.write(chunk)
                 tmp_path = tmp.name
 
-            # Thread in background che esegue il command e poi cancella il file
-            t = threading.Thread(
-                target=_run_import_language_from_excel_bg,
-                args=(tmp_path, upload.name, getattr(request.user, "id", None)),
-                daemon=True,
-            )
-            t.start()
+            import io
+            out = io.StringIO()
+            call_command("import_language_from_excel", file=tmp_path, stdout=out)
 
-            # Messaggio per l'admin: import avviato, puoi controllare più tardi
-            messages.info(
-                request,
-                _t(
-                    "Import started in background for file “%(fname)s”. "
-                    "You can go back to the Languages list and, after some time, "
-                    "reload the page to see the imported data."
-                ) % {"fname": upload.name}
-            )
+            # LOG SOLO SU CONSOLE E MESSAGGIO PULITO PER L'UTENTE ---
+            result_output = out.getvalue()
+            if result_output:
+                print(result_output)
 
-            # Pagina di conferma con stato "import_started"
-            return render(
-                request,
-                "languages/import_excel.html",
-                {
-                    "import_started": True,          # NUOVO flag per il template
-                    "uploaded_filename": upload.name,
-                },
-            )
+            # Invia all'utente online esclusivamente il messaggio di successo generico
+            messages.success(request, _t("Import completed successfully."))
 
         except Exception as e:
-            # In caso di errore PRIMA di lanciare il thread (es. problemi I/O)
-            logger.exception("Error scheduling Excel import")
-            messages.error(
-                request,
-                _t("Import could not be started: %(err)s") % {"err": str(e)},
-            )
-            return redirect("language_import_excel")
+            logger.exception("Error during synchronous Excel import")
+            messages.error(request, _t("Import failed: %(err)s") % {"err": str(e)})
 
-    # GET: mostra form di upload (stato iniziale, nessun import_started)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        return redirect("language_list")
+
     return render(request, "languages/import_excel.html", {})
 
 
@@ -1500,15 +1484,13 @@ def _build_language_workbook(lang: Language, user):
                 ref_lines: list[str] = []
 
                 for idx_ex, ex in enumerate(ex_list):
-                    num = (getattr(ex, "number", "") or "").strip()
-                    if not num:
-                        num = str(idx_ex + 1)
+                    # Recupera il testo dell'esempio così com'è (con la numerazione manuale)
                     text = getattr(ex, "textarea", "") or ""
-                    if text:
-                        examples_lines.append(f"{num}. {text}")
-                    else:
-                        examples_lines.append(num)
 
+                    # Aggiunge il testo direttamente alla lista senza prefissi extra
+                    examples_lines.append(text)
+
+                    # Mantiene l'allineamento con glosse, traduzioni e riferimenti
                     gloss_lines.append(getattr(ex, "gloss", "") or "")
                     transl_lines.append(getattr(ex, "translation", "") or "")
                     ref_lines.append(getattr(ex, "reference", "") or "")

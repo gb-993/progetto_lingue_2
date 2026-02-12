@@ -5,7 +5,7 @@
 
 ## GENERALI
 - [x] Verificare che "instructions" sia sempre al plurale
-- [ ] Rendere cliccabili i link nel menù (link circolari)
+- [x] Rendere cliccabili i link nel menù (link circolari)
 - [ ] Aggiornare i nomi delle pagine (Graph -> Parameter networks, Submissions -> Saved languages, Queries -> Filters)
 - [ ] Aggiornare ordine nel menù User: Dashboard > Languages > Instructions > Glossary > My account
 - [ ] Aggiornare ordine nel menù Admin: Dashboard > Languages > Parameters > Parameter networks > Table A > Saved languages > Filters > Instructions > Glossary > My account > Accounts
@@ -15,7 +15,7 @@
 - [ ] Creare la homepage sul modello di [ASJP](https://asjp.clld.org)
 - [ ] Pulsante di Login e poi messaggio di benvenuto personalizzato
 - [ ] Predisporre qualche riga per spiegare a cosa serve il sito
-- [ ] Predisporre modello di citazione ??
+- [ ] Predisporre modello di citazione 
 - [ ] Contatti a cui scrivere per proporre una collaborazione
 - [ ] Link cliccabili per privacy e per termini di utilizzo da accettare al primo accesso (in registrazione per public account)
 - [ ] Info lingue e famiglie (si possono aggiornare automaticamente?)
@@ -31,7 +31,10 @@
 - [ ] Errori "parlanti" al caricamento di un file(?) 
 - [ ] Equiparare Qs a QS nello script(?)
 - [ ] Fare in modo che se nel file excel ci sono ID delle questions che non si trovano nel database, i dati di quelle questions non vengano copiati
-- [ ] Verificare che il caricamento di un foglio di una lingua sovrascriva i dati precedentemente caricati per quella lingua
+- [x] **RISOLTO (2026-02-12)**: Verificare che il caricamento di un foglio di una lingua sovrascriva i dati precedentemente caricati per quella lingua
+  - **Problema**: Il secondo upload non eliminava le risposte vecchie, causando inconsistenze
+  - **Soluzione**: Implementato "replace all" - tutti i dati vengono eliminati e ricreati da zero
+  - **Docs**: Vedi BUGFIX_IMPORT_LINGUA.md e GUIDA_IMPORT_LINGUE_PER_LINGUISTI.md
 
 ## LINGUE DATA
 - [ ] A volte il Number degli esempi non aumenta progressivamente (a volte rimane uguale, a volte salta dei numeri)

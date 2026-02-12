@@ -1,4 +1,3 @@
-{# templates/base.html — base pulita, tema chiaro/scuro, header + breadcrumb #}
 <!doctype html>
 <html lang="en">
 <head>
@@ -32,127 +31,131 @@
   <header class="site-header">
     <div class="container">
       <h1 class="site-title">
-        the PCM Hub
-        <span class="site-subtitle"> Hub for data collection and storage for the Parametric Comparison Method (PCM)</span>
+        PCM Hub
+        <span class="site-subtitle"> Parametric Comparison Method (PCM) – Data collection and storage</span>
       </h1>
 
       {% with urln=request.resolver_match.url_name|default:'' %}
-      <nav class="nav" aria-label="Main">
-        <ul class="nav-list">
+<nav class="nav" aria-label="Main">
+  <ul class="nav-list">
 
-          {# Link principali #}
-          <li>
-            {% if urln == 'dashboard' %}
-              <span class="btn is-current" aria-current="page" aria-disabled="true">Dashboard</span>
-            {% else %}
-              <a class="btn" href="{% url 'dashboard' %}">Dashboard</a>
-            {% endif %}
-          </li>
+    {# Dashboard #}
+    <li>
+      <a class="btn {% if urln == 'dashboard' %}is-current{% endif %}"
+         href="{% url 'dashboard' %}"
+         {% if urln == 'dashboard' %}aria-current="page"{% endif %}>
+         Dashboard
+      </a>
+    </li>
 
-          <li>
-            {% if urln == 'instruction' %}
-              <span class="btn is-current" aria-current="page" aria-disabled="true">Instructions</span>
-            {% else %}
-              <a class="btn" href="{% url 'instruction' %}">Instructions</a>
-            {% endif %}
-          </li>
-          
-          <li>
-            {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}
-              <span class="btn is-current" aria-current="page" aria-disabled="true">Languages</span>
-            {% else %}
-              <a class="btn" href="{% url 'language_list' %}">Languages</a>
-            {% endif %}
-          </li>
+      {# Languages #}
+    <li>
+      <a class="btn {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}is-current{% endif %}"
+         href="{% url 'language_list' %}"
+         {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}aria-current="page"{% endif %}>
+         Languages
+      </a>
+    </li>
 
-          <li>
-            {% if urln == 'glossary_list' or urln == 'glossary_edit' or urln == 'glossary_add' %}
-              <span class="btn is-current" aria-current="page" aria-disabled="true">Glossary</span>
-            {% else %}
-              <a class="btn" href="{% url 'glossary_list' %}">Glossary</a>
-            {% endif %}
-          </li>
+      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
 
-          {% if not request.user.is_staff and not request.user.is_superuser and request.user.role != 'admin' %}
-          <li>
-            {% if urln == 'my_account' %}
-              <span class="btn is-current" aria-current="page" aria-disabled="true">My Account</span>
-            {% else %}
-              <a class="btn" href="{% url 'my_account' %}">My Account</a>
-            {% endif %}
-          </li>
-          {% endif %}
+        {# Parameters #}
+      <li>
+        <a class="btn {% if urln == 'parameter_list' or urln == 'parameter_edit' or urln == 'parameter_add' %}is-current{% endif %}"
+           href="{% url 'parameter_list' %}"
+           {% if urln == 'parameter_list' or urln == 'parameter_edit' or urln == 'parameter_add' %}aria-current="page"{% endif %}>
+           Parameters
+        </a>
+      </li>
 
-          {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
-            <li>
-              {% if urln == 'parameter_list' or urln == 'parameter_edit' or urln == 'parameter_add' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">Parameters</span>
-              {% else %}
-                <a class="btn" href="{% url 'parameter_list' %}">Parameters</a>
-              {% endif %}
-            </li>
+        {# Parameter Network #}
+      <li>
+        <a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}"
+           href="{% url 'parameters_graph' %}"
+           {% if urln == 'parameters_graph' %}aria-current="page"{% endif %}>
+           Parameter Network
+        </a>
+      </li>
 
-            <li>
-              {% if urln == 'parameters_graph' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">Graph</span>
-              {% else %}
-                <a class="btn" href="{% url 'parameters_graph' %}">Graph</a>
-              {% endif %}
-            </li>
+        {# Table A #}
+      <li>
+        <a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}"
+           href="{% url 'tablea_index' %}"
+           {% if urln == 'tablea_index' %}aria-current="page"{% endif %}>
+           Table A
+        </a>
+      </li>
+
+        {# Queries #}
+      <li>
+        <a class="btn {% if urln|slice:':7' == 'queries' %}is-current{% endif %}"
+           href="{% url 'queries:home' %}"
+           {% if urln|slice:':7' == 'queries' %}aria-current="page"{% endif %}>
+           Filters
+        </a>
+      </li>
+
+        {# Submissions #}
+      <li>
+        <a class="btn {% if urln == 'submissions_list' or urln == 'submission_detail' %}is-current{% endif %}"
+           href="{% url 'submissions_list' %}"
+           {% if urln == 'submissions_list' or urln == 'submission_detail' %}aria-current="page"{% endif %}>
+           Saved languages
+        </a>
+      </li>
+
+        {# Accounts #}
+      <li>
+        <a class="btn {% if urln == 'accounts_list' or urln == 'account_edit' or urln == 'account_add' %}is-current{% endif %}"
+           href="{% url 'accounts_list' %}"
+           {% if urln == 'accounts_list' or urln == 'account_edit' or urln == 'account_add' %}aria-current="page"{% endif %}>
+            Accounts
+        </a>
+      </li>
+    {% endif %}
 
 
-            <li>
-              {% if urln == 'tablea_index' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">Table A</span>
-              {% else %}
-                <a class="btn" href="{% url 'tablea_index' %}">Table A</a>
-              {% endif %}
-            </li>
+    {# Instructions #}
+    <li>
+      <a class="btn {% if urln == 'instruction' %}is-current{% endif %}"
+         href="{% url 'instruction' %}"
+         {% if urln == 'instruction' %}aria-current="page"{% endif %}>
+         Instructions
+      </a>
+    </li>
 
-            <li>
-              {% if urln|slice:":7" == 'queries' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">Queries</span>
-              {% else %}
-                <a class="btn" href="{% url 'queries:home' %}">Queries</a>
-              {% endif %}
-            </li>
+    {# Glossary #}
+    <li>
+      <a class="btn {% if urln == 'glossary_list' or urln == 'glossary_edit' or urln == 'glossary_add' %}is-current{% endif %}"
+         href="{% url 'glossary_list' %}"
+         {% if urln == 'glossary_list' or urln == 'glossary_edit' or urln == 'glossary_add' %}aria-current="page"{% endif %}>
+         Glossary
+      </a>
+    </li>
 
-            <li>
-              {% if urln == 'submissions_list' or urln == 'submission_detail' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">Submissions</span>
-              {% else %}
-                <a class="btn" href="{% url 'submissions_list' %}">Submissions</a>
-              {% endif %}
-            </li>
 
-            <li>
-              {% if urln == 'accounts_list' or urln == 'account_edit' or urln == 'account_add' %}
-                <span class="btn is-current" aria-current="page" aria-disabled="true">Accounts</span>
-              {% else %}
-                <a class="btn" href="{% url 'accounts_list' %}">Accounts</a>
-              {% endif %}
-            </li>
 
-          {% endif %}
 
-          <li class="nav-spacer" aria-hidden="true"></li>
+    <li class="nav-spacer" aria-hidden="true"></li>
 
-          <li class="nav-session">
-            <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
-              <button class="btn" type="submit">Logout</button>
-            </form>
+        {# My Account #}
+      <li>
+      <a class="btn {% if urln == 'my_account' %}is-current{% endif %}"
+         href="{% url 'my_account' %}"
+         {% if urln == 'my_account' %}aria-current="page"{% endif %}>
+         My Account
+      </a>
+    </li>
 
-            <button id="theme-toggle"
-                    type="button"
-                    class="btn theme-toggle"
-                    aria-label="Toggle theme"
-                    aria-live="polite"
-                    aria-pressed="false"></button>
-          </li>
-
-        </ul>
-
-      </nav>
+    {# Logout and theme toggle #}
+    <li class="nav-session">
+      <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
+        <button class="btn" type="submit">Logout</button>
+      </form>
+      <button id="theme-toggle" type="button" class="btn theme-toggle"></button>
+    </li>
+  </ul>
+</nav>
       {% endwith %}
 
       <nav class="breadcrumb" aria-label="Breadcrumb">

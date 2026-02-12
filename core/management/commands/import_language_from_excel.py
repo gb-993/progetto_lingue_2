@@ -1,19 +1,17 @@
-# NEW: core/management/commands/import_language_from_excel.py
 
 import os
-import re
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete
 
-# NEW: usiamo openpyxl come in seed_from_csv
 try:
     from openpyxl import load_workbook
     HAS_XLSX = True
 except Exception:
     HAS_XLSX = False
 
-# NEW: import dei modelli necessari
+# import dei modelli necessari
 from core.models import (
     Language,
     ParameterDef,
@@ -22,9 +20,10 @@ from core.models import (
     AnswerStatus,
     Example,
 )
+from core.signals import answer_saved_recompute, answer_deleted_recompute
+from core.services.param_consolidate import recompute_and_persist_language_parameter
 
 
-# NEW: helper coerenti con seed_from_csv -------------------------
 def _coerce_str(x):
     if x is None:
         return None
@@ -36,9 +35,6 @@ def parse_null(v):
 
 
 def _split_lines(cell_value):
-    """
-    NEW: normalizza e splitta una cella multilinea in righe pulite.
-    """
     if cell_value is None:
         return []
     s = str(cell_value).replace("\r\n", "\n").replace("\r", "\n").strip()
@@ -47,30 +43,17 @@ def _split_lines(cell_value):
     return [line.strip() for line in s.split("\n") if line.strip()]
 
 
+# Il testo rimarrà integrale (es: "1. Lorem ipsum")
 def _split_examples(cell_value):
-    """
-    NEW: spezza Language_Examples in una lista di (number, textarea).
-
-    Regole:
-    - split per newline
-    - se la riga inizia con "N." o "N)" (es. "1. foo"), usa N come number e il resto come testo
-    - altrimenti usa l'indice (1,2,3,...) come number e l'intera riga come testo
-    """
     lines = _split_lines(cell_value)
     out = []
     for idx, line in enumerate(lines):
-        m = re.match(r"\s*(\d+)[\.\)]\s*(.*)$", line)
-        if m:
-            num = m.group(1)
-            text = (m.group(2) or "").strip()
-        else:
-            num = str(idx + 1)
-            text = line.strip()
+        num = str(idx + 1)
+        text = line.strip()
         out.append((num, text))
     return out
 
 
-# NEW: command principale -----------------------------------------
 class Command(BaseCommand):
     help = (
         "Importa Answer ed Example da un file Excel denormalizzato "
@@ -101,7 +84,7 @@ class Command(BaseCommand):
         if not os.path.exists(path):
             raise CommandError(f"File non trovato: {path}")
 
-        # NEW: apertura Excel
+        # apertura Excel
         wb = load_workbook(path, data_only=True)
         if "Database_model" in wb.sheetnames:
             ws = wb["Database_model"]
@@ -119,7 +102,7 @@ class Command(BaseCommand):
         headers = [(_coerce_str(h) or "").strip() for h in headers]
         idx = {h: i for i, h in enumerate(headers) if h}
 
-        # NEW: controlliamo che ci siano le colonne minime
+        # controlliamo che ci siano le colonne minime
         required_cols = ["Language", "Parameter_Label", "Question_ID", "Language_Answer"]
         missing = [c for c in required_cols if c not in idx]
         if missing:
@@ -127,7 +110,7 @@ class Command(BaseCommand):
                 "Colonne obbligatorie mancanti nel file: " + ", ".join(missing)
             )
 
-        # NEW: carichiamo tutte le righe in memoria e raccogliamo i valori di Language
+        # carichiamo tutte le righe in memoria e raccogliamo i valori di Language
         all_rows = []
         lang_values = set()
 
@@ -150,7 +133,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Nessuna riga dati trovata nel file."))
             return
 
-        # NEW: determinazione della lingua
+        # determinazione della lingua
         if language_name_opt:
             language_name = language_name_opt.strip()
             if lang_values and language_name not in lang_values:
@@ -171,7 +154,7 @@ class Command(BaseCommand):
                 )
             language_name = next(iter(lang_values))
 
-        # NEW: recupero della Language dal DB (per name_full)
+        # recupero della Language dal DB (per name_full)
         try:
             language = Language.objects.get(name_full__iexact=language_name)
         except Language.DoesNotExist:
@@ -189,117 +172,161 @@ class Command(BaseCommand):
         imported_examples = 0
         skipped_rows = 0
 
-        # NEW: import atomico per sicurezza
-        with transaction.atomic():
-            for row in all_rows:
-                # Filtra per lingua (in caso il file contenga più lingue)
-                lang_val = (row.get("Language") or "").strip()
-                if lang_val and lang_val != language_name:
-                    continue
+        # NEW: disabilitiamo i signal per evitare ricalcoli ridondanti durante l'import
+        post_save.disconnect(answer_saved_recompute, sender=Answer)
+        post_delete.disconnect(answer_deleted_recompute, sender=Answer)
 
-                param_label = (_coerce_str(row.get("Parameter_Label")) or "").strip()
-                if not param_label:
-                    skipped_rows += 1
-                    continue
-
-                # Trova il parametro esistente
-                try:
-                    param = ParameterDef.objects.get(id=param_label)
-                except ParameterDef.DoesNotExist:
+        try:
+            # import atomico per sicurezza
+            with transaction.atomic():
+                # STEP 1: Rimuoviamo tutte le Answer esistenti per questa lingua
+                # (approccio "replace all" per garantire consistenza)
+                old_answers = Answer.objects.filter(language=language)
+                old_count = old_answers.count()
+                if old_count > 0:
                     self.stdout.write(
                         self.style.WARNING(
-                            f"Parametro sconosciuto Parameter_Label={param_label!r}; riga saltata."
+                            f"Rimozione di {old_count} Answer esistenti per {language_name}..."
                         )
                     )
-                    skipped_rows += 1
-                    continue
+                    # La delete in cascata rimuoverà anche Example e AnswerMotivation
+                    old_answers.delete()
 
-                qid = (_coerce_str(row.get("Question_ID")) or "").strip()
-                if not qid:
-                    skipped_rows += 1
-                    continue
+                # STEP 2: Importiamo le nuove Answer dal file
+                for row in all_rows:
+                    # Filtra per lingua (in caso il file contenga più lingue)
+                    lang_val = (row.get("Language") or "").strip()
+                    if lang_val and lang_val != language_name:
+                        continue
 
-                q_text = parse_null(row.get("Question"))
-                q_ex_yes = parse_null(row.get("Question_Examples_YES"))
-                q_instr = parse_null(row.get("Question_Intructions_Comments"))
+                    param_label = (_coerce_str(row.get("Parameter_Label")) or "").strip()
+                    if not param_label:
+                        self.stdout.write(self.style.WARNING(f"Riga saltata per Parameter_Label mancante: {row}"))
+                        skipped_rows += 1
+                        continue
 
-                # NEW: crea la Question se non esiste ancora
-                question, created = Question.objects.get_or_create(
-                    id=qid,
-                    defaults={
-                        "parameter": param,
-                        "text": q_text or "",
-                        "example_yes": q_ex_yes,
-                        "instruction": q_instr,
-                    },
-                )
-                if not created and question.parameter_id != param.id:
-                    # non tocchiamo domande già collegate ad altri parametri
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"Question {qid!r} già associata al parametro "
-                            f"{question.parameter_id!r}, non a {param_label!r}; riga saltata."
+                    # Trova il parametro esistente
+                    try:
+                        param = ParameterDef.objects.get(id=param_label)
+                    except ParameterDef.DoesNotExist:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"Parametro sconosciuto Parameter_Label={param_label!r}; riga saltata."
+                            )
                         )
+                        skipped_rows += 1
+                        continue
+
+                    qid = (_coerce_str(row.get("Question_ID")) or "").strip()
+                    if not qid:
+                        skipped_rows += 1
+                        continue
+
+                    q_text = parse_null(row.get("Question"))
+                    q_ex_yes = parse_null(row.get("Question_Examples_YES"))
+                    q_instr = parse_null(row.get("Question_Intructions_Comments"))
+
+                    # Cerchiamo la domanda ignorando maiuscole/minuscole (es: PCA_Qsa -> PCA_QSa)
+                    question = Question.objects.filter(id__iexact=qid).first()
+
+                    if not question:
+                        # Se la domanda non esiste proprio nel DB, segnaliamo l'errore e saltiamo la riga
+                        self.stdout.write(
+                            self.style.ERROR(
+                                f"ERRORE: La Question_ID '{qid}' non esiste nel database. "
+                                f"Controlla il codice nell'Excel. Riga saltata."
+                            )
+                        )
+                        skipped_rows += 1
+                        continue
+
+                    # Se la domanda esiste, verifichiamo che appartenga al parametro corretto (es: PCA)
+                    if question.parameter_id != param.id:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"ATTENZIONE: La domanda '{qid}' nel DB è legata a {question.parameter_id}, "
+                                f"mentre nell'Excel è sotto {param_label}. Riga saltata."
+                            )
+                        )
+                        skipped_rows += 1
+                        continue
+
+                    # NEW: mappiamo Language_Answer -> "yes"/"no"
+                    raw_ans = (_coerce_str(row.get("Language_Answer")) or "").strip().upper()
+                    if raw_ans in ("YES", "Y"):
+                        resp = "yes"
+                    elif raw_ans in ("NO", "N"):
+                        resp = "no"
+                    else:
+                        # --- INIZIO MODIFICA: Segnala risposta non valida ---
+                        self.stdout.write(
+                            self.style.WARNING(f"Riga saltata: risposta '{raw_ans}' non valida per la domanda {qid}"))
+                        # --- FINE MODIFICA ---
+                        skipped_rows += 1
+                        continue
+
+                    comments = parse_null(row.get("Language_Comments"))
+
+                    # NEW: crea la nuova Answer (dato che abbiamo fatto delete all sopra)
+                    answer = Answer.objects.create(
+                        language=language,
+                        question=question,
+                        status=AnswerStatus.PENDING,
+                        modifiable=True,
+                        response_text=resp,
+                        comments=comments,
                     )
-                    skipped_rows += 1
-                    continue
+                    imported_answers += 1
 
-                # NEW: mappiamo Language_Answer -> "yes"/"no"
-                raw_ans = (_coerce_str(row.get("Language_Answer")) or "").strip().upper()
-                if raw_ans in ("YES", "Y"):
-                    resp = "yes"
-                elif raw_ans in ("NO", "N"):
-                    resp = "no"
-                else:
-                    # niente YES/NO => nessuna Answer
-                    skipped_rows += 1
-                    continue
+                    # NEW: costruiamo gli Example dalle colonne Language_Examples/Gloss/Translation/References
+                    ex_main = _split_examples(row.get("Language_Examples"))
+                    gloss_lines = _split_lines(row.get("Language_Example_Gloss"))
+                    trans_lines = _split_lines(row.get("Language_Example_Translation"))
+                    ref_lines = _split_lines(row.get("Language_References"))
 
-                comments = parse_null(row.get("Language_Comments"))
+                    for idx_ex, (num, text_ex) in enumerate(ex_main):
+                        gloss = gloss_lines[idx_ex] if idx_ex < len(gloss_lines) else None
+                        transl = (
+                            trans_lines[idx_ex] if idx_ex < len(trans_lines) else None
+                        )
+                        ref = ref_lines[idx_ex] if idx_ex < len(ref_lines) else None
 
-                # NEW: create/update dell'Answer
-                answer, _ = Answer.objects.update_or_create(
-                    language=language,
-                    question=question,
-                    defaults={
-                        "status": AnswerStatus.PENDING,
-                        "modifiable": True,
-                        "response_text": resp,
-                        "comments": comments,
-                    },
-                )
-                imported_answers += 1
+                        Example.objects.create(
+                            answer=answer,
+                            number=num,
+                            textarea=text_ex,
+                            gloss=parse_null(gloss),
+                            translation=parse_null(transl),
+                            transliteration=None,
+                            reference=parse_null(ref),
+                        )
+                        imported_examples += 1
 
-                # NEW: rimuoviamo tutti gli Example esistenti per questa Answer
-                Example.objects.filter(answer=answer).delete()
+        finally:
+            # NEW: riconnettiamo i signal
+            post_save.connect(answer_saved_recompute, sender=Answer)
+            post_delete.connect(answer_deleted_recompute, sender=Answer)
 
-                # NEW: ricostruiamo gli Example dalle colonne Language_Examples/Gloss/Translation/References
-                ex_main = _split_examples(row.get("Language_Examples"))
-                gloss_lines = _split_lines(row.get("Language_Example_Gloss"))
-                trans_lines = _split_lines(row.get("Language_Example_Translation"))
-                ref_lines = _split_lines(row.get("Language_References"))
-
-                for idx_ex, (num, text_ex) in enumerate(ex_main):
-                    gloss = gloss_lines[idx_ex] if idx_ex < len(gloss_lines) else None
-                    transl = (
-                        trans_lines[idx_ex] if idx_ex < len(trans_lines) else None
-                    )
-                    ref = ref_lines[idx_ex] if idx_ex < len(ref_lines) else None
-
-                    Example.objects.create(
-                        answer=answer,
-                        number=num,
-                        textarea=text_ex,
-                        gloss=parse_null(gloss),
-                        translation=parse_null(transl),
-                        transliteration=None,
-                        reference=parse_null(ref),
-                    )
-                    imported_examples += 1
-
+        # STEP 3: Ricalcoliamo tutti i LanguageParameter per questa lingua
+        # (una sola volta alla fine, invece che ad ogni Answer)
         self.stdout.write(
             self.style.SUCCESS(
-                f"Import completato. Answers creati/aggiornati: {imported_answers}, "
+                f"Import completato. Answers creati: {imported_answers}, "
                 f"Examples creati: {imported_examples}, righe saltate: {skipped_rows}."
             )
         )
+
+        self.stdout.write("Ricalcolo dei parametri per la lingua...")
+        params_updated = set()
+        for answer in Answer.objects.filter(language=language).select_related('question'):
+            param_id = answer.question.parameter_id
+            if param_id not in params_updated:
+                recompute_and_persist_language_parameter(language.id, param_id)
+                params_updated.add(param_id)
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Ricalcolati {len(params_updated)} parametri per {language_name}."
+            )
+        )
+

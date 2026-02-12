@@ -77,7 +77,9 @@
 
 /* 3) Stato "attivo" nella navbar (bg brand): testo sempre bianco */
 .nav-list [aria-current="page"] {
-  color: #fff;  
+  background: var(--brand);
+  border-color: color-mix(in oklab, var(--brand) 75%, black);
+  color: #fff;
 }
 /* Navbar: tasto disattivato (pagina corrente) con sfondo rosso */
 .nav-list .btn.is-current[aria-disabled="true"] {
@@ -85,8 +87,6 @@
   border-color: color-mix(in oklab, var(--brand) 75%, black);
   color: #fff;
   opacity: 1;                
-  cursor: default;
-  pointer-events: none;
 }
 
 /* 4) Link generici in dark: */
@@ -249,16 +249,22 @@ a:hover{text-decoration:underline}
   text-decoration: none;
   transform: translateY(-1px);
 }
-.nav-list [aria-current="page"] {
-  background: var(--brand);
-  border-color: color-mix(in oklab, var(--brand) 75%, black);
-  color: #fff;
+/* --- NUOVO BLOCCO UNIVERSALE: TASTO ATTIVO ROSSO SEMPRE --- */
+.nav-list .btn.is-current,
+.nav-list .btn[aria-current="page"] {
+  background-color: var(--brand) !important;
+  color: #ffffff !important;
+  border-color: color-mix(in oklab, var(--brand) 75%, black) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  text-decoration: none !important;
 }
 
-
-
-
-
+.nav-list .btn.is-current:hover,
+.nav-list .btn[aria-current="page"]:hover {
+  background-color: var(--brand-700) !important;
+  color: #ffffff !important;
+}
 
 
 .breadcrumb{ margin-top:.5rem; color:var(--text-muted); }
@@ -1039,7 +1045,36 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
   margin-top: .35rem;
 }
 
-/* ... tuo CSS esistente ... */
+/* --- GRIGLIA ESEMPI A 2 COLONNE --- */
+.examples-list {
+  display: grid;
+  /* Forza esattamente 2 colonne di uguale larghezza */
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  align-items: stretch;
+}
+
+/* Rimuove i margini che interferiscono con la griglia */
+.examples-list .example-row {
+  margin-bottom: 0 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ottimizza la disposizione interna dei campi nella card esempio */
+.examples-list .example-row .grid {
+  grid-template-columns: 1fr; /* Incolonna i campi (es. Text, Gloss) per leggibilità */
+  gap: 0.6rem;
+}
+
+/* Responsive: se lo schermo è molto stretto (mobile), torna a 1 colonna */
+@media (max-width: 768px) {
+  .examples-list {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Graphs */
 .graph-layout { display:grid; grid-template-columns: 1fr minmax(260px,320px); gap:1rem; align-items:start; }

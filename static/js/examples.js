@@ -158,46 +158,44 @@
 
   
   
-  
   function buildExampleRow(qid, uid, numberValue) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "card example-row";
-    wrapper.setAttribute("data-qid", qid);
-    wrapper.setAttribute("data-uid", uid);
-    wrapper.style.marginBottom = ".5rem";
-    wrapper.innerHTML = `
-      <div class="grid">
-        <div>
-          <label>Number</label>
-          <input name="newex_${qid}_${uid}_number" value="${numberValue}" readonly>
-        </div>
-        <div>
-          <label>Example text</label>
-          <input name="newex_${qid}_${uid}_textarea" value="">
-        </div>
-        <div>
-          <label>Transliteration</label>
-          <input name="newex_${qid}_${uid}_transliteration" value="">
-        </div>
-        <div>
-          <label>Gloss</label>
-          <input name="newex_${qid}_${uid}_gloss" value="">
-        </div>
-        <div>
-          <label>English translation</label>
-          <input name="newex_${qid}_${uid}_translation" value="">
-        </div>
-        <div>
-          <label>Reference</label>
-          <input name="newex_${qid}_${uid}_reference" value="">
-        </div>
+  const wrapper = document.createElement("div");
+  wrapper.className = "card example-row";
+  wrapper.setAttribute("data-qid", qid);
+  wrapper.setAttribute("data-uid", uid);
+  wrapper.style.marginBottom = "1rem";
+
+  wrapper.innerHTML = `
+    <input type="hidden" name="newex_${qid}_${uid}_number" value="${numberValue}">
+    
+    <div class="grid">
+      <div>
+        <label>Example text</label>
+        <input name="newex_${qid}_${uid}_textarea" value="">
       </div>
-      <div class="toolbar" style="margin-top:.25rem">
-        <button class="btn btn-newex-delete" type="button" data-qid="${qid}" data-uid="${uid}">Delete</button>
-        <span class="sr-only" aria-live="polite"></span>
-      </div>`;
-    return wrapper;
-  }
+      <div>
+        <label>Transliteration</label>
+        <input name="newex_${qid}_${uid}_transliteration" value="">
+      </div>
+      <div>
+        <label>Gloss</label>
+        <input name="newex_${qid}_${uid}_gloss" value="">
+      </div>
+      <div>
+        <label>English translation</label>
+        <input name="newex_${qid}_${uid}_translation" value="">
+      </div>
+      <div>
+        <label>Reference</label>
+        <input name="newex_${qid}_${uid}_reference" value="">
+      </div>
+    </div>
+    <div class="toolbar" style="margin-top: .5rem; display: flex; justify-content: flex-end;">
+      <button class="btn btn-newex-delete" type="button" data-qid="${qid}" data-uid="${uid}">Delete</button>
+      <span class="sr-only" aria-live="polite"></span>
+    </div>`;
+  return wrapper;
+}
 
   
   

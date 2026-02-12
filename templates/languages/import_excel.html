@@ -4,70 +4,66 @@
 {% block breadcrumb %}Languages / Import from Excel{% endblock %}
 
 {% block content %}
-  <div class="card">
-    <h2 class="h3">Import language data from Excel</h2>
+<div class="card" id="import-container">
 
-    {# Stato 1: import appena AVVIATO in background #}
-    {% if import_started %}
-      <p class="muted">
-        The file
-        <strong>{{ uploaded_filename }}</strong>
-        has been queued for import and is now being processed in the background.
-      </p>
+    <div id="form-intro">
+        <div class="alert" style="background-color: #d1ecf1 !important; color: #0c5460 !important; border: 1px solid #bee5eb !important; padding: 1rem; margin: 1rem 0; border-radius: 4px; display: block;">
+            <strong style="color: #0c5460 !important;">Note:</strong>
+            <span style="color: #0c5460 !important;">All previous answers and examples for the language will be <strong>replaced</strong> to ensure data consistency.</span>
+        </div>
+    </div>
 
-      <p>
-        You can safely leave this page.<br>
-        After some time, go back to the
-        <a href="{% url 'language_list' %}">Languages list</a>
-        and reload it: if the file was valid, the imported language data will be available.
-      </p>
+    <div id="loading-state" style="display: none; text-align: center; padding: 2rem 0;">
+        <h3 class="h4" style="color: #007bff !important; margin-bottom: 0.5rem;">Importing data...</h3>
+        <p class="muted">Please wait! The server is processing your file. This operation may take up to a minute.</p>
 
-      <p class="muted">
-        For large files or slow servers this may take several minutes.
-        If something looks wrong, contact the administrator and check the server logs.
-      </p>
+        <div class="progress-container" style="width: 100%; background: #e9ecef; height: 12px; border-radius: 6px; overflow: hidden; margin: 1.5rem 0;">
+            <div class="progress-bar-moving" style="width: 30%; height: 100%; background: #007bff; border-radius: 6px;"></div>
+        </div>
 
-      <div class="actions">
-        <a href="{% url 'language_list' %}" class="btn">
-          Back to Languages list
-        </a>
-        <a href="{% url 'language_import_excel' %}" class="btn secondary">
-          Import another file
-        </a>
-      </div>
+        <div class="alert" style="background-color: #f8d7da !important; color: #721c24 !important; border: 1px solid #f5c6cb !important; padding: 0.75rem; display: inline-block; border-radius: 4px; font-weight: 600;">
+            <strong>⚠️ ATTENTION: DO NOT close this window</strong> or refresh the page until the process is finished!
+        </div>
+    </div>
 
-    {# Stato 2: GET iniziale, mostra form di upload #}
-    {% else %}
-      <p class="muted">
-        Select an Excel file (.xlsx) containing language data.
-        The import will use the same rules as the existing
-        <code>import_language_from_excel</code> command.
-      </p>
-
-      <p class="muted">
-        Once you start the import, the file will be processed in the background.
-        You will see a confirmation message and you can then return to the
-        Languages list and reload it later to see the results.
-      </p>
-
-      <form method="post" enctype="multipart/form-data" novalidate>
+    <form method="post" enctype="multipart/form-data" id="import-form">
         {% csrf_token %}
-
         <div class="form-row">
-          <label for="id_file">Excel file</label>
-          <input type="file"
-                 id="id_file"
-                 name="file"
-                 accept=".xlsx,.xlsm,.xltx,.xltm"
-                 required>
+            <label for="id_file" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">📁 Select Excel file (.xlsx)</label>
+            <input type="file" id="id_file" name="file" accept=".xlsx" required>
         </div>
+        <div class="toolbar" style="margin-top: 2rem; display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn--primary" id="btn-submit" style="min-width: 160px;">
+                Start import
+            </button>
+            <a href="{% url 'language_list' %}" class="btn" style="background: var(--surface-2); border: 1px solid var(--border);">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
 
-        <div class="form-row">
-          <button type="submit" class="btn primary">
-            Start import
-          </button>
-        </div>
-      </form>
-    {% endif %}
-  </div>
+<style>
+    .progress-bar-moving {
+        animation: progress-loop 2s infinite linear;
+        position: relative;
+    }
+
+    @keyframes progress-loop {
+        0% { left: -30%; width: 30%; }
+        50% { left: 40%; width: 40%; }
+        100% { left: 100%; width: 30%; }
+    }
+
+    #loading-state h3 { font-weight: 600; }
+</style>
+
+<script>
+    document.getElementById('import-form').onsubmit = function() {
+        document.getElementById('form-intro').style.display = 'none';
+        document.getElementById('import-form').style.display = 'none';
+        document.getElementById('loading-state').style.display = 'block';
+        document.getElementById('btn-submit').disabled = true;
+    };
+</script>
 {% endblock %}

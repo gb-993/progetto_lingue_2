@@ -14,8 +14,7 @@
 
     <!-- Blocco metadati lingua -->
     <div style="flex:1 1 16rem; max-width:32rem; font-size:.9rem; line-height:1.4;">
-      <dl class="language-meta-grid" style="display:grid; grid-template-columns:auto 1fr; column-gap:.5rem; row-gap:.25rem; margin:0;">
-
+    <dl class="language-meta-grid" style="margin:0;">
         {# Glottocode #}
         <dt style="font-weight:600;">Glottocode</dt>
         <dd>
@@ -127,117 +126,45 @@
       {% endif %}
     </div>
 
-    {% if is_admin %}
-      {# === AZIONI ADMIN SU DUE COLONNE CENTRALI === #}
-      <div class="workflow-action-grid">
+{% if is_admin %}
+  {# === AZIONI ADMIN: GRIGLIA A 3 COLONNE === #}
+  <div class="workflow-action-grid grid-3-cols">
 
-        <!-- SAVE SUBMISSION + NOTE -->
-        <form id="submission-create-form"
-              class="workflow-form-block"
-              method="post"
-              action="{% url 'submission_create_for_language' language.id %}"
-              {% if not all_answered %}data-confirm-missing="1"{% endif %}
-              data-confirm-message="Warning: missing answers. Save anyway?">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <form method="post" class="workflow-form-block" action="{% url 'language_reject' language.id %}">
+      {% csrf_token %}
+      <div class="workflow-info-text">
+        <strong>Reject:</strong> Marks the data as incorrect. The user will need to reopen the language to modify it.
+      </div>
+      <button type="submit" class="btn workflow-main-btn">Reject</button>
 
-          <button type="submit"
-                  class="btn workflow-main-btn"
-                  data-once="true"
-                  title="Crea una nuova submission con lo stato attuale della lingua">
-            Save submission
-          </button>
-
-          <details class="note-details">
-            <summary class="details-toggle-btn" role="button" aria-expanded="false">
-              ➜ Add submission note
-            </summary>
-            <div class="details-panel">
-              <label for="note_{{ language.id }}" class="details-label">
-                Submission note (optional)
-              </label>
-              <textarea id="note_{{ language.id }}"
-                        name="note"
-                        rows="2"
-                        class="details-textarea"></textarea>
-            </div>
-          </details>
-        </form>
-
-        <!-- REJECT + NOTE -->
-        <form method="post"
-              class="workflow-form-block"
-              action="{% url 'language_reject' language.id %}">
-          {% csrf_token %}
-
-          <button type="submit"
-                  class="btn workflow-main-btn"
-                  title="Rifiuta la submission della lingua">
-            Reject
-          </button>
-
-          <details class="note-details reject-details">
-            <summary class="details-toggle-btn" role="button" aria-expanded="false">
-              ➜ Add rejection note
-            </summary>
-            <div class="details-panel">
-              <label for="reject_message_{{ language.id }}" class="details-label">
-                Rejection note (required to explain why)
-              </label>
-              <textarea id="reject_message_{{ language.id }}"
-                        name="message"
-                        rows="2"
-                        class="details-textarea"></textarea>
-            </div>
-          </details>
-        </form>
-
-        <!-- DOWNLOAD -->
-        <div class="workflow-form-block">
-          <a href="{% url 'language_export_xlsx' language.id %}"
-             class="btn workflow-secondary-btn"
-             title="Download .xlsx">
-            Export .xlsx
-          </a>
+      <details class="note-details reject-details">
+        <summary class="details-toggle-btn" role="button">➜ Add rejection note</summary>
+        <div class="details-panel">
+          <textarea name="message" rows="2" class="details-textarea" placeholder="Explain the reason for rejection..."></textarea>
         </div>
+      </details>
+    </form>
 
+    <div class="workflow-form-block utility-block">
+      <div class="workflow-info-text">
+        <strong>Download:</strong> Generates an .xlsx file with all answers, glosses, and examples entered so far.
+      </div>
+      <a href="{% url 'language_export_xlsx' language.id %}" class="btn workflow-secondary-btn">
+        Download .xlsx
+      </a>
+    </div>
 
-        <!-- DEBUG PAGE LINK -->
-        <div class="workflow-form-block">
-          <a href="{% url 'language_debug' language.id %}"
-            class="btn workflow-secondary-btn"
-            title="Open debug view for this language">
-            Open debug
-          </a>
-        </div>
+    <div class="workflow-form-block utility-block">
+      <div class="workflow-info-text">
+        <strong>Debug & Approve:</strong> Inspects implicational-conditions and give access to the Approval button.
+      </div>
+      <a href="{% url 'language_debug' language.id %}" class="btn workflow-secondary-btn">
+        Open debug
+      </a>
+    </div>
 
-        <!-- APPROVE -->
-        <form method="post"
-              class="workflow-form-block"
-              action="{% url 'language_approve' language.id %}">
-          {% csrf_token %}
-          {% if not all_answered %}
-            <span class="hint-disabled"
-                  title="Cannot approve while there are missing answers"
-                  tabindex="0">
-              <button type="submit"
-                      class="btn btn--primary workflow-main-btn"
-                      disabled
-                      aria-disabled="true">
-                Approve &amp; apply implications
-              </button>
-            </span>
-          {% else %}
-            <button type="submit"
-                    class="btn btn--primary workflow-main-btn">
-              Approve &amp; apply implications
-            </button>
-          {% endif %}
-        </form>
-
-      </div> 
-
-    {% else %}
+  </div>
+{% else %}
       <div class="workflow-action-grid">
 
         {# Colonna azione principale: Reopen / Submit / Submit disabilitato #}
@@ -330,74 +257,88 @@
       <form method="post" action="{% url 'parameter_save' language.id p.id %}">
         {% csrf_token %}
         {% for q in p.questions.all %}
-          <div class="card" style="margin-bottom:.5rem">
+          <div class="card" style="margin-bottom:2rem">
 
           {# --- Testo domanda + help (inline) --- #}
           <div class="q-head">
-            <p class="q-head__text"><strong>{{ q.id }}</strong> — {{ q.text }}</p>
-            {% if q.help_info %}
-              <details class="help-info help-info--inline">
-                <summary class="help-info__summary" role="button" aria-expanded="false">
-                  <span aria-hidden="true">❓</span> More info
-                </summary>
-                <div class="help-info__panel muted">{{ q.help_info|linebreaksbr }}</div>
-              </details>
-            {% endif %}
-          </div>
+              <div class="q-head__main">
+                <strong class="q-id">{{ q.id }}</strong>
+                <div class="q-text">{{ q.text }}</div>
+              </div>
+
+              {% if q.help_info %}
+                <details class="help-info help-info--inline">
+                  <summary class="help-info__summary" role="button" aria-expanded="false">
+                    <span aria-hidden="true">❓</span> More info
+                  </summary>
+                  <div class="help-info__panel muted">{{ q.help_info|linebreaksbr }}</div>
+                </details>
+              {% endif %}
+            </div>
 
 
             {% if q.instruction %}
-              <div class="muted" style="margin:.25rem 0 .5rem;">
-                <strong>General instructions:</strong> {{ q.instruction|linebreaksbr }}
+              <div class="info-row muted">
+                <div class="info-row__label">General instructions</div>
+                <div class="info-row__content">{{ q.instruction|linebreaksbr }}</div>
               </div>
             {% endif %}
 
             {# data.html — NUOVA VERSIONE #}
             {% if q.example_yes %}
-              <div class="muted" style="margin:.25rem 0 .5rem;">
-                <strong>Example YES:</strong>
-                {# testo attaccato al tag, nessun newline/spazio prima del primo carattere #}
-                <div class="example-yes-text" style="white-space: pre-wrap; margin-top:.25rem;">{{ q.example_yes }}</div>
+              <div class="info-row muted">
+                <div class="info-row__label">Example YES</div>
+                <div class="info-row__content">
+                  <div class="example-yes-text" style="white-space: pre-wrap;">{{ q.example_yes }}</div>
+                </div>
               </div>
             {% endif %}
 
 
             {# --- ANSWER SELECT + istruzioni dinamiche --- #}
             <div class="qa-fields">
-              <div>
-                <label for="resp_{{ q.id }}">Answer</label>
-                <select id="resp_{{ q.id }}" name="resp_{{ q.id }}" class="resp-select" data-qid="{{ q.id }}">
-                  <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— select —</option>
-                  <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
-                  <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
-                </select>
-              </div>
 
-              {# struzioni per YES #}
-              <div class="yes-instruction-block"
-                   data-qid="{{ q.id }}"
-                   {% if q.ans.response_text|lower != "yes" %}style="display:none"{% endif %}>
-                <div class="muted" style="margin:.25rem 0 .5rem;">
-                  <strong>Instructions for entering the 'YES' example: </strong>
-                  {% if q.instruction_yes %}
-                    {{ q.instruction_yes|linebreaksbr }}
-                  {% else %}
-                    not provided
-                  {% endif %}
+              {# Questa è la riga della selezione allineata al resto del layout #}
+              <div class="info-row" style="margin-bottom: 1rem;">
+                <label class="info-row__label" for="resp_{{ q.id }}">Answer</label>
+                <div class="info-row__content">
+                  <select id="resp_{{ q.id }}" name="resp_{{ q.id }}" class="resp-select" data-qid="{{ q.id }}" style="max-width: 300px;">
+                    <option value="" {% if q.ans.response_text == "" %}selected{% endif %}>— select —</option>
+                    <option value="yes" {% if q.ans.response_text == "yes" %}selected{% endif %}>YES</option>
+                    <option value="no"  {% if q.ans.response_text == "no"  %}selected{% endif %}>NO</option>
+                  </select>
                 </div>
               </div>
 
-              {# struzioni per NO #}
+              {# Istruzioni per YES (già ottimizzate info-row) #}
+              <div class="yes-instruction-block"
+                   data-qid="{{ q.id }}"
+                   {% if q.ans.response_text|lower != "yes" %}style="display:none"{% endif %}>
+                <div class="info-row muted">
+                  <div class="info-row__label">Instructions (YES)</div>
+                  <div class="info-row__content">
+                    {% if q.instruction_yes %}
+                      {{ q.instruction_yes|linebreaksbr }}
+                    {% else %}
+                      not provided
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              {# Istruzioni per NO (già ottimizzate info-row) #}
               <div class="no-instruction-block"
                    data-qid="{{ q.id }}"
                    {% if q.ans.response_text|lower != "no" %}style="display:none"{% endif %}>
-                <div class="muted" style="margin:.25rem 0 .5rem;">
-                  <strong>Instructions for entering the 'NO' example: </strong>
-                  {% if q.instruction_no %}
-                    {{ q.instruction_no|linebreaksbr }}
-                  {% else %}
-                    not provided
-                  {% endif %}
+                <div class="info-row muted">
+                  <div class="info-row__label">Instructions (NO)</div>
+                  <div class="info-row__content">
+                    {% if q.instruction_no %}
+                      {{ q.instruction_no|linebreaksbr }}
+                    {% else %}
+                      not provided
+                    {% endif %}
+                  </div>
                 </div>
               </div>
 
@@ -443,70 +384,67 @@
                  data-template="{{ q.template_type|default:'linear' }}"
                  {% if q.ans.response_text == "" %}style="display:none"{% endif %}>
 
-              <div class="toolbar" style="margin:.5rem 0">
-                <strong>Examples</strong>
-              </div>
+              <div class="info-row">
+                {# Colonna Sinistra: Etichetta grigia #}
+                <div class="info-row__label">Examples</div>
 
-              <div class="field-error js-yes-examples-error" data-qid="{{ q.id }}" aria-live="polite" style="display:none"></div>
+                {# Colonna Destra: Tutto il contenuto (Errori, Card, Bottone Add) #}
+                <div class="info-row__content">
 
+                  {# Spazio per errori JS #}
+                  <div class="field-error js-yes-examples-error" data-qid="{{ q.id }}" aria-live="polite" style="display:none; margin-bottom: 1rem;"></div>
 
-              <div class="examples-list" data-qid="{{ q.id }}">
-                {% for ex in q.ans.examples %}
-                  <div class="card example-row" style="margin-bottom:.5rem">
-                    <div class="grid">
-                      <div><label>Number</label><input name="ex_{{ ex.id }}_number" value="{{ ex.number }}"></div>
-                      <div><label>Example text</label><input name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"></div>
-                      <div><label>Transliteration</label><input name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"></div>
-                      <div><label>Gloss</label><input name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"></div>
-                      <div><label>English Translation</label><input name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"></div>
-                      <div><label>Reference</label><input name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"></div>
-                    </div>
-                    <div class="toolbar" style="margin-top:.25rem">
-                      <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
-                      <button class="btn btn-ex-toggle-delete"
-                              type="button"
-                              data-qid="{{ q.id }}"
-                              data-exid="{{ ex.id }}"
-                              {% with s=lang_status.overall %}
-                                {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                                  disabled aria-disabled="true" title="Editing locked until review"
-                                {% endif %}
-                              {% endwith %}>Delete</button>
-                    </div>
+                  <div class="examples-list" data-qid="{{ q.id }}">
+                    {% for ex in q.ans.examples %}
+                      <div class="card example-row" style="margin-bottom: 1rem;">
+                        <input type="hidden" name="ex_{{ ex.id }}_number" value="{{ ex.number }}">
+
+                        <div class="grid">
+                          {# Etichette standard, senza 'grigetto' #}
+                          <div><label>Example text</label><input name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"></div>
+                          <div><label>Transliteration</label><input name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"></div>
+                          <div><label>Gloss</label><input name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"></div>
+                          <div><label>English Translation</label><input name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"></div>
+                          <div><label>Reference</label><input name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"></div>
+                        </div>
+
+                        <div class="toolbar" style="margin-top:.5rem; display: flex; justify-content: flex-end;">
+                          <input type="hidden" name="del_ex_{{ ex.id }}" value="0">
+                          <button class="btn btn-ex-toggle-delete"
+                                  type="button"
+                                  data-qid="{{ q.id }}"
+                                  data-exid="{{ ex.id }}">Delete</button>
+                        </div>
+                      </div>
+                    {% endfor %}
                   </div>
 
-                {% endfor %}
-              </div>
-
-              <div>
-                <button class="btn add-example-btn"
-                        type="button"
-                        data-qid="{{ q.id }}"
-                        {% with s=lang_status.overall %}
-                          {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
-                            disabled aria-disabled="true" title="Editing locked until review"
-                          {% endif %}
-                        {% endwith %}>Add example</button>
+                  <div style="margin-top: 1rem;">
+                    <button class="btn add-example-btn"
+                            type="button"
+                            data-qid="{{ q.id }}"
+                            {% with s=lang_status.overall %}
+                              {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
+                                disabled aria-disabled="true" title="Editing locked until review"
+                              {% endif %}
+                            {% endwith %}>Add example</button>
+                  </div>
+                </div>
               </div>
             </div>
 
             {# --- COMMENTS  --- #}
-            <div class="qa-fields" style="margin-top:1rem;">
-              <div>
-                <label for="com_{{ q.id }}">Comments</label>
-                <textarea id="com_{{ q.id }}"
-                          name="com_{{ q.id }}"
-                          rows="2"
-                          class="auto-grow"
-                          data-autosize="1">{{ q.ans.comments }}</textarea>
+            <div class="qa-fields comments-row" style="margin-top:1rem;">
+              <label class="info-row__label" for="com_{{ q.id }}">Comments</label>
+              <div class="info-row__content">
+                <textarea id="com_{{ q.id }}" name="com_{{ q.id }}" style="width: 100%;" ...>{{ q.ans.comments }}</textarea>
               </div>
             </div>
 
           </div> 
         {% endfor %}
 
-        <div class="toolbar" style="margin-top:.75rem; display:flex; flex-direction:column; gap:.75rem;">
-
+        <div class="toolbar sticky-parameter-toolbar" style="margin-top:.75rem; display:flex; flex-direction:column; gap:.75rem;">
           <!-- riga SAVE -->
           <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; width:100%;">
             <p class="muted" style="margin:0; font-size:.9rem;">
@@ -564,414 +502,346 @@
 
 
   <style>
-    .param-nav {display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem;}
-    .param-btn {
-      width:2.4rem; height:2.4rem; border-radius:4px;
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer; font-weight:bold; border:2px solid rgba(0,0,0,.65);
-      transition:transform .1s; position:relative;
-      background-clip: padding-box;
-    }
-    .param-btn:hover {transform:scale(1.1);}
-    .param-section {display:none;}
-    .param-section.active {display:block;}
+/* ==========================================================================
+   1. NAVIGAZIONE E STATI PARAMETRI (Invariato)
+   ========================================================================== */
+.param-nav { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+.param-btn {
+  width: 2.4rem; height: 2.4rem; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-weight: bold; border: 2px solid rgba(0,0,0,.65);
+  transition: transform .1s; position: relative;
+  background-clip: padding-box;
+}
+.param-btn:hover { transform: scale(1.1); }
+.param-section { display: none; }
+.param-section.active { display: block; }
 
-    /* === BLOCCO VISIVO (solo grafico) === */
-    .is-readonly .card input,
-    .is-readonly .card select,
-    .is-readonly .card textarea {
-      background: var(--surface-2, #f1f3f5);
-      color: var(--muted-fg, #666);
-      border-color: var(--border, #d0d7de);
-      pointer-events: none;
-    }
-    .is-readonly .card input::placeholder,
-    .is-readonly .card textarea::placeholder { color: #999; }
-
-    .is-readonly .btn,
-    .is-readonly .add-example-btn,
-    .is-readonly .btn-ex-toggle-delete {
-      opacity: .55; cursor: not-allowed; pointer-events: none;
-    }
-    .locked-hint { font-size: .9rem; color: #666; margin-left: .5rem; }
-    .hint-disabled[title] { cursor: help; display: inline-block; }
-
-    /* eccezione: REOPEN attivo anche in read-only */
-    .is-readonly form[action$="reopen/"] .btn { 
-      opacity: 1; pointer-events: auto; cursor: pointer; 
-    }
-
-    /* eccezione: DOWNLOAD sempre attivo e cliccabile */
-    .is-readonly a.btn[data-role="download"] {
-      opacity: 1; pointer-events: auto; cursor: pointer;
-    }
-
-    
-
-    /* --------- Accessibilità stati parametri --------- */
-
-    /* Colore bordo */
-    .param-nav .param-btn {
-      --edge: color-mix(in srgb, currentColor 55%, black);
-    }
-
-/* pulizia stati: niente giallo; usiamo inline bg/fg dalla view */
 .param-nav .param-btn { border: 2px solid rgba(0,0,0,.65); border-radius: 6px; }
-
-/* opzionale: i completi (ok) rotondi */
 .param-nav .param-btn[data-status="ok"] { border-radius: 50%; }
-
-/* untouched: nessuno sfondo, solo bordo standard */
 .param-nav .param-btn[data-status="untouched"] { background: transparent !important; color: inherit !important; }
 
-
-    /* Preferenze utente alta visibilità */
-    @media (prefers-contrast: more) {
-      .param-nav .param-btn[data-status="warn"] { border-width: 3px; }
-      .param-nav .param-btn[data-status="missing"] { border-color: #000; }
-      .param-nav .param-btn[data-status="ok"] { border-color: #000; }
-    }
-
-    /* Stacking verticale dei tre campi */
-    .qa-fields {
-      display: flex;
-      flex-direction: column;
-      gap: .75rem;
-    }
-
-    /* Textarea auto-espandibile */
-    textarea.auto-grow {
-      width: 100%;
-      min-height: 2.5rem;
-      max-height: 40vh;
-      overflow: hidden;
-      resize: vertical;
-    }
-
-    /* Accessibilità: focus ben visibile */
-    textarea.auto-grow:focus {
-      outline: 2px solid var(--focus, #2266ff);
-      outline-offset: 2px;
-    }
-
-    /* === Badge "to review" — pallino rosso a SINISTRA === */
-    .param-btn { position: relative; }
-
-    .param-btn .badge-review {
-      position: absolute;
-      top: -6px;
-      left: -6px;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--bad, #b00020);
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 1px rgba(0,0,0,.15);
-      z-index: 2;
-    }
-
-    :root[data-theme="dark"] .param-btn .badge-review {
-      border-color: var(--surface, #1e1f22);
-    }
-
-    @media (min-width: 1200px) {
-      .param-btn .badge-review { width: 16px; height: 16px; top: -7px; left: -7px; }
-    }
-
-    /* forza il nascondimento quando c'è l'attributo hidden */
-    .badge-review[hidden] { 
-      display: none !important;
-    }
-
-    /* === Workflow header (status + azioni) ================================== */
-
-
-
-/* griglia: su mobile va in colonna, su desktop 2 colonne */
-.workflow-grid {
-  row-gap: 1rem;
+.param-btn .badge-review {
+  position: absolute; top: -6px; left: -6px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--bad, #b00020);
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); z-index: 2;
 }
+:root[data-theme="dark"] .param-btn .badge-review { border-color: var(--surface, #1e1f22); }
 
-@media (min-width: 768px) {
-  .workflow-grid {
-    align-items: flex-start;
-  }
+@media (min-width: 1200px) {
+  .param-btn .badge-review { width: 16px; height: 16px; top: -7px; left: -7px; }
 }
+.badge-review[hidden] { display: none !important; }
 
-.workflow-status-block {
-  min-width: 12rem;
-  font-size: .9rem;
-  line-height: 1.4;
-}
+/* ==========================================================================
+   2. CAMPI DOMANDE E MODALITÀ READ-ONLY (Invariato)
+   ========================================================================== */
+.qa-fields { display: flex; flex-direction: column; gap: .75rem; }
+textarea.auto-grow { width: 100%; min-height: 2.5rem; max-height: 40vh; overflow: hidden; resize: vertical; }
+textarea.auto-grow:focus { outline: 2px solid var(--focus, #2266ff); outline-offset: 2px; }
 
-.workflow-status-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem;
-  align-items: center;
-  font-size: 1rem;
-  font-weight: 500;
-}
 
-.workflow-last-reject {
-  margin-top: .5rem;
-  padding: .5rem .75rem;
-  border-left: 3px solid var(--bad, #b00020);
-  background: var(--surface-2, rgba(0,0,0,0.03));
-  border-radius: 4px;
-}
-:root[data-theme="dark"] .workflow-last-reject {
-  background: rgba(255,255,255,0.05);
-}
+/* --- EVIDENZIAZIONE FUNZIONALE: LAYOUT A CAPO  --- */
 
-.workflow-last-reject .last-reject-label {
-  font-weight: 600;
-  margin-bottom: .25rem;
-  color: var(--fg, #222);
-}
-:root[data-theme="dark"] .workflow-last-reject .last-reject-label {
-  color: var(--fg, #fff);
-}
+/* --- EVIDENZIAZIONE FUNZIONALE: LAYOUT A CAPO (A + C) --- */
 
-.workflow-last-reject .last-reject-meta {
-  font-size: .8rem;
-  font-weight: 500;
-  color: var(--muted-fg, #666);
-  margin-bottom: .25rem;
-}
-
-.workflow-last-reject .last-reject-msg {
-  font-size: .9rem;
-  line-height: 1.4;
-}
-
-/* COLONNA DESTRA: blocchi azione */
-.workflow-actions-block {
-  font-size: .9rem;
-  line-height: 1.4;
-}
-
-.workflow-action-group {
+/* 1. Container con barra rossa laterale */
+.q-head {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
-  gap: 1rem 1.5rem;
+  grid-template-columns: 1fr auto;
+  column-gap: 1rem;
   align-items: start;
-  width: 100%;
+  border-left: 3px solid var(--brand);
+  padding-left: 0.85rem;
+  margin-bottom: 1rem;
 }
 
-/* Ogni "blocco azione" (form o div) è verticale */
-.workflow-form-block {
+/* Forza ID e Testo uno sopra l'altro */
+.q-head__main {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: .5rem;
-  min-width: 0;          
+  gap: 0.25rem;
 }
 
-/* Pulsante principale e secondario riempiono larghezza blocco */
-.workflow-main-btn,
-.workflow-secondary-btn {
+/*  Label della domanda (ID) in rosso brand */
+.q-id {
+  color: var(--brand);
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  display: block;
+}
+
+/* Testo della domanda */
+.q-text {
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+/* Pannello "More info" */
+.help-info__panel {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+.q-head__text strong {
+  color: var(--brand);                 /* Testo rosso/arancio brand */
+  font-weight: 700;
+  background: none;                    /* Rimuove lo sfondo grigio di prima */
+  border: none;                        /* Rimuove il bordo del badge */
+  padding: 0;                          /* Rimuove il padding interno */
+  font-family: var(--ff);              /* Torna al font standard, più sobrio */
+}
+
+.is-readonly .card input, .is-readonly .card select, .is-readonly .card textarea {
+  background: var(--surface-2, #f1f3f5); color: var(--muted-fg, #666);
+  border-color: var(--border, #d0d7de); pointer-events: none;
+}
+.is-readonly .btn, .is-readonly .add-example-btn, .is-readonly .btn-ex-toggle-delete {
+  opacity: .55; cursor: not-allowed; pointer-events: none;
+}
+.is-readonly form[action$="reopen/"] .btn, .is-readonly a.btn[data-role="download"] {
+  opacity: 1; pointer-events: auto; cursor: pointer;
+}
+
+/* ==========================================================================
+   3. WORKFLOW: STATO E ULTIMO RIFIUTO
+   ========================================================================== */
+.workflow-status-block { margin-bottom: 1rem; font-size: .9rem; line-height: 1.4; }
+.workflow-status-line { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: 1rem; font-weight: 500; }
+
+.workflow-last-reject {
+  margin-top: .5rem; padding: .5rem .75rem; border-left: 3px solid var(--bad, #b00020);
+  background: var(--surface-2, rgba(0,0,0,0.03)); border-radius: 4px;
+}
+:root[data-theme="dark"] .workflow-last-reject { background: rgba(255,255,255,0.05); }
+
+.workflow-last-reject .last-reject-label { font-weight: 600; margin-bottom: .25rem; color: var(--fg, #222); }
+:root[data-theme="dark"] .workflow-last-reject .last-reject-label { color: #fff; }
+
+/* ==========================================================================
+   4. WORKFLOW: GRIGLIA AZIONI (ADMIN & USER)
+   ========================================================================== */
+.workflow-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  gap: 1.5rem;
   width: 100%;
-  text-align: center;
-  min-height: 2.4rem;
-  min-width: 10rem;
-  justify-content: center;
+  margin: 0 auto;
 }
 
-/* === Dettagli note (Submission/Rejection) ============================== */
-
-.note-details {
-  width: 100%;
+/* Forza 3 colonne fisse per Admin su schermi grandi */
+.grid-3-cols {
+  grid-template-columns: repeat(3, 1fr) !important;
+  max-width: 100% !important;
 }
 
+.workflow-form-block {
+  display: flex; flex-direction: column; align-items: stretch; gap: .5rem;
+  padding: 0.75rem 1rem; border-radius: 4px; border: 1px solid var(--border);
+  background: var(--surface-2); box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
 
+/* Testi informativi sopra i pulsanti */
+.workflow-info-text { font-size: 0.85rem; line-height: 1.3; margin-bottom: 0.75rem; min-height: 3rem; }
+.workflow-info-text strong { display: block; margin-bottom: 0.2rem; color: var(--fg, #222); }
+
+/* Correzione contrasto Dark Mode per Admin Actions */
+:root[data-theme="dark"] .workflow-info-text strong { color: #ffffff !important; }
+:root[data-theme="dark"] .workflow-info-text { color: #adb5bd !important; }
+
+/* Blocchi Utility (Export/Debug) */
+.utility-block { border-style: dashed; opacity: 0.9; }
+:root[data-theme="dark"] .utility-block { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.03); }
+
+/* ==========================================================================
+   5. PULSANTI E RESPONSIVITÀ
+   ========================================================================== */
+.workflow-main-btn, .workflow-secondary-btn {
+  width: 100%; text-align: center; min-height: 2.4rem;
+  justify-content: center; display: flex; align-items: center;
+}
+.btn--ok { --btn-bg: var(--ok); --btn-fg: #fff; }
+.btn--bad { --btn-bg: var(--bad); --btn-fg: #fff; }
+
+@media (max-width: 900px) {
+  .grid-3-cols { grid-template-columns: 1fr !important; }
+  .workflow-info-text { min-height: auto; }
+}
+
+/* ==========================================================================
+   6. STILE PER IL TASTO "ADD NOTE" (Espandibile)
+   ========================================================================== */
 .details-toggle-btn {
   list-style: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: .5rem;
-  font-size: .85rem;
+  gap: 0.5rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  line-height: 1.2;
+
+  /* Aspetto da pulsante secondario */
+  padding: 0.4rem 0.75rem;
+  margin-top: 0.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--border, #d0d7de);
   background: var(--surface-2, #f1f3f5);
   color: var(--fg, #222);
-  border: 1px solid var(--border, #d0d7de);
-  border-radius: 4px;
-  padding: .4rem .5rem;
+
+  transition: all 0.2s ease;
   user-select: none;
 }
 
-.details-toggle-btn:focus {
-  outline: 2px solid var(--focus, #2266ff);
-  outline-offset: 2px;
+/* Effetto al passaggio del mouse */
+.details-toggle-btn:hover {
+  background: var(--border, #d0d7de);
+  border-color: var(--muted-fg, #666);
 }
 
+/* Fix per Tema Scuro */
 :root[data-theme="dark"] .details-toggle-btn {
-  background: var(--surface-2, #2a2d31);
-  color: var(--fg, #fff);
-  border-color: var(--border, #555);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-.details-panel {
-  margin-top: .5rem;
-  width: 100%;
-  background: var(--surface, #fff);
-  border: 1px solid var(--border, #d0d7de);
-  border-radius: 4px;
-  padding: .5rem .75rem .75rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+:root[data-theme="dark"] .details-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
-:root[data-theme="dark"] .details-panel {
-  background: var(--surface, #1e1f22);
-  border-color: var(--border, #555);
-  box-shadow: 0 1px 2px rgba(0,0,0,.6);
+/* Rimuove la freccetta predefinita del browser */
+.details-toggle-btn::-webkit-details-marker {
+  display: none;
 }
 
-.details-label {
-  font-size: .8rem;
-  font-weight: 500;
-  display: block;
-  margin-bottom: .25rem;
-  color: var(--fg, #222);
-}
-:root[data-theme="dark"] .details-label {
-  color: var(--fg, #fff);
-}
+/* ==========================================================================
+   7. TOOLBAR FLOATING (SAVE/NEXT) - Glass Effect
+   ========================================================================== */
+.sticky-parameter-toolbar {
+  position: sticky;
+  bottom: 1rem; /* La stacca dal fondo per farla sembrare sospesa */
+  z-index: 100;
 
-.details-textarea {
-  width: 100%;
-  min-width: 100%;
-  min-height: 3rem;
-  max-height: 30vh;
-  resize: vertical;
-  line-height: 1.4;
-  font-size: .9rem;
-  padding: .4rem .5rem;
-  border-radius: 4px;
-  border: 1px solid var(--border, #d0d7de);
-  background: var(--surface, #fff);
-  color: var(--fg, #222);
-}
-
-:root[data-theme="dark"] .details-textarea {
-  background: var(--surface-2, #2a2d31);
-  color: var(--fg, #fff);
-  border-color: var(--border, #555);
-}
-
-.reject-details .details-panel {
-  border-left: 3px solid var(--bad, #b00020);
-}
-
-/* responsive: su schermi stretti i blocchi azione uno sotto l'altro */
-@media (max-width: 600px) {
-  .workflow-actions-block {
-    justify-content: flex-start;
-    text-align: left;
-  }
-  .workflow-action-group {
-    grid-template-columns: 1fr;
-  }
-  .workflow-form-block {
-    width: 100%;
-    max-width: 100%;
-  }
-  .workflow-main-btn,
-  .workflow-secondary-btn {
-    width: 100%;
-  }
-}
-
-/* === Workflow card layout v2 ========================================= */
-
-/* la card già usa .card dal css globale */
-.workflow-card {
-  display: block;
-}
-
-.workflow-status-block {
-  margin-bottom: 1rem;
-  font-size: .9rem;
-  line-height: 1.4;
-}
-
-.workflow-status-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem;
-  align-items: center;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-
-.workflow-action-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(22rem,100%), 1fr));
-  gap: 1rem 1.5rem;
-  align-items: start;
-
-  max-width: 60rem;         
-  margin: 0 auto;           
-  width: 100%;
-}
-
-/* ogni blocco (save+note, reject+note, download, approve) */
-.workflow-form-block {
+  /* Layout e Spazi */
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: .5rem;
-  min-width: 0;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: .75rem 1rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,.06);
-}
-:root[data-theme="dark"] .workflow-form-block {
-  background: var(--surface-2);
-  box-shadow: 0 1px 2px rgba(0,0,0,.6);
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0 0.5rem 0;
+
+  /* Arrotondamento coerente con --radius (12px) */
+  border-radius: var(--radius, 12px);
+  border: 1px solid var(--border, #dadde2);
+
+  /* Effetto Trasparenza e Vetro (Backdrop Filter) */
+  background: rgba(255, 255, 255, 0.6); /* Bianco semi-trasparente quarto valore per trasparenza + basso = + trasparente */
+  backdrop-filter: blur(8px); /* Sfoca quello che passa sotto + basso = + nitido sotto*/
+  -webkit-backdrop-filter: blur(10px);
+
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
-.workflow-main-btn,
-.workflow-secondary-btn {
-  width: 100%;
-  text-align: center;
-  min-height: 2.4rem;
-  min-width: 10rem;
-  justify-content: center;
+/* Fix Tema Scuro per Effetto Vetro */
+:root[data-theme="dark"] .sticky-parameter-toolbar {
+  background: rgba(21, 23, 27, 0.6); /* Usa --surface semi-trasparente */
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.note-details {
-  width: 100%;
+/* Ottimizzazione pulsanti interni per la barra floating */
+.sticky-parameter-toolbar .btn {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* mobile force 1 colonna */
+/* Responsività */
 @media (max-width: 600px) {
-  .workflow-action-grid {
+  .sticky-parameter-toolbar {
+    bottom: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0 0 0;
+  }
+}
+
+/* ==========================================================================
+   8. LAYOUT PARAMETRI E NESTING DELLE CARD
+   ========================================================================== */
+/* Il contenitore principale del parametro  */
+.param-section.card {
+  background-color: var(--surface-2) !important;
+  border: 1px solid var(--border);
+  padding: 1.5rem; /* Aumenta lo spazio interno del contenitore */
+  margin-bottom: 2.5rem; /* Distanzia maggiormente i parametri tra loro */
+}
+
+/* Le card delle singole domande all'interno del parametro tornano al colore
+   standard (più scuro) per creare contrasto e "staccare" dal fondo */
+.param-section .card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  margin-bottom: 1.5rem; /* Spazio costante tra le domande */
+}
+
+/* Rende il titolo del parametro più evidente sopra il nuovo sfondo */
+.param-title {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ==========================================================================
+   9. LAYOUT INFORMAZIONI ORIZZONTALI (Forzatura 25% / 75%)
+   ========================================================================== */
+.info-row, .language-meta-grid, .comments-row {
+  display: grid !important;
+  /* 25% alle etichette, il resto (75%) al contenuto */
+  grid-template-columns: 25% 1fr !important;
+  gap: 1.5rem;
+  margin: 0.75rem 0;
+  align-items: start;
+}
+
+.info-row__label,
+.language-meta-grid dt,
+.label-style {
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  font-size: 0.8rem !important; /* Leggermente più piccolo per evitare a capo */
+  letter-spacing: 0.05em !important;
+  color: var(--muted-fg, #444) !important;
+  padding-top: 0.15rem;
+  margin: 0;
+  /* Permette alle parole lunghe di andare a capo se necessario
+     senza allargare la colonna del 25% */
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.info-row__content, .language-meta-grid dd {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 950px) {
+  .info-row, .language-meta-grid, .comments-row {
     grid-template-columns: 1fr;
-    max-width: 28rem;
+    gap: 0.25rem;
   }
 }
 
-  .btn--ok {
-    --btn-bg: var(--ok);
-    --btn-fg: #fff;
-    --btn-bd: color-mix(in oklab, var(--ok) 75%, black);
-  }
 
-  .btn--bad {
-  --btn-bg: var(--bad);
-  --btn-fg: #fff;
-  --btn-bd: color-mix(in oklab, var(--bad) 75%, black);
-}
+
 </style>
-
-  </style>
 {% endblock %}
+
+
+
+
 
 {% block extra_js %}
 <script>

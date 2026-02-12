@@ -103,12 +103,11 @@ def recompute_and_persist_language_parameter(language_id: str, parameter_id: str
     - Se determinato => value_orig in {'+','-'}; warning_orig=True solo nel conflitto
     Ritorna l'oggetto LanguageParameter aggiornato.
     """
-        # Se la lingua è stata cancellata (es. delete con cascade), non fare nulla.
+    # Se la lingua è stata cancellata (es. delete con cascade), non fare nulla.
     try:
         lang = Language.objects.select_for_update().get(pk=language_id)
     except Language.DoesNotExist:
-        return
-    lang = Language.objects.select_for_update().get(pk=language_id)
+        return None
     param = ParameterDef.objects.get(pk=parameter_id)
 
     lp = _get_or_create_lp(lang, param)

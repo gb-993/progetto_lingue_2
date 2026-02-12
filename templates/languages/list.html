@@ -33,38 +33,46 @@
 
 <div class="table-responsive">
   <table class="table">
-<thead>
-  <tr>
-    {#
-      Abilitazione delle intestazioni cliccabili:
-      - Ogni header usa sort_urls.<campo> per invertire asc/desc.
-      - Se la colonna è l’ordinamento corrente, mostra una freccia (↑ ascendente, ↓ discendente).
-    #}
-    <th scope="col">
-      <a href="{{ sort_urls.id }}">Id</a>
-      {% if sort == 'id' %}
-        {% if dir == 'asc' %}<span aria-hidden="true">↑</span>{% else %}<span aria-hidden="true">↓</span>{% endif %}
-      {% endif %}
-    </th>
-    <th scope="col">
-      <a href="{{ sort_urls.name }}">Name</a>
-      {% if sort == 'name' %}
-        {% if dir == 'asc' %}<span aria-hidden="true">↑</span>{% else %}<span aria-hidden="true">↓</span>{% endif %}
-      {% endif %}
-    </th>
-    <th scope="col">
-      <a href="{{ sort_urls.top }}">Top‑level family</a>
-      {% if sort == 'top' %}
-        {% if dir == 'asc' %}<span aria-hidden="true">↑</span>{% else %}<span aria-hidden="true">↓</span>{% endif %}
-      {% endif %}
-    </th>
-    <!-- le restanti intestazioni non cambiano -->
-    <th scope="col">Family</th>
-    <th scope="col">Group</th>
-    <th scope="col">Last modified</th>
-    <th scope="col"></th>
-  </tr>
-</thead>
+    <thead>
+      <tr>
+        <th scope="col">
+          <a href="{{ sort_urls.id }}" class="sort-link {% if sort == 'id' %}active{% endif %}">
+            Id <span class="sort-indicator">{% if sort == 'id' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+
+        <th scope="col">
+          <a href="{{ sort_urls.name }}" class="sort-link {% if sort == 'name' %}active{% endif %}">
+            Name <span class="sort-indicator">{% if sort == 'name' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+
+        <th scope="col">
+          <a href="{{ sort_urls.top }}" class="sort-link {% if sort == 'top' %}active{% endif %}">
+            Top‑level family <span class="sort-indicator">{% if sort == 'top' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+
+        <th scope="col">
+          <a href="{{ sort_urls.family }}" class="sort-link {% if sort == 'family' %}active{% endif %}">
+            Family <span class="sort-indicator">{% if sort == 'family' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+
+        <th scope="col">
+          <a href="{{ sort_urls.group }}" class="sort-link {% if sort == 'group' %}active{% endif %}">
+            Group <span class="sort-indicator">{% if sort == 'group' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+
+        <th scope="col">
+          <a href="{{ sort_urls.modified }}" class="sort-link {% if sort == 'modified' %}active{% endif %}">
+            Last modified <span class="sort-indicator">{% if sort == 'modified' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}</span>
+          </a>
+        </th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
 
     <tbody>
       {% for l in languages %}
@@ -110,3 +118,27 @@
 </nav>
 {% endif %}
 {% endblock %}
+
+<style>
+  /* --- INIZIO MODIFICA CSS --- */
+  .sort-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .sort-link:hover {
+    color: #ff4500; /* Il colore arancione del tuo brand */
+  }
+  .sort-indicator {
+    font-size: 0.8rem;
+    opacity: 0.5;
+  }
+  .sort-link.active .sort-indicator {
+    opacity: 1;
+    color: #ff4500;
+    font-weight: bold;
+  }
+  /* --- FINE MODIFICA CSS --- */
+</style>
