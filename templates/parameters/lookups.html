@@ -1,12 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Parameter lookups{% endblock %}
-{% block breadcrumb %}Parameters / Lookups{% endblock %}
+
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'parameter_list' %}">Parameters</a>
+  </li>
+  <li aria-current="page">Parameter Lookups {{ p.id }}</li>
+{% endblock %}
 
 {% block content %}
 <section class="card">
-  <h2>Edit schemas and types</h2>
+  <h2>Edit schemas, types and levels</h2>
 
-  <div class="grid grid-2">
+  <div class="grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+
     <div>
       <h3>Schemas</h3>
       <form method="post" class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
@@ -78,6 +85,43 @@
         </tbody>
       </table>
     </div>
+
+    <div>
+      <h3>Levels of comparison</h3>
+      <form method="post" class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_level">
+        <div>
+          <label>New level</label>
+          <input class="form-control" name="label" required>
+        </div>
+        <div>
+          <button class="btn btn--primary" type="submit">Add</button>
+        </div>
+      </form>
+
+      <table class="table" style="margin-top:.75rem;">
+        <thead><tr><th>Existing levels</th><th></th></tr></thead>
+        <tbody>
+          {% for l in levels %}
+          <tr>
+            <td>{{ l.label }}</td>
+            <td style="text-align: right;">
+              <form method="post" style="display:inline" onsubmit="return confirm('Delete this level?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="del_level">
+                <input type="hidden" name="id" value="{{ l.id }}">
+                <button class="btn btn--danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2"><p class="muted">No levels yet.</p></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </section>
 {% endblock %}

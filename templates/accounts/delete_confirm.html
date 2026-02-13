@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Delete account{% endblock %}
-{% block breadcrumb %}Accounts / Delete{% endblock %}
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'accounts_list' %}">Accounts</a>
+  </li>
+  <li aria-current="page">Delete</li>
+{% endblock %}
 
 {% block content %}
   <div class="card">

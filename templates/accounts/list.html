@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Accounts{% endblock %}
-{% block breadcrumb %}Accounts{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Accounts</li>
+{% endblock %}
 {% block content %}
 
 <h1 class="dashboard-hero">
@@ -96,5 +98,33 @@
           {% endfor %}
         </tbody>
       </table>
+
+  <h3>Public Users</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Name</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in public_users %}
+        <tr>
+          <td>{{ u.email }}</td>
+          <td>{{ u.name }} {{ u.surname }}</td>
+          <td class="row-actions">
+            <a class="btn" href="{% url 'accounts_edit' u.id %}">Edit</a>
+            <a class="btn" href="{% url 'accounts_delete' u.id %}">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" class="muted">No public users</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
   </div>
 {% endblock %}

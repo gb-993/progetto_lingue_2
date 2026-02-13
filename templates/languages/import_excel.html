@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}Import language data from Excel{% endblock %}
-{% block breadcrumb %}Languages / Import from Excel{% endblock %}
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'parameter_list' %}">Languages</a>
+  </li>
+  <li aria-current="page">Import</li>
+{% endblock %}
 
 {% block content %}
 <div class="card" id="import-container">

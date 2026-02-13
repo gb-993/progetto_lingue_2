@@ -8,7 +8,7 @@ from django.shortcuts import render
 from django.utils.translation import gettext as _
 
 from core.models import (
-    Language, ParameterDef, LanguageParameter, LanguageParameterEval,
+    Language, ParameterDef, LanguageParameter, LanguageParameterEval, Answer,
 )
 from core.services.logic_parser import evaluate_with_parser, pretty_print_expression 
 import re
@@ -192,9 +192,18 @@ def home(request):
         "form_q5": LangOnlyForm(request.GET if request.GET.get("tab") == "q5" else None),
         "form_q6": LangOnlyForm(request.GET if request.GET.get("tab") == "q6" else None),
         "form_q7": LangPairForm(request.GET if request.GET.get("tab") == "q7" else None),
-        "q1": None, "q2": None, "q3": None, "q4": None, "q5": None, "q6": None, "q7": None,
+        "form_q8": LangOnlyForm(request.GET if request.GET.get("tab") == "q8" else None),
+        "form_q9": LangOnlyForm(request.GET if request.GET.get("tab") == "q9" else None),
+        "q1": None, "q2": None, "q3": None, "q4": None, "q5": None, "q6": None, "q7": None, "q8": None, "q9": None,
     }
 
+    # 1. Ordinamento alfabetico per le lingue (Query 7 e altre)
+    for f_key in ["form_q3", "form_q4", "form_q5", "form_q6", "form_q7", "form_q8", "form_q9"]:
+        form = ctx.get(f_key)
+        if form:
+            for field_name in ["language", "language_a", "language_b"]:
+                if field_name in form.fields:
+                    form.fields[field_name].queryset = Language.objects.all().order_by("name_full")
     
     if ctx["form_q1"].is_bound and ctx["form_q1"].is_valid():
         p = ctx["form_q1"].cleaned_data["parameter"]
@@ -256,5 +265,18 @@ def home(request):
         b = ctx["form_q7"].cleaned_data["language_b"]
         rows = comparable_params_for(a, b)
         ctx["q7"] = {"a": a, "b": b, "rows": rows}
+
+
+    for tab, val in (("q8", "yes"), ("q9", "no")):
+        form = ctx[f"form_{tab}"]
+        if form.is_bound and form.is_valid():
+            lang = form.cleaned_data["language"]
+            # Filtriamo il modello Answer per lingua e testo della risposta (case-insensitive)
+            answers = Answer.objects.filter(
+                language=lang,
+                response_text__iexact=val
+            ).select_related("question__parameter").order_by("question__parameter__position", "question__id")
+
+            ctx[tab] = {"language": lang, "answers": answers, "type": val.upper()}
 
     return render(request, "queries/home.html", ctx)

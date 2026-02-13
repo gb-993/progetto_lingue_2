@@ -267,8 +267,47 @@ a:hover{text-decoration:underline}
 }
 
 
-.breadcrumb{ margin-top:.5rem; color:var(--text-muted); }
-.breadcrumb a{ color:inherit; text-decoration:underline; }
+/* Sostituisci le righe 223-224 con questo blocco */
+
+.breadcrumb {
+  margin-top: .5rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb li:not(:last-child)::after {
+  content: "/";
+  margin-left: 0.5rem;
+  opacity: 0.5;
+}
+
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none; /* Meglio togliere la sottolineatura di default */
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* L'ultimo elemento (pagina corrente) */
+.breadcrumb li:last-child {
+  font-weight: 600; /* Opzionale: lo rende un po' più evidente */
+  pointer-events: none;
+}
 
 /* 4) Layout & utility */
 .container {
@@ -1090,3 +1129,19 @@ details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--bo
 .b-plus { background:#e8f7ec; } .b-minus { background:#fde8e7; } .b-zero { background:#eef1f5; } .b-unset { background:#f8f8f8; }
 .b-focus { background:#fff6da; border-color:#eed68a; }
 .b-up { background:#e5efff; } .b-down { background:#fff0e5; }
+
+                              /* Allineamento del nuovo logo */
+.pcm-logo-img {
+  height: 1.4em;           /* Si adatta automaticamente all'altezza del testo */
+  vertical-align: middle;  /* Centra l'immagine rispetto al testo "PCM" */
+  margin-left: -8px;       /* Avvicina l'immagine al testo per l'effetto "abbraccio" */
+  margin-top: -4px;        /* Piccolo aggiustamento verticale */
+  display: inline-block;
+}
+
+/* Ottimizzazione per mobile */
+@media (max-width: 768px) {
+  .pcm-logo-img {
+    height: 1.2em;
+  }
+}

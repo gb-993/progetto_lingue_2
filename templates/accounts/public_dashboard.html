@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Dashboard</li>
+{% endblock %}
+
+{% block content %}
+<div class="container dashboard" role="main">
+
+  {% if request.user.role == 'public' %}
+    <header class="dashboard-hero">
+      <h1>Welcome to the PCM Database</h1>
+      <p style="font-size: 1.1rem; max-width: 900px; line-height: 1.6;">
+        The database of the <strong>Parametric Comparison Method (PCM)</strong> aims to collect structural and syntactic data of the world's languages.
+        By comparing language parameters, it is possible to reconstruct historical relationships and infer divergence patterns.
+        Explore the glossary for terminology or visit your assigned languages in your profile.
+      </p>
+    </header>
+
+    <div class="asjp-layout" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem; margin-top: 2rem; align-items: start;">
+
+      <div class="card" style="padding: 1.5rem; background: var(--surface-2);">
+        <h3 style="margin-top: 0;">How to cite:</h3>
+        <p class="muted" style="font-size: 0.95rem;">
+          PCM Hub Project. (2026). <em>The Parametric Comparison Method Database (version 1.0)</em>.
+          Centralized repository for data collection and storage.
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+  <img src="{% static 'img/img.png' %}"
+       alt="PCM Hub Logo"
+       style="width: 220px; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));">
+</div>
+
+      <div class="card" style="padding: 0;">
+        <table class="table" style="margin: 0; font-size: 0.95rem;">
+          <tbody>
+            <tr>
+              <td><strong>Languages</strong></td>
+              <td style="text-align: right;">{{ stats.languages }}</td>
+            </tr>
+            <tr>
+              <td><strong>Distinct Families</strong></td>
+              <td style="text-align: right;">{{ stats.families }}</td>
+            </tr>
+            <tr>
+              <td><strong>Active Parameters</strong></td>
+              <td style="text-align: right;">{{ stats.parameters }}</td>
+            </tr>
+            <tr>
+              <td><strong>Answers recorded</strong></td>
+              <td style="text-align: right;">{{ stats.answers }}</td>
+            </tr>
+            <tr>
+              <td><strong>Glossary terms</strong></td>
+              <td style="text-align: right;">{{ stats.glossary }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% else %}
+    <header class="dashboard-hero">
+      <h1 style="margin-bottom: 0.2rem;">
+        Welcome back, {{ request.user.name|default:request.user.email }}!
+      </h1>
+    </header>
+
+    <div class="dashboard-flex">
+      <nav class="dashboard-links-grid" role="navigation" aria-label="Dashboard shortcuts">
+        <a class="dash-tile" href="{% url 'language_list' %}" aria-label="Open languages">
+          <span class="dash-tile-label">Languages</span>
+        </a>
+
+        <a class="dash-tile" href="{% url 'instruction' %}" aria-label="Open instruction">
+          <span class="dash-tile-label">Instructions</span>
+        </a>
+
+        <a class="dash-tile" href="{% url 'glossary_list' %}" aria-label="Open glossary">
+          <span class="dash-tile-label">Glossary</span>
+        </a>
+
+        <a class="dash-tile" href="{% url 'my_account' %}" aria-label="Open my account">
+          <span class="dash-tile-label">My Account</span>
+        </a>
+
+        {% if is_admin %}
+          <a class="dash-tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
+            <span class="dash-tile-label">Parameters</span>
+          </a>
+          <a class="dash-tile" href="{% url 'parameters_graph' %}" aria-label="Open parameters graph">
+            <span class="dash-tile-label">Graph</span>
+          </a>
+          <a class="dash-tile" href="{% url 'tablea_index' %}" aria-label="Open Table A">
+            <span class="dash-tile-label">Table A</span>
+          </a>
+          <a class="dash-tile" href="{% url 'queries:home' %}" aria-label="Open queries">
+            <span class="dash-tile-label">Queries</span>
+          </a>
+          <a class="dash-tile" href="{% url 'submissions_list' %}" aria-label="Open submissions">
+            <span class="dash-tile-label">Submissions</span>
+          </a>
+          <a class="dash-tile" href="{% url 'accounts_list' %}" aria-label="Open accounts">
+            <span class="dash-tile-label">Accounts</span>
+          </a>
+        {% endif %}
+      </nav>
+
+      {% if is_admin %}
+        <aside class="card news-box collapsed" aria-labelledby="last-changes-heading">
+          <h3 id="last-changes-heading">Latest changes to parameters and questions</h3>
+          <ul class="list news-list">
+            {% for log in recent_param_changes %}
+              <li class="news-item">
+                <strong>{{ log.parameter_id }}</strong>
+                <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span><br>
+                <span class="muted small">by {{ log.changed_by.name }} {{ log.changed_by.surname|default:"" }}</span>
+                {% if log.recap %}<p class="mt-1 small">{{ log.recap }}</p>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+          <div class="news-toggle-row">
+            <button class="news-toggle-btn" type="button" aria-expanded="false" aria-controls="last-changes-heading">Show more</button>
+          </div>
+        </aside>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<style>
+/* Adattamento per dispositivi mobili per il layout ASJP */
+@media (max-width: 900px) {
+  .asjp-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+{% endblock %}

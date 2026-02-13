@@ -33,8 +33,11 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    ROLE_CHOICES = (("admin", "Admin"), ("user", "User"))
-
+    ROLE_CHOICES = (
+        ("admin", "Admin"),
+        ("user", "User"),
+        ("public", "Public")
+    )
     email = models.EmailField(unique=True)  
     name = models.CharField(max_length=100)
     surname = models.CharField(max_length=100)
@@ -110,6 +113,8 @@ class Language(models.Model):
     historical_language = models.BooleanField(default=False)
     top_level_family = models.CharField(max_length=255, blank=True, default="")
     family = models.CharField(max_length=255, blank=True, default="")
+    latitude = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=11, decimal_places=6, null=True, blank=True)
     assigned_user = models.ForeignKey(
         "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="languages"
     )
@@ -244,6 +249,15 @@ class ParamType(models.Model):
     def __str__(self):
         return self.label
 
+class ParamLevelOfComparison(models.Model):
+    label = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["label"]
+
+    def __str__(self):
+        return self.label
+
 
 # =======================
 # PARAMETER DEFINITIONS
@@ -259,6 +273,7 @@ class ParameterDef(models.Model):
     warning_default = models.BooleanField(default=False)
     schema = models.CharField(max_length=100, blank=True, default="")
     param_type = models.CharField(max_length=100, blank=True, default="")
+    level_of_comparison = models.CharField(max_length=255, blank=True, default="")
 
     def __str__(self):
         """

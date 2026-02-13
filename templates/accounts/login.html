@@ -31,13 +31,6 @@
     <section class="card" role="region" aria-labelledby="login-title">
       <h1 id="login-title">Login</h1>
 
-      {% if messages %}
-        <div role="status" aria-live="polite">
-          {% for message in messages %}
-            <p class="alert">{{ message }}</p>
-          {% endfor %}
-        </div>
-      {% endif %}
 
       {% if form.non_field_errors %}
         <div role="alert" class="alert alert-error">

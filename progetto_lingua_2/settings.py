@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "submissions_ui",
     "queries",
     "instruction_ui",
+    "questions_ui",
 
 ]
 SUBMISSIONS_MAX_PER_LANGUAGE = 10
@@ -250,5 +251,31 @@ LOGGING = {
             "level": LOG_LEVEL,
             "propagate": True,
         },
-    },
+            "glossary_ui": {
+                "handlers": ["console"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "graphs_ui": {
+                "handlers": ["console"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "tablea_ui": {
+                "handlers": ["console"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "instruction_ui": {
+                "handlers": ["console"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            },
+            "questions_ui": {
+                "handlers": ["console"],
+                "level": LOG_LEVEL,
+                "propagate": True,
+            }
+    }
+
 }

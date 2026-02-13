@@ -1,109 +1,174 @@
 {% extends "base.html" %}
 {% block title %}Parameters Debug — {{ language.id }}{% endblock %}
-{% block breadcrumb %}Languages / {{ language.id }} / Parameters Debug{% endblock %}
+
+{% block breadcrumb %}
+  <li><a href="{% url 'language_list' %}">Languages</a></li>
+  <li><a href="{% url 'language_edit' language.id %}">{{ language.id }}</a></li>
+  <li aria-current="page">Parameters Debug</li>
+{% endblock %}
 
 {% block content %}
-  <h1 class="main-title">
-    Parameters Debug — {{ language.name_full|default:language.id }} ({{ language.id }})
-  </h1>
+<div class="sticky-debug-header">
+    <h1 class="main-title">
+      Parameters Debug — {{ language.name_full|default:language.id }} ({{ language.id }})
+    </h1>
 
-  <div class="toolbar" style="display:flex;gap:.5rem;flex-wrap:wrap">
-    <a class="btn" href="{% url 'language_data' language.id %}">Back to language data</a>
+    <div class="toolbar">
+        <a class="btn" href="{% url 'language_data' language.id %}">Back to language data</a>
 
-    {# Run DAG (Apply implications) #}
-    <form method="post" action="{% url 'language_run_dag' language.id %}" class="d-inline" aria-label="Apply implications">
-      {% csrf_token %}
-      <button type="submit" class="btn btn--primary" aria-live="polite">
-        Apply implications
-      </button>
-    </form>
-  </div>
+        {# Run DAG (Apply implications) #}
+        <form method="post" action="{% url 'language_run_dag' language.id %}" class="d-inline" aria-label="Apply implications">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--primary" aria-live="polite">
+            Apply implications
+          </button>
+        </form>
+    </div>
+</div>
 
-    <table class="table">
-      <thead>
-        <tr>
-          <th class="w-1ch">#</th>
-          <th class="w-5ch">Label</th>
-          <th>Questions</th>
-          <th>Answers</th>
-          <th class="w-10ch nowrap">Initial value</th>
-          <th class="w-8ch">Warn (init)</th>
-          <th>Implicational condition(s)</th>
-          <th class="w-10ch">Check</th>
-          <th class="w-10ch">Final value</th>
-          <th class="w-8ch">Warn (final)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in rows %}
-          <tr>
-            <td>{{ r.position }}</td>
-            <td><strong>{{ r.param_id }}</strong></td>
+<table class="table">
+  <thead>
+    <tr>
+      <th class="w-1ch">#</th>
+      <th class="w-5ch">Label</th>
+      <th>Questions</th>
+      <th>Answers</th>
+      <th class="w-10ch nowrap">Initial value</th>
+      <th class="w-8ch">Warn (init)</th>
+      <th>Implicational condition(s)</th>
+      <th class="w-10ch">Check</th>
+      <th class="w-10ch">Final value</th>
+      <th class="w-8ch">Warn (final)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+      <tr id="{{ r.param_id }}">
+        <td>{{ r.position }}</td>
+        <td>
+          <a href="{% url 'language_data' language.id %}#p-{{ r.param_id }}"
+             title="Edit data for {{ r.param_id }}"
+             style="text-decoration: underline; color: inherit; font-weight: bold;">
+            {{ r.param_id }}
+          </a>
+        </td>
+        <td>
+          {% if r.questions %}
+            {% for qid in r.questions %}<div><code>{{ qid }}</code></div>{% endfor %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          {% if r.answers %}
+            {% for a in r.answers %}<div>{{ a }}</div>{% endfor %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td class="num nowrap">
+          {% if r.initial == '+' %}+{% elif r.initial == '-' %}-{% else %}<span class="muted"> </span>{% endif %}
+        </td>
+        <td data-label="Warn (init)">
+          {% if r.warn_init %}<span class="badge b-bad">⚠</span>{% else %}<span class="muted"></span>{% endif %}
+        </td>
+        <td>
+          {% if r.cond %}<div><code>{{ r.cond }}</code></div>{% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          {% if r.cond_true is True %}<span class="badge b-good">TRUE</span>
+          {% elif r.cond_true is False %}<span class="badge b-bad">FALSE</span>
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td class="num nowrap">
+          {% if r.final == '+' %}+{% elif r.final == '-' %}-{% elif r.final == '0' %}0{% else %}<span class="muted"> </span>{% endif %}
+        </td>
+        <td data-label="Warn (final)">
+          {% if r.warn_final %}<span class="badge b-bad">⚠</span>{% else %}<span class="muted"></span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-            <td>
-              {% if r.questions %}
-                {% for qid in r.questions %}
-                  <div><code>{{ qid }}</code></div>
-                {% endfor %}
-              {% else %}
-                <span class="muted">—</span>
-              {% endif %}
-            </td>
+<style>
+/* ==========================================
+   STILE UNIFICATO GLASS EFFECT (FLOATING)
+   ========================================== */
 
-            <td>
-              {% if r.answers %}
-                {% for a in r.answers %}
-                  <div>{{ a }}</div>
-                {% endfor %}
-              {% else %}
-                <span class="muted">—</span>
-              {% endif %}
-            </td>
+.sticky-debug-header {
+  position: sticky;
+  top: 1rem; /* Lo stacca dal bordo superiore per mostrare l'arrotondamento */
+  z-index: 1000;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
 
-            <td class="num nowrap">
-              {% if r.initial == '+' %}+{% elif r.initial == '-' %}-{% else %}<span class="muted"> </span>{% endif %}
-            </td>
+  /* Arrotondamento coerente con il sito */
+  border-radius: var(--radius, 12px);
+  border: 1px solid var(--border, #dadde2);
 
-            <td data-label="Warn (init)">
-              {% if r.warn_init %}
-                <span class="badge b-bad" aria-label="Initial warning true">⚠</span>
-              {% else %}
-                <span class="muted"></span>
-              {% endif %}
-            </td>
+  /* Effetto Vetro - Light Mode */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
 
-            <td>
-              {% if r.cond %}
-                <div><code>{{ r.cond }}</code></div>
-              {% else %}
-                <span class="muted">—</span>
-              {% endif %}
-            </td>
+/* Fix Tema Scuro */
+:root[data-theme="dark"] .sticky-debug-header {
+  background: rgba(21, 23, 27, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
 
-            {# CELLA NUOVA: TRUE / FALSE / — #}
-            <td>
-              {% if r.cond_true is True %}
-                <span class="badge b-good">TRUE</span>
-              {% elif r.cond_true is False %}
-                <span class="badge b-bad">FALSE</span>
-              {% else %}
-                <span class="muted">—</span>
-              {% endif %}
-            </td>
+.sticky-debug-header .main-title {
+  margin: 0 0 1rem 0;
+  padding: 0;
+  font-size: var(--fs-4);
+  color: var(--text); /* Forza il colore corretto per evitare il bianco su bianco */
+}
 
-            <td class="num nowrap">
-              {% if r.final == '+' %}+{% elif r.final == '-' %}-{% elif r.final == '0' %}0{% else %}<span class="muted"> </span>{% endif %}
-            </td>
+.sticky-debug-header .toolbar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0; /* Rimuove il margine della toolbar standard */
+}
 
-            <td data-label="Warn (final)">
-              {% if r.warn_final %}
-                <span class="badge b-bad" aria-label="Final warning true">⚠</span>
-              {% else %}
-                <span class="muted"></span>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+/* Rimuove l'intestazione sticky della tabella come richiesto */
+.table thead th {
+  position: static;
+  background: var(--surface-2);
+}
+
+/* Miglioria estetica tabella */
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  if (window.location.hash) {
+    const targetId = window.location.hash.substring(1);
+    const targetElement = document.getElementById(targetId);
+
+    if (targetElement) {
+      // Piccolo timeout per attendere il rendering della tabella
+      setTimeout(() => {
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center' // <--- Centra la riga verticalmente
+        });
+
+        // Feedback visivo: evidenzia la riga per 2 secondi
+        targetElement.style.transition = 'background-color 0.5s';
+        targetElement.style.backgroundColor = 'var(--pill-warn-bg)';
+        setTimeout(() => {
+          targetElement.style.backgroundColor = '';
+        }, 2000);
+      }, 200);
+    }
+  }
+});
+</script>
 {% endblock %}

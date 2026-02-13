@@ -1,148 +1,311 @@
 {% extends "base.html" %}
 {% block title %}Table A{% endblock %}
-{% block breadcrumb %}Table A{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Table A</li>
+{% endblock %}
 
 {% block content %}
+<style>
+    /* UI Enhancements */
+    .control-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    /* Layout side-by-side per i filtri */
+    .filters-main-layout {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group-title {
+        font-size: 0.8rem;
+        font-weight: 900;
+        color: var(--brand);
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+        display: block;
+        letter-spacing: 0.05em;
+        padding-bottom: 0.25rem;
+    }
+
+    /* Griglia interna per i campi di input */
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .filter-item label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .filter-item select, .filter-item input {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 0.85rem;
+    }
+
+    /* VIEW SWITCHER - NON TOCCATO */
+    .view-switcher-wrapper { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+    .view-switcher { background: #e9ecef; padding: 5px; border-radius: 50px; display: inline-flex; }
+    .view-switcher-item { padding: 8px 25px; border-radius: 50px; text-decoration: none; color: #6c757d; font-weight: 600; transition: 0.2s; }
+    .view-switcher-item.active { background: white; color: black; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--border);
+        padding-top: 1.25rem;
+    }
+
+    /* Dropdown Styles */
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        background: var(--surface);
+        min-width: 220px;
+        box-shadow: var(--shadow);
+        z-index: 1000;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    .dropdown-content a {
+        color: var(--text);
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        font-size: 0.9rem;
+    }
+    .dropdown-content a:hover { background-color: var(--surface-2); color: var(--brand); }
+    .dropdown:hover .dropdown-content { display: block; }
+
+    /* Responsive: sotto i 900px torna incolonnato */
+    @media (max-width: 900px) {
+        .filters-main-layout { flex-direction: column; gap: 1.5rem; }
+    }
+</style>
 
 <header class="dashboard-hero">
-  <h1>Table A</h1>
-
-  {# SWITCH tra TableA per parametri e TableA per questions #}
-  <div class="view-switch" style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
-    {# calcoliamo la vista corrente; se 'view' manca, default = params #}
-    {% with current_view=view|default:"params" %}
-      {# link alla vista parametri: mantiene i filtri attuali #}
-      <a
-        class="btn {% if current_view == 'params' %}btn-primary{% else %}btn-secondary{% endif %}"
-        href="{% url 'tablea_index' %}?view=params{% if selected_family %}&family={{ selected_family|urlencode }}{% endif %}{% if selected_historical %}&historical={{ selected_historical|urlencode }}{% endif %}"
-      >
-        Parameters view
-      </a>
-
-      {# link alla vista questions: una question per riga, valori YES/NO #}
-      <a
-        class="btn {% if current_view == 'questions' %}btn-primary{% else %}btn-secondary{% endif %}"
-        href="{% url 'tablea_index' %}?view=questions{% if selected_family %}&family={{ selected_family|urlencode }}{% endif %}{% if selected_historical %}&historical={{ selected_historical|urlencode }}{% endif %}"
-      >
-        Questions view
-      </a>
-    {% endwith %}
-  </div>
+    <h1>Table A</h1>
+    <div class="view-switcher-wrapper">
+        <nav class="view-switcher">
+            <a href="?view=params" class="view-switcher-item {% if view == 'params' %}active{% endif %}">Parameters View</a>
+            <a href="?view=questions" class="view-switcher-item {% if view == 'questions' %}active{% endif %}">Questions View</a>
+        </nav>
+    </div>
 </header>
 
-  <div class="toolbar" role="region" aria-label="Azioni tabella">
-    <form method="get" class="filters-form" aria-label="Filters">
-      {# Manteniamo la vista corrente quando si applicano i filtri #}
-      <input type="hidden" name="view" value="{{ view|default:'params' }}">
+<div class="control-panel">
+    <form method="get" id="filterForm">
+        <input type="hidden" name="view" value="{{ view }}">
 
-      <div style="display: flex; gap: 2rem;">
-        <div>
-          <label for="family" class="visually-hidden">Top-level family</label>
-          <select id="family" name="family">
-            <option value="">All families</option>
-            {% for fam in families %}
-              {% if fam %}
-                <option value="{{ fam }}" {% if fam == selected_family %}selected{% endif %}>{{ fam }}</option>
-              {% endif %}
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label for="historical" class="visually-hidden">Historical</label>
-          <select id="historical" name="historical">
-            <option value="all" {% if selected_historical == "all" %}selected{% endif %}>
-              Both historical and non-historical languages
-            </option>
-            <option value="yes" {% if selected_historical == "yes" %}selected{% endif %}>
-              Historical languages only
-            </option>
-            <option value="no"  {% if selected_historical == "no"  %}selected{% endif %}>
-              Non-historical languages only
-            </option>
-          </select>
-        </div>
-      </div>
+        <div class="filters-main-layout">
+            <div class="filter-column">
+                <span class="filter-group-title">Language Filters</span>
+                <div class="filter-grid">
+                    <div class="filter-item">
+                        <label>Top Family</label>
+                        <select name="f_lang_top_family">
+                            <option value="">All</option>
+                            {% for f in opt_top_families %}<option value="{{ f }}" {% if params.f_lang_top_family == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Family</label>
+                        <select name="f_lang_family">
+                            <option value="">All</option>
+                            {% for f in opt_families %}<option value="{{ f }}" {% if params.f_lang_family == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Historical</label>
+                        <select name="f_lang_hist">
+                            <option value="all">Both</option>
+                            <option value="yes" {% if params.f_lang_hist == 'yes' %}selected{% endif %}>Only Historical</option>
+                            <option value="no" {% if params.f_lang_hist == 'no' %}selected{% endif %}>Only Non-Hist</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Group</label>
+                        <select name="f_lang_grp">
+                            <option value="">All</option>
+                            {% for g in opt_groups %}<option value="{{ g }}" {% if params.f_lang_grp == g %}selected{% endif %}>{{ g }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
 
-      <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-        <button class="btn" type="submit">Apply</button>
-        {% if selected_family or selected_historical != "all" %}
-          <a class="btn" href="{% url 'tablea_index' %}?view={{ view|default:'params' }}">
-            Reset
-          </a>
-        {% endif %}
-      </div>
+            <div class="filter-column">
+                <span class="filter-group-title">{{ view|capfirst }} Filters</span>
+                <div class="filter-grid">
+                    {% if view == 'params' %}
+                        <div class="filter-item">
+                            <label>Schema</label>
+                            <select name="f_p_schema">
+                                <option value="">All</option>
+                                {% for s in opt_schemas %}<option value="{{ s }}" {% if params.f_p_schema == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Type</label>
+                            <select name="f_p_type">
+                                <option value="">All</option>
+                                {% for t in opt_types %}<option value="{{ t }}" {% if params.f_p_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Level</label>
+                            <select name="f_p_level">
+                                <option value="">All</option>
+                                {% for l in opt_levels %}<option value="{{ l }}" {% if params.f_p_level == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    {% else %}
+                        <div class="filter-item">
+                            <label>Template</label>
+                            <select name="f_q_template">
+                                <option value="">All</option>
+                                {% for t in opt_templates %}<option value="{{ t }}" {% if params.f_q_template == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Stop Question?</label>
+                            <select name="f_q_stop">
+                                <option value="all">All</option>
+                                <option value="yes" {% if params.f_q_stop == 'yes' %}selected{% endif %}>Yes</option>
+                                <option value="no" {% if params.f_q_stop == 'no' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <div>
+                <button type="submit" class="btn btn--primary">Apply Filters</button>
+                <a href="?view={{ view }}" class="btn btn--secondary">Reset</a>
+            </div>
+
+            <div class="dropdown">
+                <button type="button" class="btn btn--accent">Download Data ▾</button>
+                <div class="dropdown-content">
+                    <a href="{% url 'tablea_export_xlsx' %}?{{ request.GET.urlencode }}">Export .xlsx (Standard)</a>
+                    <a href="{% url 'tablea_export_csv' %}?{{ request.GET.urlencode }}">Export .csv (Transposed)</a>
+                    {% if view == 'params' %}
+                        <a href="{% url 'tablea_export_distances_zip' %}?{{ request.GET.urlencode }}">Distances (.zip)</a>
+                        <a href="{% url 'tablea_export_dendrogram' %}?{{ request.GET.urlencode }}">Dendrogram UPGMA (.png)</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </form>
+</div>
 
-    <div class="row-actions">
-      {# Export usa la vista corrente per generare il foglio parametri o questions #}
-      <a class="btn" href="{% url 'tablea_export_xlsx' %}?view={{ view|default:'params' }}">
-        Export .xlsx
-      </a>
-      <a class="btn" href="{% url 'tablea_export_csv' %}?view={{ view|default:'params' }}">
-        Export transposed .csv
-      </a>
-      {% with current_view=view|default:"params" %}
-        {% if current_view == "params" %}
-          <a class="btn"
-            href="{% url 'tablea_export_distances_zip' %}?view=params{% if selected_family %}&family={{ selected_family|urlencode }}{% endif %}{% if selected_historical %}&historical={{ selected_historical|urlencode }}{% endif %}">
-            Export distances (.zip)
-          </a>
-        {% endif %}
-      {% endwith %}
+<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+    <button type="button" class="btn btn--secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="toggleAllCheckboxes(true)">Select All</button>
+    <button type="button" class="btn btn--secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="toggleAllCheckboxes(false)">Deselect All</button>
+</div>
 
-    </div>
-  </div>
-
-  <div class="card table-container">
+<div class="card table-container">
     {% if rows %}
-      <div class="table-scroll" role="region"
-           aria-label="Table A – scroll horizontally to see all languages"
-           tabindex="0">
-        <table class="table table--freeze tableA" aria-describedby="tablea-desc">
-          <colgroup>
-            <col class="w-label" />
-            <col class="w-name" />
-            <col class="w-implication" />
-          </colgroup>
-
-          <thead>
-            <tr>
-              <th scope="col" class="col-sticky-left">Label</th>
-              <th scope="col">Name</th>
-              <th scope="col">Implicational condition(s)</th>
-              {% for lang in languages %}
-                <th scope="col">{{ lang.id }}</th>
-              {% empty %}
-                <th scope="col">No languages</th>
-              {% endfor %}
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for row in rows %}
-              <tr>
-                <th scope="row" class="col-sticky-left">{{ row.p.id }}</th>
-                <td>{{ row.p.name }}</td>
-                <td class="muted">{{ row.p.implicational_condition }}</td>
-
-                {% for val in row.cells %}
-                  <td>{{ val }}</td>
-                {% empty %}
-                  <td>—</td>
+    <div class="table-scroll">
+        <table class="table table--freeze tableA">
+            <thead>
+                <tr>
+                    <th class="col-sticky-left" style="width: 45px; left: 0; z-index: 4; text-align: center;">
+                        <input type="checkbox" id="masterCheckbox" onclick="toggleAllCheckboxes(this.checked)">
+                    </th>
+                    <th class="col-sticky-left" style="left: 45px; z-index: 4;">Label</th>
+                    <th>Name / Text</th>
+                    <th>{% if view == 'params' %}Implication{% else %}Param ID{% endif %}</th>
+                    {% for lang in languages %}<th>{{ lang.id }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td class="col-sticky-left" style="left: 0; text-align: center; background: var(--surface);">
+                        <input type="checkbox" name="row_selector" value="{{ row.p.id }}" class="row-checkbox">
+                    </td>
+                    <th class="col-sticky-left" style="left: 45px; background: var(--surface);">{{ row.p.id }}</th>
+                    <td style="min-width: 300px;">{{ row.p.name }}</td>
+                    <td class="muted">{{ row.p.implicational_condition }}</td>
+                    {% for cell in row.cells %}
+                    <td>
+                        {% if cell.val %}
+                            {% url 'language_debug' cell.lang_id as debug_url %}
+                            <a href="{{ debug_url }}#{% if view == 'questions' %}{{ row.p.implicational_condition }}{% else %}{{ row.p.id }}{% endif %}" class="debug-link">
+                                {{ cell.val }}
+                            </a>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
                 {% endfor %}
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="{{ languages|length|add:3 }}">
-                  No available data for Table A.
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
+            </tbody>
         </table>
-      </div>
+    </div>
     {% else %}
-      <p role="status">No available data for Table A.</p>
+    <p style="padding: 2rem; text-align: center;" class="muted">No data matches the selected filters.</p>
     {% endif %}
-  </div>
+</div>
+
+    <script>
+function toggleAllCheckboxes(source) {
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    const master = document.getElementById('masterCheckbox');
+    checkboxes.forEach(cb => cb.checked = (typeof source === 'boolean' ? source : source.checked));
+    if (master) master.checked = (typeof source === 'boolean' ? source : source.checked);
+}
+
+// Intercetta i click sui link di download nel dropdown
+document.querySelectorAll('.dropdown-content a').forEach(link => {
+    link.addEventListener('click', function(e) {
+        const selected = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+
+        // Se ci sono righe selezionate, modifichiamo l'URL del download al volo
+        if (selected.length > 0) {
+            e.preventDefault();
+            const url = new URL(this.href, window.location.origin);
+
+            // Puliamo eventuali selezioni precedenti e aggiungiamo le nuove
+            url.searchParams.delete('selected_ids');
+            selected.forEach(id => url.searchParams.append('selected_ids', id));
+
+            window.location.href = url.toString();
+        }
+        // Se non c'è nulla di selezionato, il link procede normalmente usando i filtri della pagina
+    });
+});
+</script>
+
 {% endblock %}

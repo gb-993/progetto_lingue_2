@@ -1,399 +1,234 @@
 from __future__ import annotations
-from io import BytesIO
 import csv
-
+import zipfile
+from io import BytesIO
+from openpyxl import Workbook
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.spatial.distance import squareform
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
-
-# NUOVO: importiamo anche Question e Answer per la seconda TableA (per questions)
-from core.models import Language, ParameterDef, LanguageParameterEval, Question, Answer
-
-
-def _build_tablea_matrix():
-    """
-    Costruisce intestazioni e valori della Table A basata sui PARAMETRI (COMPLETI, senza filtri).
-    Ritorna:
-      - headers: lista ["Label", "Name", "Implication", <lang ids...>]
-      - rows: lista di righe, ognuna lista [label, name, implication, val1, val2, ...]
-      - languages, parameters: lista di oggetti Language / ParameterDef usati per l'ordine colonne/righe.
-    """
-    # Stesso ordine lingue/parametri della versione originale
-    languages = list(
-        Language.objects.order_by("position").only(
-            "id", "name_full", "position", "top_level_family", "historical_language"
-        )
-    )
-    parameters = list(
-        ParameterDef.objects.filter(is_active=True)
-        .order_by("position")
-        .only("id", "name", "implicational_condition", "position")
-    )
-
-    # Valori valutati (+/-/0) per ciascuna coppia parametro-lingua
-    eval_rows = LanguageParameterEval.objects.values(
-        "language_parameter__language_id",
-        "language_parameter__parameter_id",
-        "value_eval",
-    )
-    px = {
-        (row["language_parameter__parameter_id"], row["language_parameter__language_id"]): row["value_eval"]
-        for row in eval_rows
-    }
-
-    headers = ["Label", "Name", "Implication"] + [lang.id for lang in languages]
-
-    export_rows = []
-    for p in parameters:
-        cells = [px.get((p.id, lang.id), "") for lang in languages]
-        export_rows.append([p.id, p.name, p.implicational_condition or ""] + cells)
-
-    return headers, export_rows, languages, parameters
+from core.models import (
+    Language, ParameterDef, LanguageParameterEval, Question, Answer,
+    ParamSchema, ParamType, ParamLevelOfComparison
+)
 
 
-def _build_tablea_questions_matrix():
-    """
-    Costruisce intestazioni e valori della seconda Table A basata sulle QUESTION:
-    - una question per riga
-    - per ogni lingua: valore "YES"/"NO" se esiste una Answer, altrimenti vuoto.
-    Struttura identica a _build_tablea_matrix per poter riusare template e export:
-      - headers: ["Label", "Name", "Implication", <lang ids...>]
-        * Label        -> question.id
-        * Name         -> question.text
-        * Implication  -> parameter_id (del parametro a cui appartiene la question)
-    """
-    languages = list(
-        Language.objects.order_by("position").only(
-            "id", "name_full", "position", "top_level_family", "historical_language"
-        )
-    )
+# --- HELPER: LOGICA DI FILTRO (Il "Cuore" dei dati) ---
 
-    # Ordiniamo le question per parametro.position e poi per id, così l'output è stabile.
-    questions = list(
-        Question.objects.filter(parameter__is_active=True)
-        .select_related("parameter")
-        .order_by("parameter__position", "id")
-        .only("id", "text", "parameter")
-    )
+def get_tablea_filtered_data(request):
+    """Estrae lingue e righe basandosi sui filtri della UI e sui checkbox selezionati."""
+    view_mode = request.GET.get("view", "params").strip().lower()
 
-    # Recuperiamo tutte le Answer yes/no per le question attive
-    ans_rows = Answer.objects.filter(question__in=questions).values(
-        "language_id", "question_id", "response_text"
-    )
-    # Mappa (question_id, language_id) -> "YES"/"NO"
-    ax = {}
-    for row in ans_rows:
-        val = (row["response_text"] or "").lower()
-        if val == "yes":
-            v = "YES"
-        elif val == "no":
-            v = "NO"
-        else:
-            v = ""
-        ax[(row["question_id"], row["language_id"])] = v
+    # 1. Filtro Lingue
+    languages = Language.objects.all().order_by("position")
+    f_lang_family = request.GET.get("f_lang_family")
+    f_lang_top_family = request.GET.get("f_lang_top_family")
+    f_lang_grp = request.GET.get("f_lang_grp")
+    f_lang_hist = request.GET.get("f_lang_hist")
 
-    headers = ["Label", "Name", "Implication"] + [lang.id for lang in languages]
+    if f_lang_top_family: languages = languages.filter(top_level_family=f_lang_top_family)
+    if f_lang_family: languages = languages.filter(family=f_lang_family)
+    if f_lang_grp: languages = languages.filter(grp=f_lang_grp)
+    if f_lang_hist == "yes": languages = languages.filter(historical_language=True)
+    if f_lang_hist == "no": languages = languages.filter(historical_language=False)
 
-    export_rows = []
-    for q in questions:
-        # Usiamo parameter_id nella colonna "Implication" per mantenere la stessa struttura del template
-        param_label = q.parameter_id or ""
-        cells = [ax.get((q.id, lang.id), "") for lang in languages]
-        export_rows.append([q.id, q.text, param_label] + cells)
+    languages = list(languages)
 
-    # Per coerenza con _build_tablea_matrix, ritorniamo la lista Question come "parameters"
-    # (verrà usata solo per gli header nei file di export, non nel template).
-    return headers, export_rows, languages, questions
+    # 2. Filtro Item e Selezione Manuale
+    selected_ids = request.GET.getlist("selected_ids")
 
+    if view_mode == "questions":
+        items = Question.objects.filter(parameter__is_active=True).select_related("parameter").order_by(
+            "parameter__position", "id")
+        f_q_template = request.GET.get("f_q_template")
+        f_q_stop = request.GET.get("f_q_stop")
+        if f_q_template: items = items.filter(template_type=f_q_template)
+        if f_q_stop == "yes": items = items.filter(is_stop_question=True)
+        if f_q_stop == "no": items = items.filter(is_stop_question=False)
+    else:
+        items = ParameterDef.objects.filter(is_active=True).order_by("position")
+        f_p_schema = request.GET.get("f_p_schema")
+        f_p_type = request.GET.get("f_p_type")
+        f_p_level = request.GET.get("f_p_level")
+        if f_p_schema: items = items.filter(schema=f_p_schema)
+        if f_p_type: items = items.filter(param_type=f_p_type)
+        if f_p_level: items = items.filter(level_of_comparison=f_p_level)
+
+    if selected_ids:
+        items = items.filter(id__in=selected_ids)
+
+    items = list(items)
+
+    # 3. Costruzione Matrice
+    matrix = []
+    if view_mode == "questions":
+        ans_dict = {(a.question_id, a.language_id): a.response_text for a in Answer.objects.filter(question__in=items)}
+        for q in items:
+            cells = [{"val": (ans_dict.get((q.id, l.id)) or "").upper(), "lang_id": l.id} for l in languages]
+            matrix.append({"p": q, "cells": cells})
+    else:
+        eval_dict = {
+            (e.language_parameter.parameter_id, e.language_parameter.language_id): e.value_eval
+            for e in LanguageParameterEval.objects.filter(language_parameter__parameter__in=items)
+        }
+        for p in items:
+            cells = [{"val": eval_dict.get((p.id, l.id)) or "", "lang_id": l.id} for l in languages]
+            matrix.append({"p": p, "cells": cells})
+
+    return languages, matrix, view_mode
+
+
+# --- VIEWS: PAGINA PRINCIPALE ED EXPORT STANDARD ---
 
 @login_required
 def tablea_index(request):
-    """
-    Pagina Table A con switch tra:
-    - view = 'params'    -> Table A per parametri (+/-/0)
-    - view = 'questions' -> Table A per question (YES/NO)
-    I filtri family / historical si applicano allo stesso modo in entrambe le viste.
-    """
-    view_mode = (request.GET.get("view") or "params").strip().lower()
-    if view_mode not in {"params", "questions"}:
-        view_mode = "params"
-
-    if view_mode == "questions":
-        headers, export_rows, languages_all, items = _build_tablea_questions_matrix()
-    else:
-        headers, export_rows, languages_all, items = _build_tablea_matrix()
-
-    # Filtri già esistenti
-    selected_family = request.GET.get("family", "").strip()
-    selected_historical = request.GET.get("historical", "all").strip()
-
-    families_qs = (
-        Language.objects.values_list("top_level_family", flat=True)
-        .distinct()
-        .order_by("top_level_family")
-    )
-    families = [f for f in families_qs]
-
-    def _match(lang: Language) -> bool:
-        if selected_family and (lang.top_level_family or "") != selected_family:
-            return False
-        if selected_historical == "yes" and not lang.historical_language:
-            return False
-        if selected_historical == "no" and lang.historical_language:
-            return False
-        return True
-
-    # Sottinsieme di lingue che soddisfa i filtri
-    languages = [l for l in languages_all if _match(l)]
-
-    # Mappiamo gli indici (nelle colonne) delle lingue mantenute
-    idx_map = [i for i, l in enumerate(languages_all) if l in languages]
-
-    # rows_for_template: struttura identica a prima, ma la "p" è generica:
-    # - view=params    -> p.id/name/implicational_condition = parametro
-    # - view=questions -> p.id/name/implicational_condition = question
-    rows_for_template = []
-    for r in export_rows:
-        label, name, implication, *vals = r
-        filtered_vals = [vals[i] for i in idx_map] if idx_map else []
-        rows_for_template.append(
-            {
-                "p": type(
-                    "P",
-                    (),
-                    {"id": label, "name": name, "implicational_condition": implication},
-                )(),
-                "cells": filtered_vals,
-            }
-        )
-
-    ctx = {
-        "languages": languages,
-        # "items" può essere la lista di ParameterDef o di Question (usata solo per export/diagnostica se serve)
-        "items": items,
-        "rows": rows_for_template,
-        "families": families,
-        "selected_family": selected_family,
-        "selected_historical": selected_historical,
-        "view": view_mode,  # usato per lo switch nel template e per aggiungere ?view=...
+    languages, rows, view_mode = get_tablea_filtered_data(request)
+    ctx_options = {
+        "opt_top_families": Language.objects.exclude(top_level_family="").values_list("top_level_family",
+                                                                                      flat=True).distinct().order_by(
+            "top_level_family"),
+        "opt_families": Language.objects.exclude(family="").values_list("family", flat=True).distinct().order_by(
+            "family"),
+        "opt_groups": Language.objects.exclude(grp="").values_list("grp", flat=True).distinct().order_by("grp"),
+        "opt_schemas": ParamSchema.objects.values_list("label", flat=True).order_by("label"),
+        "opt_types": ParamType.objects.values_list("label", flat=True).order_by("label"),
+        "opt_levels": ParamLevelOfComparison.objects.values_list("label", flat=True).order_by("label"),
+        "opt_templates": Question.objects.exclude(template_type="").values_list("template_type",
+                                                                                flat=True).distinct().order_by(
+            "template_type"),
     }
-    return render(request, "tablea/index.html", ctx)
-
-
-@login_required
-def tablea_export_csv(request):
-    """
-    Export transposto:
-    - se view=params    -> righe = lingue, colonne = parametri (+/-/0)
-    - se view=questions -> righe = lingue, colonne = questions (YES/NO)
-    """
-    view_mode = (request.GET.get("view") or "params").strip().lower()
-    if view_mode not in {"params", "questions"}:
-        view_mode = "params"
-
-    if view_mode == "questions":
-        headers, export_rows, languages, items = _build_tablea_questions_matrix()
-    else:
-        headers, export_rows, languages, items = _build_tablea_matrix()
-
-    # items = lista di colonne (ParameterDef oppure Question)
-    transposed_header = ["Language"] + [getattr(p, "id", "") for p in items]
-
-    transposed_rows = []
-    for lang_index, lang in enumerate(languages):
-        # Ogni riga di export_rows ha: [label, name, implication, val_lang0, val_lang1, ...]
-        row_values_for_items = [
-            export_rows[item_idx][3 + lang_index]  # indice 3 = dopo label/name/implication
-            for item_idx in range(len(items))
-        ]
-        transposed_rows.append([lang.id] + row_values_for_items)
-
-    response = HttpResponse(content_type="text/csv; charset=utf-8")
-    filename = "tableA_questions.csv" if view_mode == "questions" else "tableA.csv"
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
-    response.write("\ufeff")  # BOM per Excel
-
-    writer = csv.writer(response, delimiter=",", quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(transposed_header)
-    writer.writerows(transposed_rows)
-    return response
+    return render(request, "tablea/index.html",
+                  {**ctx_options, "languages": languages, "rows": rows, "view": view_mode, "params": request.GET})
 
 
 @login_required
 def tablea_export_xlsx(request):
-    """
-    Export Excel "non transposto":
-    - righe = parametri o questions
-    - colonne = Label, Name, Implication/Parameter, <lingue ...>
-    """
     from openpyxl import Workbook
-    from openpyxl.styles import Font
-    from openpyxl.utils import get_column_letter
-
-    view_mode = (request.GET.get("view") or "params").strip().lower()
-    if view_mode not in {"params", "questions"}:
-        view_mode = "params"
-
-    if view_mode == "questions":
-        headers, export_rows, *_ = _build_tablea_questions_matrix()
-    else:
-        headers, export_rows, *_ = _build_tablea_matrix()
-
+    languages, rows, view_mode = get_tablea_filtered_data(request)
     wb = Workbook()
     ws = wb.active
-    ws.title = "Table A"
-
-    # Intestazioni
-    ws.append(headers)
-    for cell in ws[1]:
-        cell.font = Font(bold=True)
-
-    # Dati
-    for row in export_rows:
-        ws.append(row)
-
-    # Fissa la prima riga
-    ws.freeze_panes = "A2"
-
-    # Larghezze colonne min/max base
-    for col_idx, header in enumerate(headers, start=1):
-        col_letter = get_column_letter(col_idx)
-        ws.column_dimensions[col_letter].width = max(8, min(40, len(str(header)) + 2))
+    ws.append(["Label", "Name", "Implication"] + [l.id for l in languages])
+    for r in rows:
+        name_val = getattr(r['p'], 'name', getattr(r['p'], 'text', ''))
+        impl_val = r['p'].parameter_id if view_mode == "questions" else getattr(r['p'], 'implicational_condition', '')
+        ws.append([r['p'].id, name_val, impl_val] + [c['val'] for c in r['cells']])
 
     buffer = BytesIO()
     wb.save(buffer)
-    buffer.seek(0)
-
-    response = HttpResponse(
-        buffer.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    filename = "tableA_questions.xlsx" if view_mode == "questions" else "tableA.xlsx"
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response = HttpResponse(buffer.getvalue(),
+                            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="tableA_{view_mode}.xlsx"'
     return response
 
 
-import io
-import zipfile
-from collections import defaultdict
-# ==========================
-# NUOVO: Export distances zip
-# ==========================
-
-def _dist_hamming(P1, P2) -> float:
-    idc = 0.0
-    dif = 0.0
-    for i in range(len(P1)):
-        if (P1[i] == P2[i] == "+") or (P1[i] == P2[i] == "-"):
-            idc += 1
-        elif (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
-            dif += 1
-    denom = dif + idc
-    return 0.0 if denom == 0 else (dif / denom)
+@login_required
+def tablea_export_csv(request):
+    languages, rows, view_mode = get_tablea_filtered_data(request)
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="tableA_{view_mode}_transposed.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Language ID", "Top Family", "Family"] + [r['p'].id for r in rows])
+    for i, lang in enumerate(languages):
+        writer.writerow([lang.id, lang.top_level_family, lang.family] + [r['cells'][i]['val'] for r in rows])
+    return response
 
 
-def _dist_jaccard(P1, P2, identity: str) -> float:
-    idc = 0.0
-    dif = 0.0
-    for i in range(len(P1)):
-        if P1[i] == P2[i] == identity:
-            idc += 1
-        elif (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
-            dif += 1
-    denom = dif + idc
-    return 0.0 if denom == 0 else (dif / denom)
+# --- ANALISI COMPUTAZIONALE: DISTANZE E DENDROGRAMMA ---
+
+def calc_hamming(p1, p2):
+    identities = sum(1 for a, b in zip(p1, p2) if a == b and a in ['+', '-'])
+    differences = sum(1 for a, b in zip(p1, p2) if (a == '+' and b == '-') or (a == '-' and b == '+'))
+    return differences / (differences + identities) if (differences + identities) > 0 else 0
 
 
-def _distance_matrix_text(dist_func, data, languages, identity: str | None = None) -> str:
-    dist = defaultdict(dict)
-    for lang1 in data:
-        for lang2 in data:
-            if identity is None:
-                v = dist_func(lang1, lang2)
-            else:
-                v = dist_func(lang1, lang2, identity)
-            dist[lang1[0]][lang2[0]] = round(v, 3)
-
-    lines = []
-    lines.append("Language\t" + "\t".join(languages))
-    for lang in languages:
-        lines.append(lang + "\t" + "\t".join(str(dist[lang][lang2]) for lang2 in languages))
-    return "\n".join(lines) + "\n"
+def calc_jaccard_plus(p1, p2):
+    identities = sum(1 for a, b in zip(p1, p2) if a == b == '+')
+    differences = sum(1 for a, b in zip(p1, p2) if (a == '+' and b == '-') or (a == '-' and b == '+'))
+    return differences / (differences + identities) if (differences + identities) > 0 else 0
 
 
-def _build_tablea_transposed_for_distances(request):
-    """
-    Produce i dati nello stesso "formato logico" dello script distance.py:
-    lista di righe: [LANG_ID, v1, v2, ...] con v in {+,-,0}
-    - Usa SOLO la Table A parametri.
-    - Applica gli stessi filtri (family/historical) della pagina Table A.
-    """
-    headers, export_rows, languages_all, items = _build_tablea_matrix()
 
-    selected_family = request.GET.get("family", "").strip()
-    selected_historical = request.GET.get("historical", "all").strip()
 
-    def _match(lang: Language) -> bool:
-        if selected_family and (lang.top_level_family or "") != selected_family:
-            return False
-        if selected_historical == "yes" and not lang.historical_language:
-            return False
-        if selected_historical == "no" and lang.historical_language:
-            return False
-        return True
+# --- NUOVA FUNZIONE PER GENERARE EXCEL ---
 
-    languages = [l for l in languages_all if _match(l)]
-    idx_map = [i for i, l in enumerate(languages_all) if l in languages]
+def generate_matrix_xlsx(languages, rows, dist_func):
+    """Genera un file Excel in memoria contenente la matrice di distanza"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Distance Matrix"
 
-    transposed = []
-    for lang_pos, lang in enumerate(languages):
-        original_lang_index = idx_map[lang_pos]
-        vals = []
-        for param_row in export_rows:
-            v = param_row[3 + original_lang_index]
-            # normalizza: vuoto -> "0" (viene ignorato dalle metriche se non +/-)
-            vals.append(v if v in {"+", "-", "0"} else "0")
-        transposed.append([lang.id] + vals)
+    # Preparazione dei dati (transposizione lingue/parametri)
+    lang_data = [[r['cells'][i]['val'] for r in rows] for i in range(len(languages))]
 
-    return [l.id for l in languages], transposed
+    # Header: "Language" + lista degli ID lingue
+    headers = ["Language"] + [l.id for l in languages]
+    ws.append(headers)
+
+    # Riempimento delle righe
+    for i, l1 in enumerate(languages):
+        row_vals = [l1.id]  # Prima colonna: ID della lingua di riga
+        for j, l2 in enumerate(languages):
+            d = dist_func(lang_data[i], lang_data[j])
+            row_vals.append(round(d, 3))
+        ws.append(row_vals)
+
+    # Salvataggio nel buffer
+    out_buf = BytesIO()
+    wb.save(out_buf)
+    out_buf.seek(0)
+    return out_buf.read()
 
 
 @login_required
 def tablea_export_distances_zip(request):
-    """
-    Genera uno zip con 6 matrici di distanza (come distance.py) calcolate
-    sulla Table A parametri attualmente visualizzata (filtri inclusi).
-    """
-    view_mode = (request.GET.get("view") or "params").strip().lower()
+    view_mode = request.GET.get("view", "params").strip().lower()
+
     if view_mode != "params":
-        # distanza definita SOLO per Table A parametri (+/-/0)
-        return HttpResponse("Distances export is available only in Parameters view.", status=400)
+        return HttpResponse("Distances only for Parameters View", status=400)
 
-    languages, original = _build_tablea_transposed_for_distances(request)
+    languages, rows, _ = get_tablea_filtered_data(request)
 
-    # Variante: 0 -> -
-    zero_to_minus = []
-    for row in original:
-        new_row = [row[0]]
-        for char in row[1:]:
-            new_row.append("-" if char == "0" else char)
-        zero_to_minus.append(new_row)
+    if not languages or not rows:
+        return HttpResponse("No data available", status=400)
 
-    files = {
-        "hamming.txt": _distance_matrix_text(_dist_hamming, original, languages),
-        "jaccard[+].txt": _distance_matrix_text(_dist_jaccard, original, languages, identity="+"),
-        "jaccard[-].txt": _distance_matrix_text(_dist_jaccard, original, languages, identity="-"),
-        "hamming[NO_0].txt": _distance_matrix_text(_dist_hamming, zero_to_minus, languages),
-        "jaccard[+_NO_0].txt": _distance_matrix_text(_dist_jaccard, zero_to_minus, languages, identity="+"),
-        "jaccard[-_NO_0].txt": _distance_matrix_text(_dist_jaccard, zero_to_minus, languages, identity="-"),
-    }
-
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for name, content in files.items():
-            zf.writestr(name, content)
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        # Ora inseriamo file .xlsx invece di .txt
+        zf.writestr("distances_hamming.xlsx", generate_matrix_xlsx(languages, rows, calc_hamming))
+        zf.writestr("distances_jaccard_plus.xlsx", generate_matrix_xlsx(languages, rows, calc_jaccard_plus))
 
     buf.seek(0)
-    resp = HttpResponse(buf.getvalue(), content_type="application/zip")
-    resp["Content-Disposition"] = 'attachment; filename="tableA_distances.zip"'
-    return resp
+    response = HttpResponse(buf.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="distances_excel.zip"'
+    return response
+
+
+@login_required
+def tablea_export_dendrogram(request):
+    languages, rows, _ = get_tablea_filtered_data(request)
+    if not languages: return HttpResponse("No data")
+
+    # Matrice Hamming per il dendrogramma
+    lang_data = [[r['cells'][i]['val'] for r in rows] for i in range(len(languages))]
+    matrix_data = [[calc_hamming(lang_data[i], lang_data[j]) for j in range(len(languages))] for i in
+                   range(len(languages))]
+
+    Z = linkage(squareform(matrix_data), method='average')
+
+    plt.figure(figsize=(10, 8))
+    dendrogram(Z, labels=[l.id for l in languages], orientation='left')
+    plt.title("Dendrogram UPGMA (Hamming)")
+    plt.tight_layout()
+
+    img_buf = BytesIO()
+    plt.savefig(img_buf, format='png', dpi=300)
+    plt.close()
+    img_buf.seek(0)
+
+    response = HttpResponse(img_buf.read(), content_type="image/png")
+    response["Content-Disposition"] = 'attachment; filename="dendrogram_upgma.png"'
+    return response

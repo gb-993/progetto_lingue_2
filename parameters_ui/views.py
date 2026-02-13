@@ -24,6 +24,8 @@ from core.models import (
     Motivation,
     ParamSchema,
     ParamType,
+    ParamLevelOfComparison,
+
 )
 
 from .forms import (
@@ -109,6 +111,7 @@ def parameter_list(request):
             | Q(implicational_condition__icontains=q)
             | Q(schema__icontains=q)
             | Q(param_type__icontains=q)
+            | Q(level_of_comparison__icontains=q)
         )
     qs = qs.annotate(
         questions_count=Count("questions", filter=Q(questions__is_stop_question=False), distinct=True),
@@ -133,6 +136,7 @@ def parameter_add(request):
 
     schema_options = list(ParamSchema.objects.order_by("label").values_list("label", flat=True))
     type_options   = list(ParamType.objects.order_by("label").values_list("label", flat=True))
+    level_options = list(ParamLevelOfComparison.objects.order_by("label").values_list("label", flat=True))
 
     return render(
         request,
@@ -576,6 +580,7 @@ from core.models import (
     Example,
     AnswerMotivation,
     QuestionAllowedMotivation,
+    ParamLevelOfComparison,
 )
 
 @login_required
@@ -798,13 +803,33 @@ def lookups_manage(request):
                 messages.success(request, "Type deleted.")
                 return redirect("param_lookups_manage")
 
+            if action == "add_level":
+                ParamLevelOfComparison.objects.create(
+                    label=(request.POST.get("label") or "").strip(),
+                )
+                messages.success(request, "Level added.")
+                return redirect("param_lookups_manage")
+
+            if action == "del_level":
+                pk = request.POST.get("id")
+                ParamLevelOfComparison.objects.filter(pk=pk).delete()
+                messages.success(request, "Level deleted.")
+                return redirect("param_lookups_manage")
+
+
             messages.error(request, "Unknown action.")
         except Exception as e:
             messages.error(request, f"Operation failed: {e}")
 
     schemas = ParamSchema.objects.order_by("label")
     types = ParamType.objects.order_by("label")
-    return render(request, "parameters/lookups.html", {"schemas": schemas, "types": types})
+    levels = ParamLevelOfComparison.objects.order_by("label")
+
+    return render(request, "parameters/lookups.html", {
+        "schemas": schemas,
+        "types": types,
+        "levels": levels
+    })
 
 
 

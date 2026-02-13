@@ -1,10 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Questions{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Questions</li>
+{% endblock %}
+
+{% block content %}
+
+<header class="dashboard-hero">
+  <h1>Questions</h1>
+</header>
+
+{# Integrazione coerente della toolbar #}
+{% include "_toolbar_search.html" with q=q placeholder="Search questions or parameters…" %}
+
+<h2 id="table-heading" class="sr-only">Question list</h2>
+
+<table class="table" role="table" aria-describedby="table-caption">
+  <caption id="table-caption" class="sr-only">
+    Global list of questions ordered by parameter position.
+    {% if questions %} Total items: {{ questions|length }}.{% endif %}
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">ID</th>
+      <th scope="col">Text Snippet</th>
+      <th scope="col">Type</th>
+      <th scope="col" style="text-align: right;">Actions</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for q in questions %}
+    <tr>
+      <td data-label="ID">
+          <strong>{{ q.id }}</strong>
+      </td>
+      <td data-label="Text">
+        {{ q.text|truncatechars:100 }}
+      </td>
+      <td data-label="Type">
+        {% if q.is_stop_question %}
+          <span style="color: var(--danger, #d9534f);">Stop</span>
+        {% else %}
+          <span class="muted">Standard</span>
+        {% endif %}
+      </td>
+      <td data-label="Actions" class="row-actions" style="text-align: right;">
+        <a class="btn" href="{% url 'question_edit' q.parameter.id q.id %}">Edit</a>
+        <a class="btn btn--danger" href="{% url 'question_delete' q.parameter.id q.id %}">Delete</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="5">
+        <p class="muted" role="status" aria-live="polite">No questions found.</p>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

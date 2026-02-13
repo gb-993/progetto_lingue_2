@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Add language{% endblock %}
-{% block breadcrumb %}Languages / Add{% endblock %}
+
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'parameter_list' %}">Languages</a>
+  </li>
+  <li aria-current="page">Add</li>
+{% endblock %}
+
 {% block content %}
   <div class="card">
     <h2 class="h3">Add language</h2>

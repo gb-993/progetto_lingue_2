@@ -2,7 +2,12 @@
 {% load static %}
 
 {% block title %}Account{% endblock %}
-{% block breadcrumb %}Accounts / {{ page_title }}{% endblock %}
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'accounts_list' %}">Accounts</a>
+  </li>
+  <li aria-current="page">{{ page_title }}</li>
+{% endblock %}
 
 {% block extra_head %}
   <script defer src="{% static 'js/account_languages.js' %}"></script>

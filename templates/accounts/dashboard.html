@@ -2,94 +2,268 @@
 {% load static %}
 
 {% block title %}Dashboard{% endblock %}
-{% block breadcrumb %}Dashboard{% endblock %}
+
 
 {% block content %}
 <div class="container dashboard" role="main">
+
   <header class="dashboard-hero">
-      <h1 style="margin-bottom: 0.2rem;">
-      Welcome back, {{ request.user.name|default:request.user.email }}!
-    </h1>
+    <h1>Welcome, {{ request.user.name|default:request.user.email }}</h1>
   </header>
 
-  <div class="dashboard-flex">
-    <nav class="dashboard-links-grid" role="navigation" aria-label="Dashboard shortcuts">
-      {# sempre visibili #}
-      <a class="dash-tile" href="{% url 'language_list' %}" aria-label="Open languages">
-        <span class="dash-tile-label">Languages</span>
-      </a>
+  {% if is_admin %}
+    <div class="dashboard-grid-admin">
 
-      <a class="dash-tile" href="{% url 'instruction' %}" aria-label="Open instruction">
-        <span class="dash-tile-label">Instructions</span>
-      </a>
-      
-      <a class="dash-tile" href="{% url 'glossary_list' %}" aria-label="Open glossary">
-        <span class="dash-tile-label">Glossary</span>
-      </a>
+      <div class="admin-counters">
 
-      <a class="dash-tile" href="{% url 'my_account' %}" aria-label="Open my account">
-        <span class="dash-tile-label">My Account</span>
-      </a>
+        <div class="card counter-card {% if pending_languages %}border-bad{% endif %}">
+          <h3 class="admin-label">Pending Approvals</h3>
+          <div class="admin-big-number">{{ pending_languages.count }}</div>
 
-      {% if is_admin %}
-        <a class="dash-tile" href="{% url 'parameter_list' %}" aria-label="Open parameters">
-          <span class="dash-tile-label">Parameters</span>
-        </a>
-
-        <a class="dash-tile" href="{% url 'parameters_graph' %}" aria-label="Open parameters graph">
-          <span class="dash-tile-label">Graph</span>
-        </a>
-
-
-        <a class="dash-tile" href="{% url 'tablea_index' %}" aria-label="Open Table A">
-          <span class="dash-tile-label">Table A</span>
-        </a>
-
-        <a class="dash-tile" href="{% url 'queries:home' %}" aria-label="Open queries">
-          <span class="dash-tile-label">Queries</span>
-        </a>
-
-        <a class="dash-tile" href="{% url 'submissions_list' %}" aria-label="Open submissions">
-          <span class="dash-tile-label">Submissions</span>
-        </a>
-
-        <a class="dash-tile" href="{% url 'accounts_list' %}" aria-label="Open accounts">
-          <span class="dash-tile-label">Accounts</span>
-        </a>
-      {% endif %}
-    </nav>
-
-    {% if is_admin %}
-      <aside class="card news-box collapsed" aria-labelledby="last-changes-heading">
-        <h3 id="last-changes-heading">Latest changes to parameters and questions</h3>
-
-        <ul class="list news-list">
-          {% for log in recent_param_changes %}
-            <li class="news-item">
-              <strong>{{ log.parameter_id }}</strong>
-              <span class="muted">— {{ log.changed_at|date:"Y-m-d H:i" }}</span><br>
-              <span class="muted small">by {{ log.changed_by.name }} {{ log.changed_by.surname|default:"" }}</span>
-              {% if log.recap %}
-                <p class="mt-1 small">{{ log.recap }}</p>
-              {% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-
-        <div class="news-toggle-row">
-          <button
-            class="news-toggle-btn"
-            type="button"
-            aria-expanded="false"
-            aria-controls="last-changes-heading"
-          >
-            Show more
-          </button>
+          {% if pending_languages %}
+            <div class="mt-2">
+              {% for lang in pending_languages %}
+                <div style="margin-bottom: 0.5rem;">
+                  <a href="{% url 'language_data' lang.id %}" class="link-action" style="font-weight: 600;">
+                    ➜ Review {{ lang.name_full }}
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="muted small mt-1">No pending reviews.</p>
+          {% endif %}
         </div>
-      </aside>
-    {% endif %}
 
-  </div>
+        <div class="card counter-card">
+          <h3 class="admin-label">Languages Completed</h3>
+          <div class="admin-big-number">
+            {{ stats.completed_languages }}
+            <span class="numerator-small">
+               / {{ stats.languages }}
+            </span>
+          </div>
+
+          <div class="progress-track">
+            <div class="progress-fill" style="width: {% widthratio stats.completed_languages stats.languages 100 %}%;"></div>
+          </div>
+        </div>
+
+        <div class="card counter-card">
+          <h3 class="admin-label">Total Answers Recorded</h3>
+          <div class="admin-big-number">
+            {{ stats.answers }}
+            <span class="numerator-small">
+               / {{ stats.total_answers }}
+            </span>
+          </div>
+            <div class="progress-track">
+            <div class="progress-fill" style="width: {% widthratio stats.answers stats.total_answers 100 %}%;"></div>
+          </div>
+        </div>
+
+      </div> <div class="admin-activity">
+        <section class="card h-full" style="padding: 0; display: flex; flex-direction: column;">
+          <div style="padding: 2rem 2rem 1rem;">
+            <h3 class="admin-label">Latest Changes</h3>
+          </div>
+
+          <div style="flex-grow: 1; overflow: auto;">
+            <table class="table" style="margin: 0; width: 100%;">
+              <thead style="background: var(--surface-2);">
+                <tr>
+                  <th style="padding-left: 2rem;">Param</th>
+                  <th>By</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in recent_param_changes %}
+                  <tr>
+                    <td style="padding-left: 2rem; font-weight: bold;">{{ log.parameter_id }}</td>
+                    <td>{{ log.changed_by.name|default:log.changed_by.email }}</td>
+                    <td class="muted">{{ log.changed_at|date:"d M, H:i" }}</td>
+                  </tr>
+                {% empty %}
+                   <tr>
+                     <td colspan="3" style="padding: 2rem; text-align: center;" class="muted">No recent changes found.</td>
+                   </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div> </div>
+
+  {% elif request.user.role == 'user' %}
+
+    <section class="section">
+      <h3>Your Assigned Languages</h3>
+      <div class="projects-list">
+        {% for item in user_projects %}
+          <a href="{% url 'language_data' item.lang.id %}" class="card project-item-simple">
+
+            <div class="project-header">
+              <strong>{{ item.lang.name_full }} ({{ item.lang.id }})</strong>
+              <span class="muted">{{ item.progress }}%</span>
+            </div>
+
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: {{ item.progress }}%;"></div>
+            </div>
+
+            {% if item.has_rejection %}
+              <div class="alert-inline mt-1">⚠️ Needs correction</div>
+            {% endif %}
+
+          </a>
+        {% empty %}
+          <div class="card muted">No languages assigned to your account.</div>
+        {% endfor %}
+      </div>
+    </section>
+
+  {% endif %}
+
 </div>
-{% endblock %}
 
+<style>
+/* =========================================
+   STILI CONDIVISI / UTILITÀ
+   ========================================= */
+.h-full { height: 100%; }
+.muted { color: #6c757d; }
+
+/* Stile per il denominatore piccolo (es. "/ 100") */
+.numerator-small {
+  font-size: 0.5em;
+  color: #6c757d;
+  font-weight: 400;
+  vertical-align: baseline;
+}
+
+/* Stile barre progresso Admin */
+.progress-track {
+  background: #eee;
+  height: 4px;
+  border-radius: 2px;
+  margin-top: 5px;
+  width: 100%;
+}
+.progress-fill {
+  background: var(--brand, #007bff);
+  height: 100%;
+}
+
+/* =========================================
+   STILI ADMIN DASHBOARD (Griglia 50/50)
+   ========================================= */
+.dashboard-grid-admin {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 50% sinistra, 50% destra */
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.admin-counters {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-activity {
+  height: 100%; /* Forza l'altezza per allinearsi ai contatori */
+}
+
+/* Card KPI Admin */
+.counter-card {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.admin-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #888;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.admin-big-number {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-main, inherit);
+  margin-bottom: 0.5rem;
+}
+
+/* Responsività Admin */
+@media (max-width: 900px) {
+  .dashboard-grid-admin {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================
+   STILI USER DASHBOARD
+   ========================================= */
+.projects-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.project-item-simple {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.25rem;
+  transition: transform 0.15s ease;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.project-item-simple:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand);
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar-bg {
+  background: var(--surface-2);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: var(--ok);
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.alert-inline {
+  margin-top: auto;
+  padding-top: 1rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #ff4d4d;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+</style>
+{% endblock %}

@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Parameters{% endblock %}
-{% block breadcrumb %}Parameters{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Parameters</li>
+{% endblock %}
 
 {% block content %}
-
 <header class="dashboard-hero">
   <h1>Parameters</h1>
 </header>
@@ -23,6 +24,7 @@
         <th scope="col">Name</th>
         <th scope="col">Schema</th>   
         <th scope="col">Type</th>
+        <th scope="col">Lvl comparison</th> ```
         <th scope="col">#Q</th>
         <th scope="col">#QS</th>
         <th scope="col">Status</th>
@@ -37,6 +39,7 @@
         <td data-label="Name">{{ p.name }}</td>
         <td data-label="Schema">{{ p.schema|default:"—" }}</td>
         <td data-label="Type">{{ p.param_type|default:"—" }}</td>
+      <td data-label="Lvl comparison">{{ p.level_of_comparison|default:"—" }}</td> ```
         <td data-label="#Q">{{ p.questions_count  }}</td>
         <td data-label="#Stop">{{ p.stop_count }}</td>
         <td data-label="Status">

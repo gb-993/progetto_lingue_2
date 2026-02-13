@@ -1,8 +1,16 @@
 {% extends "base.html" %} 
 {% load static %}
-
 {% block title %}Language data{% endblock %}
-{% block breadcrumb %}Languages / {{ language.id }} / Data{% endblock %}
+
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'language_list' %}">Languages</a>
+  </li>
+  <li>
+    <a href="{% url 'language_edit' language.id %}">{{ language.id }}</a>
+  </li>
+  <li aria-current="page">Data</li>
+{% endblock %}
 
 {% block content %}
 <main class="{% with s=lang_status.overall %}{% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}is-readonly{% endif %}{% endwith %}">
@@ -14,7 +22,7 @@
 
     <!-- Blocco metadati lingua -->
     <div style="flex:1 1 16rem; max-width:32rem; font-size:.9rem; line-height:1.4;">
-    <dl class="language-meta-grid" style="margin:0;">
+    <dl  style="margin:0;">
         {# Glottocode #}
         <dt style="font-weight:600;">Glottocode</dt>
         <dd>
@@ -30,6 +38,26 @@
         <dd>
           {% if language.isocode %}
             {{ language.isocode }}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </dd>
+
+    {# latitude #}
+        <dt style="font-weight:600;">Latitude</dt>
+        <dd>
+          {% if language.latitude %}
+            {{ language.latitude }}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </dd>
+
+        {# longitude #}
+        <dt style="font-weight:600;">Longitude</dt>
+        <dd>
+          {% if language.longitude %}
+            {{ language.longitude }}
           {% else %}
             <span class="muted">—</span>
           {% endif %}
@@ -928,4 +956,25 @@ document.addEventListener('click', function(e){
 });
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const hash = window.location.hash;
+  if (hash) {
+    const targetId = hash.substring(1);
+
+    // Cerca il bottone della nav che punta a questo ID
+    const btn = document.querySelector(`.param-btn[data-target="${targetId}"]`);
+
+    if (btn) {
+      btn.click();
+        setTimeout(() => {
+        const section = document.getElementById(targetId);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }
+});
+</script>
 {% endblock %}

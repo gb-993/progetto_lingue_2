@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Motivations{% endblock %}
-{% block breadcrumb %}Parameters / Motivations{% endblock %}
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'parameter_list' %}">Parameters</a>
+  </li>
 
+  <li aria-current="page">Motivations {{ p.id }}</li>
+{% endblock %}
 {% block content %}
 <section class="card">
   <h2>Motivations</h2>

@@ -27,7 +27,6 @@
 
 <body class="{% block body_class %}{% endblock %}">
 
-  <!-- HEADER -->
   <header class="site-header">
     <div class="container">
       <h1 class="site-title">
@@ -39,7 +38,7 @@
 <nav class="nav" aria-label="Main">
   <ul class="nav-list">
 
-    {# Dashboard #}
+    {# 1. DASHBOARD: Sempre visibile per tutti (Admin, User, Public) #}
     <li>
       <a class="btn {% if urln == 'dashboard' %}is-current{% endif %}"
          href="{% url 'dashboard' %}"
@@ -48,98 +47,40 @@
       </a>
     </li>
 
+    {# 2. MENU OPERATIVO: Visibile solo a Admin e User (Nascosto per Public) #}
+    {% if request.user.role != 'public' %}
+
       {# Languages #}
-    <li>
-      <a class="btn {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}is-current{% endif %}"
-         href="{% url 'language_list' %}"
-         {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}aria-current="page"{% endif %}>
-         Languages
-      </a>
-    </li>
+      <li>
+        <a class="btn {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}is-current{% endif %}"
+           href="{% url 'language_list' %}">
+           Languages
+        </a>
+      </li>
 
+      {# Sezione solo Admin #}
       {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+        <li><a class="btn {% if urln == 'parameter_list' %}is-current{% endif %}" href="{% url 'parameter_list' %}">Parameters</a></li>
+        <li><a class="btn {% if urln == 'questions_list' %}is-current{% endif %}" href="{% url 'questions_list' %}">Questions</a></li>
+        <li><a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}" href="{% url 'parameters_graph' %}">Network</a></li>
+        <li><a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}" href="{% url 'tablea_index' %}">Table A</a></li>
+        <li><a class="btn {% if urln|slice:':7' == 'queries' %}is-current{% endif %}" href="{% url 'queries:home' %}">Filters</a></li>
+        <li><a class="btn {% if urln == 'submissions_list' %}is-current{% endif %}" href="{% url 'submissions_list' %}">Saved</a></li>
+        <li><a class="btn {% if urln == 'accounts_list' %}is-current{% endif %}" href="{% url 'accounts_list' %}">Accounts</a></li>
+      {% endif %}
 
-        {# Parameters #}
-      <li>
-        <a class="btn {% if urln == 'parameter_list' or urln == 'parameter_edit' or urln == 'parameter_add' %}is-current{% endif %}"
-           href="{% url 'parameter_list' %}"
-           {% if urln == 'parameter_list' or urln == 'parameter_edit' or urln == 'parameter_add' %}aria-current="page"{% endif %}>
-           Parameters
-        </a>
-      </li>
+      {# Instructions #}
+      <li><a class="btn {% if urln == 'instruction' %}is-current{% endif %}" href="{% url 'instruction' %}">Instructions</a></li>
 
-        {# Parameter Network #}
-      <li>
-        <a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}"
-           href="{% url 'parameters_graph' %}"
-           {% if urln == 'parameters_graph' %}aria-current="page"{% endif %}>
-           Parameter Network
-        </a>
-      </li>
+      {# Glossary #}
+      <li><a class="btn {% if urln == 'glossary_list' %}is-current{% endif %}" href="{% url 'glossary_list' %}">Glossary</a></li>
 
-        {# Table A #}
-      <li>
-        <a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}"
-           href="{% url 'tablea_index' %}"
-           {% if urln == 'tablea_index' %}aria-current="page"{% endif %}>
-           Table A
-        </a>
-      </li>
-
-        {# Queries #}
-      <li>
-        <a class="btn {% if urln|slice:':7' == 'queries' %}is-current{% endif %}"
-           href="{% url 'queries:home' %}"
-           {% if urln|slice:':7' == 'queries' %}aria-current="page"{% endif %}>
-           Filters
-        </a>
-      </li>
-
-        {# Submissions #}
-      <li>
-        <a class="btn {% if urln == 'submissions_list' or urln == 'submission_detail' %}is-current{% endif %}"
-           href="{% url 'submissions_list' %}"
-           {% if urln == 'submissions_list' or urln == 'submission_detail' %}aria-current="page"{% endif %}>
-           Saved languages
-        </a>
-      </li>
-
-        {# Accounts #}
-      <li>
-        <a class="btn {% if urln == 'accounts_list' or urln == 'account_edit' or urln == 'account_add' %}is-current{% endif %}"
-           href="{% url 'accounts_list' %}"
-           {% if urln == 'accounts_list' or urln == 'account_edit' or urln == 'account_add' %}aria-current="page"{% endif %}>
-            Accounts
-        </a>
-      </li>
     {% endif %}
-
-
-    {# Instructions #}
-    <li>
-      <a class="btn {% if urln == 'instruction' %}is-current{% endif %}"
-         href="{% url 'instruction' %}"
-         {% if urln == 'instruction' %}aria-current="page"{% endif %}>
-         Instructions
-      </a>
-    </li>
-
-    {# Glossary #}
-    <li>
-      <a class="btn {% if urln == 'glossary_list' or urln == 'glossary_edit' or urln == 'glossary_add' %}is-current{% endif %}"
-         href="{% url 'glossary_list' %}"
-         {% if urln == 'glossary_list' or urln == 'glossary_edit' or urln == 'glossary_add' %}aria-current="page"{% endif %}>
-         Glossary
-      </a>
-    </li>
-
-
-
 
     <li class="nav-spacer" aria-hidden="true"></li>
 
-        {# My Account #}
-      <li>
+    {# 3. MY ACCOUNT: Sempre visibile per tutti (inclusi i Public) #}
+    <li>
       <a class="btn {% if urln == 'my_account' %}is-current{% endif %}"
          href="{% url 'my_account' %}"
          {% if urln == 'my_account' %}aria-current="page"{% endif %}>
@@ -147,7 +88,7 @@
       </a>
     </li>
 
-    {# Logout and theme toggle #}
+    {# 4. LOGOUT E DARK/LIGHT MODE: Sempre visibili #}
     <li class="nav-session">
       <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
         <button class="btn" type="submit">Logout</button>
@@ -159,37 +100,37 @@
       {% endwith %}
 
       <nav class="breadcrumb" aria-label="Breadcrumb">
-        {% block breadcrumb %}<span>Dashboard</span>{% endblock %}
-      </nav>
+  <ol>
+    {# 1. Radice fissa: Sempre cliccabile #}
+    <li>
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+    </li>
+
+    {# 2. Blocco per le pagine figlie #}
+    {% block breadcrumb %}{% endblock %}
+  </ol>
+</nav>
+
     </div>
   </header>
 
-  <a href="#main" class="sr-only">Skip to main content</a>
-
-  <!-- FLASH MESSAGES -->
-  <section role="status" aria-live="polite" aria-atomic="true">
-    {% include "_partials/messages.html" %}
-  </section>
-
-  <!-- MAIN -->
   <main id="main" role="main" tabindex="-1">
     <div class="container">
       {% block content %}{% endblock %}
     </div>
   </main>
 
-  <!-- FOOTER -->
-  {% block footer %}
   <footer class="site-footer" role="contentinfo">
     <div class="container">
-      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+      {% if request.user.role == 'admin' or request.user.is_staff %}
         <p class="muted">© {% now "Y" %} – Admin area</p>
+      {% elif request.user.role == 'public' %}
+        <p class="muted">© {% now "Y" %} – Public area</p>
       {% else %}
         <p class="muted">© {% now "Y" %} – User area</p>
       {% endif %}
     </div>
   </footer>
-  {% endblock %}
 
   {% block extra_js %}{% endblock %}
   <script>
@@ -197,10 +138,7 @@
       var root = document.documentElement;
       var btn = document.getElementById('theme-toggle');
       if (!btn) return;
-
-      function currentTheme() {
-        return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-      }
+      function currentTheme() { return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
       function setTheme(next) {
         root.setAttribute('data-theme', next);
         root.style.colorScheme = next;
@@ -208,34 +146,34 @@
         updateButton(next);
       }
       function updateButton(theme) {
-        var icon = theme === 'dark'
-          ? 'Light'  
-          : 'Dark'; 
-        btn.textContent = icon;
+        btn.textContent = theme === 'dark' ? 'Light' : 'Dark';
         btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
-        btn.setAttribute('aria-label', 'Toggle theme');
-        btn.title = theme === 'dark' ? 'Light theme' : 'Dark theme';
       }
       updateButton(currentTheme());
       btn.addEventListener('click', function () {
         var next = currentTheme() === 'dark' ? 'light' : 'dark';
         setTheme(next);
       });
-      try {
-        if (!localStorage.getItem('theme') && window.matchMedia) {
-          var mq = window.matchMedia('(prefers-color-scheme: dark)');
-          mq.addEventListener('change', function (e) {
-            setTheme(e.matches ? 'dark' : 'light');
-          });
-        }
-      } catch (e) {}
     })();
   </script>
 
-  <button id="backToTop" class="back-to-top is-hidden" type="button" aria-label="Torna su" title="Back to top">↑</button>
+  <button id="backToTop" class="back-to-top is-hidden" type="button" aria-label="Back to top" title="Back to top">↑</button>
   <script src="{% static 'js/back_to_top.js' %}"></script>
   <script src="{% static 'js/messages.js' %}" defer></script>
-  <script src="{% static 'js/dashboard.js' %}"></script>
+
+  {% comment %}
+  <script>
+    (function() {
+      // Eseguiamo subito
+      var hero = document.querySelector('.dashboard-hero');
+      if (hero) {
+        // 'behavior: auto' forza il salto istantaneo senza animazione
+        hero.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+    })();
+  </script>
+  {% endcomment %}
+
 
 </body>
 </html>

@@ -1,12 +1,13 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import update_session_auth_hash
 from django.utils.translation import gettext as _
 from core.models import User, ParameterChangeLog, Submission, ParameterReviewFlag
 from .forms import AccountForm, MyAccountForm, MyPasswordChangeForm
+from core.models import Language, ParameterDef, Answer, Glossary, User, Question
 try:
     from core.models import Language
     HAS_LANGUAGE = True
@@ -21,25 +22,68 @@ def _is_admin(user: User) -> bool:
 
 @login_required
 def dashboard(request):
-    is_admin = (
-        request.user.is_staff
-        or request.user.is_superuser
-        or getattr(request.user, "role", "") == "admin"
-    )
+    user = request.user
+    role = getattr(user, "role", "user")
+    is_admin = _is_admin(user)
 
-    recent = []
+    total_langs = Language.objects.count()
+    total_questions = Question.objects.filter(parameter__is_active=True).count()
+    total_possible_answers = total_langs * total_questions
+
+    completed_langs_count = Language.objects.annotate(
+        valid_answers_count=Count('answers', filter=Q(
+            answers__response_text__in=['yes', 'no'],
+            answers__question__parameter__is_active=True
+        ))
+    ).filter(valid_answers_count__gte=total_questions).count()
+
+
+    # Statistiche generali
+    stats = {
+        "languages": Language.objects.count(),
+        "answers": Answer.objects.filter(response_text__in=["yes", "no"]).count(),
+        "total_answers": total_possible_answers,
+        "completed_languages": completed_langs_count,
+    }
+
+    if role == "public":
+        return render(request, "accounts/public_dashboard.html", {"stats": stats, "is_public": True})
+
+    ctx = {"is_admin": is_admin, "stats": stats}
+
+    # --- LOGICA ADMIN: 50/50 Layout ---
     if is_admin:
-        recent = (
+        # Recuperiamo le lingue che hanno risposte in attesa
+        ctx["pending_languages"] = Language.objects.filter(
+            answers__status="waiting_for_approval"
+        ).distinct()
+
+        ctx["recent_param_changes"] = (
             ParameterChangeLog.objects
             .select_related("parameter", "changed_by")
-            .only("parameter__id", "changed_at", "changed_by__email", "recap", "diff")
             .order_by("-changed_at")[:10]
         )
 
-    return render(request, "accounts/dashboard.html", {
-        "is_admin": is_admin,
-        "recent_param_changes": recent,
-    })
+    # --- LOGICA USER: Solo i suoi progetti ---
+    if role == "user":
+        total_q_count = Question.objects.filter(parameter__is_active=True).count()
+        # Ottimizzazione: una sola query per tutto il progresso
+        assigned_langs = user.m2m_languages.annotate(
+            done_count=Count('answers', filter=Q(answers__response_text__in=['yes', 'no'])),
+            has_reject=Count('answers', filter=Q(answers__status='rejected'))
+        )
+
+        user_projects = []
+        for lang in assigned_langs:
+            progress = int((lang.done_count / total_q_count) * 100) if total_q_count > 0 else 0
+            user_projects.append({
+                "lang": lang,
+                "progress": progress,
+                "has_rejection": lang.has_reject > 0,
+            })
+        ctx["user_projects"] = user_projects
+
+    return render(request, "accounts/dashboard.html", ctx)
 
 
 @login_required
@@ -58,6 +102,7 @@ def accounts_list(request):
     ctx = {
         "admins": qs.filter(role="admin"),
         "users": qs.filter(role="user"),
+        "public_users": qs.filter(role="public"),
     }
     return render(request, "accounts/list.html", ctx)
 

@@ -2,8 +2,16 @@
 {% load i18n %}
 {% load static %}
 
-{% block title %}{% if is_create %}Add parameter{% else %}Edit parameter{% endif %}{% endblock %}
-{% block breadcrumb %}Parameters / {% if is_create %}Add{% else %}{{ parameter.id }}{% endif %}{% endblock %}
+{% block title %}
+    {% if is_create %}Add parameter{% else %}Edit parameter{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'parameter_list' %}">Parameters</a>
+  </li>
+  <li aria-current="page">Edit Parameter {{ p.id }}</li>
+{% endblock %}
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
@@ -40,7 +48,8 @@
           "{{ form.position.html_name|escapejs }}"{% if form.warning_default %},
           "{{ form.warning_default.html_name|escapejs }}"{% endif %},
           "{{ form.schema.html_name|escapejs }}",
-          "{{ form.param_type.html_name|escapejs }}"
+          "{{ form.param_type.html_name|escapejs }}",
+          "{{ form.level_of_comparison.html_name|escapejs }}"
         ]'
         data-external-dirty="{% if external_dirty %}true{% else %}false{% endif %}"
         >
@@ -62,8 +71,7 @@
       </div>
     {% endif %}
 
-    <div style="display: flex; gap: 1rem; align-items: flex-end;">
-
+    <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
       <div class="form-row">
         <label for="{{ form.label.id_for_label }}">{{ form.label.label }}</label>
         {{ form.label }}
@@ -92,50 +100,53 @@
         {% endif %}
         {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
       </div>
-
     </div>
 
+    <div class="form-row">
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
+    </div>
 
-      <div class="form-row">
-        <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-        {{ form.name }}
-        {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
-      </div>
+    <div class="form-row">
+      <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
+      {{ form.short_description }}
+      {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
+    </div>
 
-      <div class="form-row">
-        <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
-        {{ form.short_description }}
-        {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
-      </div>
+    <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
 
-
-    <div style="display: flex; gap: 1rem;">
-      <div class="form-row" style="flex: 1;">
+      <div class="form-row" style="flex: 0 1 auto;">
         <label for="{{ form.schema.id_for_label }}">{{ form.schema.label }}</label>
         {{ form.schema }}
         {% if form.schema.errors %}<div class="form-error">{{ form.schema.errors }}</div>{% endif %}
       </div>
 
-      <div class="form-row" style="flex: 1;">
+      <div class="form-row" style="flex: 0 1 auto;">
         <label for="{{ form.param_type.id_for_label }}">{{ form.param_type.label }}</label>
         {{ form.param_type }}
         {% if form.param_type.errors %}<div class="form-error">{{ form.param_type.errors }}</div>{% endif %}
       </div>
+
+      <div class="form-row" style="flex: 0 1 auto;">
+        <label for="{{ form.level_of_comparison.id_for_label }}">{{ form.level_of_comparison.label }}</label>
+        {{ form.level_of_comparison }}
+        {% if form.level_of_comparison.errors %}<div class="form-error">{{ form.level_of_comparison.errors }}</div>{% endif %}
+      </div>
+
+      <div class="actions" style="margin-bottom: .25rem;">
+        <a class="btn" href="{% url 'param_lookups_manage' %}">
+          Edit schema, type & level
+        </a>
+      </div>
+
+      <div class="form-row" style="flex: 1;">
+        <label for="{{ form.implicational_condition.id_for_label }}">{{ form.implicational_condition.label }}</label>
+        {{ form.implicational_condition }}
+        {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
+      </div>
+
     </div>
-
-    <div class="actions" style="margin:.5rem 0 .25rem; text-align: right;">
-      <a class="btn" href="{% url 'param_lookups_manage' %}">
-        Edit schema & type
-      </a>
-    </div>
-
-
-    <div class="form-row">
-      <label for="{{ form.implicational_condition.id_for_label }}">{{ form.implicational_condition.label }}</label>
-      {{ form.implicational_condition }}
-      {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
-    </div>
-
 
     <div class="form-row">
       <label class="sr-only" for="{{ form.warning_default.id_for_label }}">Warning default</label>
@@ -144,7 +155,6 @@
     </div>
 
     {% if not is_create %}
-
         <div class="grid grid--2">
           <div>
             <label>Questions</label>
@@ -191,7 +201,7 @@
           </div>
         </div>
 
-        <div class="actions" style="margin-bottom: .5rem; text-align: right; display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap;">
+        <div class="actions" style="margin: 1rem 0; text-align: right; display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap;">
           <a class="btn" href="{% url 'question_clone' parameter.id %}">
             Import question from another parameter
           </a>
@@ -199,7 +209,6 @@
             Add a new question
           </a>
         </div>
-
     {% endif %}
 
     {% if not is_create %}
@@ -209,7 +218,7 @@
           {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
     {% endif %}
 
-    <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
+    <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1rem;">
       <button id="saveBtn" type="submit" class="btn btn--primary" aria-disabled="false">Save</button>
       <a class="btn" href="{% url 'parameter_list' %}">Cancel</a>
     </div>

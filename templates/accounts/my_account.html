@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}My Account{% endblock %}
-{% block breadcrumb %}Accounts / My Account{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">My Account</li>
+{% endblock %}
 
 {% block content %}
   <div class="card">

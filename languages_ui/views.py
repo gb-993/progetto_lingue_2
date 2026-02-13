@@ -246,6 +246,7 @@ def language_list(request):
             | Q(family__icontains=q)
             | Q(top_level_family__icontains=q)
             | Q(source__icontains=q)
+
         )
         if q.lower() in {"hist", "stor", "storica", "storico", "true", "yes"}:
             filt |= Q(historical_language=True)
@@ -261,7 +262,9 @@ def language_list(request):
         "top": "top_level_family",
         "family": "family",
         "group": "grp",
-        "modified": "last_change"
+        "modified": "last_change",
+        "lat": "latitude",
+        "lon": "longitude",
     }
 
     active_sort = None
@@ -304,6 +307,8 @@ def language_list(request):
         "family": _toggle_url("family"),
         "group": _toggle_url("group"),
         "modified": _toggle_url("modified"),
+        "lat": _toggle_url("lat"),
+        "lon": _toggle_url("lon"),
     }
 
     ctx = {
@@ -1171,6 +1176,8 @@ def language_list_export_xlsx(request):
         "Group",
         "Glottocode",
         "ISO code",
+        "Latitude",
+        "Longitude",
         "Historical",
         "Source",
         "Assigned user",
@@ -1196,6 +1203,8 @@ def language_list_export_xlsx(request):
             _xlsx_sanitize(L.grp),
             _xlsx_sanitize(L.glottocode),
             _xlsx_sanitize(L.isocode),
+            _xlsx_sanitize(L.latitude),
+            _xlsx_sanitize(L.longitude),
             _xlsx_sanitize(L.historical_language),
             _xlsx_sanitize(L.source),
             _xlsx_sanitize(_full_name(L.assigned_user)),

@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 {% block body_class %}page-graph{% endblock %}
-{% block title %}Parameters DAG{% endblock %}
-{% block breadcrumb %}Graphs / Parameters{% endblock %}
+{% block title %}Network{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Network</li>
+{% endblock %}
 
 {% block extra_head %}
   <script defer src="{% static 'vendor/cytoscape.min.js' %}"></script>
@@ -61,7 +63,7 @@
 
 {% block content %}
 <header class="dashboard-hero">
-  <h1>Graph</h1>
+  <h1>Network</h1>
 </header>
 
 <section class="card" style="padding:1rem;">
@@ -93,7 +95,6 @@
 
   <div id="graph-mode"
        class="graph-layout"
-       {# NEW: graph sempre visibile, niente hidden in base a preselect #}
        style="display:flex; flex-direction:column; gap:.75rem;">
 
     <!-- Grafo -->

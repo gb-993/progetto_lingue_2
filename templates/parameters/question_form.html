@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}{% if is_create %}Add question{% else %}Edit question{% endif %}{% endblock %}
-{% block breadcrumb %}Parameters / {{ parameter.id }} / {% if is_create %}Add question{% else %}Edit {{ form.initial.id|default_if_none:"" }}{% endif %}{% endblock %}
+{% block breadcrumb %}
+  <li>
+    <a href="{% url 'parameter_list' %}">Parameters</a>
+  </li>
+  <li>
+    <a href="{% url 'parameter_edit' parameter.id %}">{{ parameter.id }}</a>
+  </li>
+  <li aria-current="page">{% if is_create %}Add question{% else %}Edit {{ form.initial.id|default_if_none:"" }}{% endif %}</li>
+{% endblock %}
 
 {% block content %}
 <div class="card">

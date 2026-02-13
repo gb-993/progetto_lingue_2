@@ -9,7 +9,7 @@ from core.models import (
     Motivation,
     QuestionAllowedMotivation,
     ParamSchema,
-    ParamType,
+    ParamType, ParamLevelOfComparison,
 )
 from core.services.logic_parser import validate_expression, ParseException
 
@@ -30,6 +30,12 @@ class ParameterForm(forms.ModelForm):
         widget=forms.Select(attrs={"class": "form-control"}),
         label="Type",
     )
+    level_of_comparison = forms.ChoiceField(
+        required=False,
+        choices=[],
+        widget=forms.Select(attrs={"class": "form-control"}),
+        label="Level of comparison",
+    )
 
     class Meta:
         model = ParameterDef
@@ -42,6 +48,7 @@ class ParameterForm(forms.ModelForm):
             "is_active",
             "schema",
             "param_type",
+            "level_of_comparison",
         ]
         labels = {
         "id": "Label",   
@@ -52,6 +59,7 @@ class ParameterForm(forms.ModelForm):
         "is_active": "Active",
         "schema": "Schema",
         "param_type": "Type",
+        "level_of_comparison": "Level of comparison",
         }
 
         widgets = {
@@ -70,9 +78,11 @@ class ParameterForm(forms.ModelForm):
         # Popola le scelte dai lookup
         schema_labels = list(ParamSchema.objects.order_by("label").values_list("label", flat=True))
         type_labels   = list(ParamType.objects.order_by("label").values_list("label", flat=True))
+        level_labels = list(ParamLevelOfComparison.objects.order_by("label").values_list("label", flat=True))
 
         schema_choices = [("", "— select schema —")] + [(s, s) for s in schema_labels]
         type_choices   = [("", "— select type —")]   + [(t, t) for t in type_labels]
+        level_choices = [("", "— select level —")] + [(l, l) for l in level_labels]
 
         # Se il record ha valori legacy non più in lista, aggiungili per mostrare e salvare
         inst = getattr(self, "instance", None)
@@ -81,9 +91,12 @@ class ParameterForm(forms.ModelForm):
                 schema_choices.insert(1, (inst.schema, f"{inst.schema} (legacy)"))
             if inst.param_type and inst.param_type not in {c for c, _ in type_choices}:
                 type_choices.insert(1, (inst.param_type, f"{inst.param_type} (legacy)"))
+            if inst.level_of_comparison and inst.level_of_comparison not in {c for c, _ in level_choices}:
+                level_choices.insert(1, (inst.level_of_comparison, f"{inst.level_of_comparison} (legacy)"))
 
         self.fields["schema"].choices = schema_choices
         self.fields["param_type"].choices = type_choices
+        self.fields["level_of_comparison"].choices = level_choices
 
         # Campo "change_note" se non già presente
         if "change_note" not in self.fields:
