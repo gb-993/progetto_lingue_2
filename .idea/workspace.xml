@@ -4,44 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0af43531-8303-4fd2-b0ce-29eaa71ba032" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/templates/public/about.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/public/contacts.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/public/methodology.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/public/team.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/submissions/confirm_create_all.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/progetto_lingua_2.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/progetto_lingua_2.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parameters_ui/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/parameters_ui/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queries/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/queries/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/css/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/js/examples.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/js/examples.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/submissions_ui/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/submissions_ui/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/submissions_ui/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/submissions_ui/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/accounts/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/accounts/dashboard.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/accounts/edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/accounts/edit.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/accounts/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/accounts/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/accounts/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/accounts/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/accounts/public_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/accounts/public_dashboard.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/glossary/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/glossary/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/graphs/parameters.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/graphs/parameters.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/instructions/instructions.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/instructions/instructions.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/languages/data.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/languages/data.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/languages/debug_parameters.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/languages/debug_parameters.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/languages/edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/languages/edit.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/languages/import_excel.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/languages/import_excel.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/languages/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/languages/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/parameters/edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/parameters/edit.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/parameters/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/parameters/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/parameters/lookups.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/parameters/lookups.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/parameters/motivations.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/parameters/motivations.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/queries/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/queries/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/questions/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/questions/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/submissions/detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/submissions/detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/submissions/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/submissions/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/tablea/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/tablea/index.html" afterDir="false" />
+    <list default="true" id="0af43531-8303-4fd2-b0ce-29eaa71ba032" name="Changes" comment="completate modifiche">
+      <change afterPath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,6 +37,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "gb-993"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/gb-993/progetto_lingue_2.git",
+    "accountId": "b7f049d9-8688-4287-b277-f1e5667fa794"
+  }
+}]]></component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -86,6 +62,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "DefaultHtmlFileTemplate": "HTML File",
     "Django Server.progetto_lingua_2.executor": "Run",
     "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
@@ -166,12 +143,25 @@
       <workItem from="1770966841739" duration="19021000" />
       <workItem from="1770991520713" duration="2230000" />
       <workItem from="1770996427502" duration="2710000" />
-      <workItem from="1771067187178" duration="30030000" />
+      <workItem from="1771067187178" duration="30203000" />
     </task>
+    <task id="LOCAL-00001" summary="completate modifiche">
+      <option name="closed" value="true" />
+      <created>1771149692938</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1771149692938</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="completate modifiche" />
+    <option name="LAST_COMMIT_MESSAGE" value="completate modifiche" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
