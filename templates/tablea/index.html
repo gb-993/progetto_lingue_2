@@ -242,10 +242,22 @@
                     <th class="col-sticky-left" style="width: 45px; left: 0; z-index: 4; text-align: center;">
                         <input type="checkbox" id="masterCheckbox" onclick="toggleAllCheckboxes(this.checked)">
                     </th>
-                    <th class="col-sticky-left" style="left: 45px; z-index: 4;">Label</th>
-                    <th>Name / Text</th>
-                    <th>{% if view == 'params' %}Implication{% else %}Param ID{% endif %}</th>
-                    {% for lang in languages %}<th>{{ lang.id }}</th>{% endfor %}
+
+                    <th class="col-sticky-left" style="left: 45px; z-index: 4; width: 60px;">
+                        {% if view == 'params' %}ID{% else %}Q.ID{% endif %}
+                    </th>
+
+                    <th style="{% if view == 'params' %}min-width: 150px; max-width: 200px;{% else %}min-width: 400px;{% endif %}">
+                        {% if view == 'params' %}Parameter Name{% else %}Question Text{% endif %}
+                    </th>
+
+                    {% if view == 'params' %}
+                    <th style="min-width: 300px;">Implication</th>
+                    {% endif %}
+
+                    {% for lang in languages %}
+                        <th style="text-align: center;">{{ lang.id }}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>
@@ -254,18 +266,34 @@
                     <td class="col-sticky-left" style="left: 0; text-align: center; background: var(--surface);">
                         <input type="checkbox" name="row_selector" value="{{ row.p.id }}" class="row-checkbox">
                     </td>
-                    <th class="col-sticky-left" style="left: 45px; background: var(--surface);">{{ row.p.id }}</th>
-                    <td style="min-width: 300px;">{{ row.p.name }}</td>
-                    <td class="muted">{{ row.p.implicational_condition }}</td>
+
+                    <th class="col-sticky-left" style="left: 45px; background: var(--surface);">
+                        {{ row.p.id }}
+                    </th>
+
+                    <td style="white-space: normal;">
+                        {% if view == 'questions' %}
+                            {{ row.p.text }}
+                        {% else %}
+                            {{ row.p.name }}
+                        {% endif %}
+                    </td>
+
+                    {% if view == 'params' %}
+                    <td class="muted" style="white-space: normal;">
+                        {{ row.p.implicational_condition }}
+                    </td>
+                    {% endif %}
+
                     {% for cell in row.cells %}
-                    <td>
+                    <td style="text-align: center;">
                         {% if cell.val %}
                             {% url 'language_debug' cell.lang_id as debug_url %}
-                            <a href="{{ debug_url }}#{% if view == 'questions' %}{{ row.p.implicational_condition }}{% else %}{{ row.p.id }}{% endif %}" class="debug-link">
+                            <a href="{{ debug_url }}#{% if view == 'questions' %}q_{{ row.p.id }}{% else %}{{ row.p.id }}{% endif %}" class="debug-link">
                                 {{ cell.val }}
                             </a>
                         {% else %}
-                            <span class="muted">—</span>
+                            <span class="muted" style="opacity: 0.3;">—</span>
                         {% endif %}
                     </td>
                     {% endfor %}
