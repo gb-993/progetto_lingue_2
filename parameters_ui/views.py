@@ -119,7 +119,7 @@ def parameter_list(request):
     )
 
     
-    return render(request, "parameters/list.html", {"parameters": qs})
+    return render(request, "parameters/list.html", {"parameters": qs, "q": q})
 
 @login_required
 @user_passes_test(_is_admin)

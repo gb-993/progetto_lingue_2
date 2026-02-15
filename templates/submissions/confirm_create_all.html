@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Backup globale lingue{% endblock %}
+
+{% block content %}
+<div class="card" id="backup-container" style="padding: 2rem; border: 1px solid var(--border); border-radius: 8px;">
+
+    <div id="form-intro">
+        <div class="alert" style="background-color: #fff3cd !important; color: #856404 !important; border: 1px solid #ffeeba !important; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
+            <strong style="color: #856404 !important;">Attenzione:</strong>
+            <span style="color: #856404 !important;">Questa operazione creerà uno snapshot (backup) per <strong>tutte le lingue</strong> presenti nel database. Potrebbe richiedere del tempo.</span>
+        </div>
+    </div>
+
+    <div id="loading-state" style="display: none; text-align: center; padding: 2rem 0;">
+        <h3 class="h4" style="color: #ff4500 !important; margin-bottom: 0.5rem;">Creazione backup globale in corso...</h3>
+
+        <div class="progress-container" style="width: 100%; background: #e9ecef; height: 12px; border-radius: 6px; overflow: hidden; margin: 1.5rem 0;">
+            <div class="progress-bar-moving" style="width: 30%; height: 100%; background: #ff4500; border-radius: 6px;"></div>
+        </div>
+
+        <div class="alert" style="background-color: #f8d7da !important; color: #721c24 !important; border: 1px solid #f5c6cb !important; padding: 0.75rem; display: inline-block; border-radius: 4px; font-weight: 600;">
+            <strong>⚠️ ATTENZIONE: NON chiudere questa finestra</strong> e non ricaricare la pagina finché il processo non è terminato!
+        </div>
+    </div>
+
+    <form method="post" id="backup-form">
+        {% csrf_token %}
+        <div class="form-row">
+            <label for="note" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Nota opzionale per questo backup</label>
+            <textarea id="note" name="note" class="form-control" rows="3" placeholder="Es: Backup pre-importazione febbraio"></textarea>
+        </div>
+
+        <div class="toolbar" style="margin-top: 2rem; display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn--primary" id="btn-submit" style="min-width: 160px; background-color: #ff4500; color: white; border: none;">
+                Avvia Backup Totale
+            </button>
+            <a href="{% url 'language_list' %}" class="btn" style="background: #f8f9fa; border: 1px solid #ddd; color: #333;">
+                Annulla
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* Animazione copiata da import_excel.html */
+    .progress-bar-moving {
+        animation: progress-loop 2s infinite linear;
+        position: relative;
+    }
+
+    @keyframes progress-loop {
+        0% { left: -30%; width: 30%; }
+        50% { left: 40%; width: 40%; }
+        100% { left: 100%; width: 30%; }
+    }
+
+    #loading-state h3 { font-weight: 600; }
+</style>
+
+<script>
+    // Logica di attivazione copiata da import_excel.html
+    document.getElementById('backup-form').onsubmit = function() {
+        document.getElementById('form-intro').style.display = 'none';
+        document.getElementById('backup-form').style.display = 'none';
+        document.getElementById('loading-state').style.display = 'block';
+        document.getElementById('btn-submit').disabled = true;
+    };
+</script>
+{% endblock %}

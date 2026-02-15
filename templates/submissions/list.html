@@ -1,51 +1,176 @@
 {% extends "base.html" %}
-{% block title %}Submissions{% endblock %}
+{% block title %}Backup History{% endblock %}
+
+{% block breadcrumb %}
+  <li aria-current="page">Backup</li>
+{% endblock %}
+
+
 {% block content %}
 
-  <h1 class="dashboard-hero">
-      Language saved
-  </h1>
+<header class="dashboard-hero" style="margin-bottom: 2rem;">
+    {% if is_folder_view %}
+        <h1>Backup History</h1>
+    {% else %}
+        <div class="d-flex align-items-center gap-3">
+             <a href="{% url 'submissions_list' %}" class="btn btn-outline-secondary">← Torna alle cartelle</a>
+             <div>
+                <h1 class="m-0">Backup del {{ selected_ts }}</h1>
+             </div>
+        </div>
+    {% endif %}
+</header>
 
-<section class="toolbar" role="search" aria-label="Filter submissions">
-  <form method="get" class="toolbar__form">
-    <label for="q" class="sr-only">Search</label>
-    <input id="q"
-           name="q"
-           type="search"
-           value="{{ q|default:'' }}"
-           placeholder="Filter by language id or full name…"
-           autocomplete="off">
-    <button class="btn btn--search" type="submit">Search</button>
+<section class="toolbar" role="search" style="margin-bottom: 1.5rem;">
+  <form method="get" class="toolbar__form d-flex gap-2">
+    <input id="q" name="q" class="form-control" type="search" value="{{ q|default:'' }}"
+           placeholder="{% if is_folder_view %}Cerca backup...{% else %}Cerca lingua...{% endif %}">
+
+    {% if selected_ts %}
+        <input type="hidden" name="timestamp" value="{{ selected_ts }}">
+        {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+        {% if dir %}<input type="hidden" name="dir" value="{{ dir }}">{% endif %}
+    {% endif %}
+
+    <button class="btn btn-primary" type="submit">Cerca</button>
+
+    {% if is_folder_view and is_admin %}
+         <a class="btn btn-warning" href="{% url 'submission_create_all' %}" style="background-color: #ff4500; color: white; border:none; margin-left:auto;">
+            + Crea Nuovo Backup Totale
+        </a>
+    {% endif %}
   </form>
 </section>
 
-
-
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      {% if is_folder_view %}
         <tr>
-          <th>Date</th>
-          <th>Language</th>
-          <th>User</th>
-          <th></th>
+          <th style="width: 50px;"></th>
+          <th>Data Backup</th>
+          <th>Nota</th>
+          <th>Lingue</th>
+          <th>Utente</th>
+          <th style="text-align: right;">Azioni</th>
         </tr>
-      </thead>
-      <tbody>
-      {% for s in page.object_list %}
+      {% else %}
         <tr>
-          <td><time datetime="{{ s.submitted_at|date:'c' }}">{{ s.submitted_at|date:"Y-m-d H:i:s" }}</time></td>
-          <td>{{ s.language.name_full }} ({{ s.language_id }})</td>
-          <td>{{ s.submitted_by.email }}</td>
-          <td style="text-align: right;">
-             <a class="btn btn-sm btn-primary" href="{% url 'submission_detail' s.id %}">Open</a>
-          </td>
+          <th scope="col">
+            <a href="{{ sort_urls.name }}" class="sort-link {% if sort == 'name' %}active{% endif %}">
+              Language Name
+              <span class="sort-indicator">
+                {% if sort == 'name' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}
+              </span>
+            </a>
+          </th>
+
+          <th scope="col">
+            <a href="{{ sort_urls.id }}" class="sort-link {% if sort == 'id' %}active{% endif %}">
+              ID
+              <span class="sort-indicator">
+                {% if sort == 'id' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}
+              </span>
+            </a>
+          </th>
+
+          <th>Stato</th>
+          <th style="text-align: right;">Dettagli</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="4">No submissions</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+      {% endif %}
+    </thead>
+
+    <tbody>
+      {% if is_folder_view %}
+        {# --- LOOP CARTELLE --- #}
+        {% for g in page.object_list %}
+          <tr>
+            <td style="font-size: 1.5rem;">📁</td>
+            <td><strong>{{ g.submitted_at|date:"Y-m-d H:i:s" }}</strong></td>
+            <td>{{ g.note|default:"-" }}</td>
+            <td><span class="badge rounded-pill bg-secondary">{{ g.lang_count }}</span></td>
+            <td><small>{{ g.submitted_by__email }}</small></td>
+            <td style="text-align: right; white-space: nowrap;">
+                <div style="display: inline-flex; align-items: center; gap: 10px; justify-content: flex-end;">
+
+                    <a class="btn btn-sm btn-primary"
+                       href="?timestamp={{ g.submitted_at|date:'Y-m-d H:i:s' }}">
+                        Open folder
+                    </a>
+
+                    <form method="post" action="{% url 'submission_delete_backup' %}"
+                          onsubmit="return confirm('Sei sicuro di voler eliminare questo backup?');"
+                          style="margin: 0; display: inline-block;">
+                        {% csrf_token %}
+                        <input type="hidden" name="timestamp" value="{{ g.submitted_at|date:'Y-m-d H:i:s' }}">
+
+                        <button type="submit" class="btn btn-sm btn-danger" title="Delete"
+                                style="background-color: #dc3545 !important; border-color: #dc3545 !important; color: white !important;">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center py-4">Nessun backup trovato.</td></tr>
+        {% endfor %}
+
+      {% else %}
+        {# --- LOOP LINGUE --- #}
+        {% for s in page.object_list %}
+          <tr>
+            <td><strong>{{ s.language.name_full }}</strong></td>
+            <td><code>{{ s.language_id }}</code></td>
+            <td><span class="badge bg-success">Salvato</span></td>
+            <td style="text-align: right;">
+               <a class="btn btn-sm btn-outline-primary" href="{% url 'submission_detail' s.id %}">Vedi Dati</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-center py-4">Nessuna lingua trovata.</td></tr>
+        {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<nav class="pagination d-flex justify-content-center mt-4">
+  <div class="btn-group">
+      {% if page.has_previous %}
+        <a class="btn btn-outline-secondary" href="?page={{ page.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_ts %}&timestamp={{ selected_ts }}&sort={{ sort }}&dir={{ dir }}{% endif %}">Precedente</a>
+      {% endif %}
+      <span class="btn btn-disabled disabled">Pagina {{ page.number }} di {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}
+        <a class="btn btn-outline-secondary" href="?page={{ page.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_ts %}&timestamp={{ selected_ts }}&sort={{ sort }}&dir={{ dir }}{% endif %}">Successiva</a>
+      {% endif %}
   </div>
+</nav>
+{% endif %}
 
+<style>
+  /* Stili copiati e adattati da list.html originale */
+  .sort-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+  }
+  .sort-link:hover {
+    color: #ff4500;
+  }
+  .sort-indicator {
+    font-size: 0.8rem;
+    opacity: 0.3;
+  }
+  .sort-link.active .sort-indicator {
+    opacity: 1;
+    color: #ff4500;
+    font-weight: bold;
+  }
+</style>
 {% endblock %}

@@ -165,29 +165,31 @@
   wrapper.setAttribute("data-uid", uid);
   wrapper.style.marginBottom = "1rem";
 
+  // Nota: ho messo rows="1" agli altri campi per farli partire compatti come input,
+  // ma col vantaggio che si espandono se l'utente scrive molto.
   wrapper.innerHTML = `
     <input type="hidden" name="newex_${qid}_${uid}_number" value="${numberValue}">
     
     <div class="grid">
       <div>
         <label>Example text</label>
-        <input name="newex_${qid}_${uid}_textarea" value="">
+        <textarea name="newex_${qid}_${uid}_textarea" rows="3" style="width:100%; resize:vertical;"></textarea>
       </div>
       <div>
         <label>Transliteration</label>
-        <input name="newex_${qid}_${uid}_transliteration" value="">
+        <textarea name="newex_${qid}_${uid}_transliteration" rows="1" style="width:100%; resize:vertical;"></textarea>
       </div>
       <div>
         <label>Gloss</label>
-        <input name="newex_${qid}_${uid}_gloss" value="">
+        <textarea name="newex_${qid}_${uid}_gloss" rows="1" style="width:100%; resize:vertical;"></textarea>
       </div>
       <div>
         <label>English translation</label>
-        <input name="newex_${qid}_${uid}_translation" value="">
+        <textarea name="newex_${qid}_${uid}_translation" rows="1" style="width:100%; resize:vertical;"></textarea>
       </div>
       <div>
         <label>Reference</label>
-        <input name="newex_${qid}_${uid}_reference" value="">
+        <textarea name="newex_${qid}_${uid}_reference" rows="1" style="width:100%; resize:vertical;"></textarea>
       </div>
     </div>
     <div class="toolbar" style="margin-top: .5rem; display: flex; justify-content: flex-end;">
@@ -230,7 +232,7 @@
         container.appendChild(row);
 
         
-        const firstInput = row.querySelector(`input[name="newex_${qid}_${uid}_textarea"]`);
+        const firstInput = row.querySelector(`textarea[name="newex_${qid}_${uid}_textarea"]`);
         if (firstInput) firstInput.focus();
         renumberExamplesForQuestion(qid);
       });
@@ -347,13 +349,14 @@ document.addEventListener("DOMContentLoaded", function () {
           const isDeleted = delHidden && delHidden.value === "1";
           if (isDeleted) continue;
 
-          const txt = row.querySelector('input[name$="_textarea"]');
+          const txt = row.querySelector('[name$="_textarea"]');
           if (txt && txt.value.trim()) { hasNonEmpty = true; break; }
         }
 
         
         if (!hasNonEmpty) {
-          const newInputs = list.querySelectorAll(`input[name^="newex_${qid}_"][name$="_textarea"]`);
+          // Cerca anche qui textarea o input genericamente
+          const newInputs = list.querySelectorAll(`[name^="newex_${qid}_"][name$="_textarea"]`);
           for (const inp of newInputs) {
             if ((inp.value || "").trim()) { hasNonEmpty = true; break; }
           }

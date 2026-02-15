@@ -9,7 +9,7 @@
   <h1>Parameters</h1>
 </header>
 
-{% include "_toolbar_search.html" with q=request.GET.q placeholder="Search a parameter…" add_url="parameter_add" add_label="Add a new parameter" %}
+{% include "_toolbar_search.html" with q=q placeholder="Search parameters…" %}
 
   <h2 id="table-heading" class="sr-only">Parameter list</h2>
 
@@ -24,7 +24,7 @@
         <th scope="col">Name</th>
         <th scope="col">Schema</th>   
         <th scope="col">Type</th>
-        <th scope="col">Lvl comparison</th> ```
+        <th scope="col">Lvl comparison</th>
         <th scope="col">#Q</th>
         <th scope="col">#QS</th>
         <th scope="col">Status</th>
@@ -39,7 +39,7 @@
         <td data-label="Name">{{ p.name }}</td>
         <td data-label="Schema">{{ p.schema|default:"—" }}</td>
         <td data-label="Type">{{ p.param_type|default:"—" }}</td>
-      <td data-label="Lvl comparison">{{ p.level_of_comparison|default:"—" }}</td> ```
+      <td data-label="Lvl comparison">{{ p.level_of_comparison|default:"—" }}</td>
         <td data-label="#Q">{{ p.questions_count  }}</td>
         <td data-label="#Stop">{{ p.stop_count }}</td>
         <td data-label="Status">
@@ -64,4 +64,11 @@
       {% endfor %}
     </tbody>
   </table>
+
+
+    <style>
+  .dashboard-hero {
+    margin-bottom: 4rem;
+  }
+</style>
 {% endblock %}

@@ -22,115 +22,353 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <link rel="stylesheet" href="{% static 'css/mobile.css' %}" media="(max-width: 768px)">
+
+  <style>
+    /* --- NUOVO LAYOUT (Full-width footer) --- */
+
+    :root {
+      --sidebar-width: 260px;
+      --topbar-height: 80px;
+    }
+
+    body {
+      margin: 0;
+      /* Flex column per gestire il footer in fondo se la pagina è corta */
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-color: var(--surface-1);
+    }
+
+    /* Wrapper che contiene SOLO Sidebar e Main Content (No Footer) */
+    .app-wrapper {
+      display: flex;
+      width: 100%;
+      flex: 1; /* Occupa tutto lo spazio disponibile spingendo il footer giù */
+      position: relative;
+    }
+
+    /* 1. SIDEBAR STICKY */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--surface-2);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+
+      /* STICKY CONFIGURATION */
+      position: sticky;
+      top: 0;
+      height: 100vh;    /* Altezza viewport completa */
+      overflow-y: auto; /* Scroll interno se il menu è lungo */
+
+      z-index: 100;
+      flex-shrink: 0;
+      padding-bottom: 1rem;
+    }
+
+    .sidebar-header {
+      padding: 2rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-header .site-title {
+      font-size: 1.25rem;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .sidebar-header .site-subtitle {
+      display: block;
+      font-size: 0.75rem;
+      margin-top: 0.5rem;
+      opacity: 0.7;
+      font-weight: normal;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 0;
+    }
+
+    /* --- SIDEBAR OVERRIDES --- */
+    .sidebar .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .sidebar .nav-list li {
+      width: 100%;
+      display: block;
+      padding: 0;
+    }
+
+    .sidebar .nav-list .btn {
+      display: block;
+      width: auto;
+      margin: 0 1rem;
+      text-align: left;
+      border: none;
+      background: transparent;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+
+    .sidebar .nav-list .btn:hover {
+      background-color: rgba(0,0,0, 0.05);
+      text-decoration: none;
+    }
+
+    .sidebar .nav-list .btn.is-current {
+      background-color: var(--primary-color, #ff4500);
+      color: #fff;
+    }
+
+    .sidebar .nav-list .nav-divider-label {
+      padding: 2rem 0 0.5rem 2rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 700;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    /* 2. MAIN LAYOUT */
+    .main-layout {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0; /* Previene overflow orizzontale */
+    }
+
+    /* 3. TOP BAR */
+    .top-bar {
+      padding: 0.8rem 3rem;
+      min-height: var(--topbar-height);
+      height: auto;
+      background-color: var(--surface-1);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      position: relative; /* Scorre via con la pagina */
+      z-index: 90;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .top-bar .btn {
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+      margin: 0;
+    }
+
+    #main {
+      padding-top: 3rem;
+      flex: 1;
+    }
+
+    /* 4. FOOTER (Fuori dal flusso principale, full width) */
+    .site-footer {
+      width: 100%;
+      background-color: var(--surface-1);
+      border-top: 1px solid var(--border-color);
+      padding-top: 4rem;
+      margin-top: 5rem;
+      position: relative;
+      z-index: 200; /* Sta sopra a tutto se necessario */
+    }
+
+    /* Override Tabelle */
+    .table td, .table th {
+      padding: 1.2rem 1rem !important;
+    }
+    .table tr {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .app-wrapper { display: block; }
+      .top-bar { padding: 1rem; }
+    }
+  </style>
   {% block extra_head %}{% endblock %}
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
 
-  <header class="site-header">
-    <div class="container">
+<div class="app-wrapper">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
       <h1 class="site-title">
         PCM Hub
-        <span class="site-subtitle"> Parametric Comparison Method (PCM) – Data collection and storage</span>
+        <span class="site-subtitle">Parametric Comparison Method</span>
       </h1>
+    </div>
 
-      {% with urln=request.resolver_match.url_name|default:'' %}
-<nav class="nav" aria-label="Main">
-  <ul class="nav-list">
+    {% with urln=request.resolver_match.url_name|default:'' %}
+    <nav class="sidebar-nav" aria-label="Main Navigation">
+      <ul class="nav-list">
 
-    {# 1. DASHBOARD: Sempre visibile per tutti (Admin, User, Public) #}
-    <li>
-      <a class="btn {% if urln == 'dashboard' %}is-current{% endif %}"
-         href="{% url 'dashboard' %}"
-         {% if urln == 'dashboard' %}aria-current="page"{% endif %}>
-         Dashboard
-      </a>
-    </li>
+        {# --- DASHBOARD --- #}
+        <li>
+          <a class="btn {% if urln == 'dashboard' %}is-current{% endif %}"
+             href="{% url 'dashboard' %}">
+             Dashboard
+          </a>
+        </li>
 
-    {# 2. MENU OPERATIVO: Visibile solo a Admin e User (Nascosto per Public) #}
-    {% if request.user.role != 'public' %}
+        {# --- PUBLIC MENU --- #}
+        {% if request.user.role == 'public' %}
+          <li class="nav-divider-label">Information</li>
+          <li><a class="btn {% if urln == 'about' %}is-current{% endif %}" href="{% url 'about' %}">About</a></li>
+          <li><a class="btn {% if urln == 'methodology' %}is-current{% endif %}" href="{% url 'methodology' %}">Methodology</a></li>
+          <li><a class="btn {% if urln == 'team' %}is-current{% endif %}" href="{% url 'team' %}">Team</a></li>
+          <li><a class="btn {% if urln == 'contacts' %}is-current{% endif %}" href="{% url 'contacts' %}">Contacts</a></li>
+        {% endif %}
 
-      {# Languages #}
-      <li>
-        <a class="btn {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}is-current{% endif %}"
-           href="{% url 'language_list' %}">
-           Languages
+        {# --- DATA MENU --- #}
+        {% if request.user.role != 'public' %}
+          <li class="nav-divider-label">Data Management</li>
+
+          <li>
+            <a class="btn {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}is-current{% endif %}"
+               href="{% url 'language_list' %}">
+               Languages
+            </a>
+          </li>
+
+          {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+            <li><a class="btn {% if urln == 'parameter_list' %}is-current{% endif %}" href="{% url 'parameter_list' %}">Parameters</a></li>
+            <li><a class="btn {% if urln == 'questions_list' %}is-current{% endif %}" href="{% url 'questions_list' %}">Questions</a></li>
+            <li><a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}" href="{% url 'parameters_graph' %}">Network</a></li>
+            <li><a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}" href="{% url 'tablea_index' %}">Table A</a></li>
+            <li><a class="btn {% if urln|slice:':7' == 'queries' %}is-current{% endif %}" href="{% url 'queries:home' %}">Filters</a></li>
+            <li><a class="btn {% if urln == 'submissions_list' %}is-current{% endif %}" href="{% url 'submissions_list' %}">Backup</a></li>
+            <li><a class="btn {% if urln == 'accounts_list' %}is-current{% endif %}" href="{% url 'accounts_list' %}">Accounts</a></li>
+          {% endif %}
+
+          <li class="nav-divider-label">Resources</li>
+          <li><a class="btn {% if urln == 'instruction' %}is-current{% endif %}" href="{% url 'instruction' %}">Instructions</a></li>
+          <li><a class="btn {% if urln == 'glossary_list' %}is-current{% endif %}" href="{% url 'glossary_list' %}">Glossary</a></li>
+        {% endif %}
+
+      </ul>
+    </nav>
+    {% endwith %}
+  </aside>
+
+  <div class="main-layout">
+
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <nav class="breadcrumb" aria-label="Breadcrumb" style="margin:0;">
+          <ol style="margin:0; padding:0; list-style:none; display:flex; gap:0.5rem;">
+            <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            {% block breadcrumb %}{% endblock %}
+          </ol>
+        </nav>
+      </div>
+
+      <div class="top-bar-right">
+        {% with urln=request.resolver_match.url_name|default:'' %}
+          <a class="btn {% if urln == 'my_account' %}is-current{% endif %}"
+             href="{% url 'my_account' %}">
+             My Account
+          </a>
+          <button id="theme-toggle" type="button" class="btn theme-toggle"></button>
+          <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
+            <button class="btn" type="submit">Logout</button>
+          </form>
+        {% endwith %}
+      </div>
+    </header>
+
+    <main id="main" role="main" tabindex="-1">
+    <div class="container-fluid" style="padding: 1rem 3rem; max-width: 1600px; margin: 0 auto;">
+    {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    </div>
+</div> <footer class="site-footer" role="contentinfo" style="padding-top: 3rem; padding-bottom: 2rem;">
+  <div class="container" style="padding: 0 2rem;">
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 3rem; margin-bottom: 3rem;">
+
+      <div class="footer-col">
+        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-color);">PCM Hub</h4>
+        <p class="muted" style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+          The Hub of the <strong>Parametric Comparison Method</strong> aims to collect and preserve structural and syntactic data of the world's languages.
+        </p>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">
+            <img src="https://licensebuttons.net/l/by/4.0/88x31.png" alt="CC BY 4.0" style="height: 31px; border-radius: 3px; opacity: 0.8;">
+          </a>
+          <span class="muted" style="font-size: 0.75rem; line-height: 1.2;">
+            Licensed under <br>
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" style="color: inherit; text-decoration: underline;">CC BY 4.0 International</a>
+          </span>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-color);">Resources</h4>
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.7rem;">
+          <li><a href="{% static 'docs/Informativa WebAPP_revDPO.pdf' %}" target="_blank" style="color: var(--text-color);">Privacy Policy</a></li>
+          <li><a href="{% static 'docs/Terms_of_use_CG.pdf' %}" target="_blank" style="color: var(--text-color);">Disclaimer</a></li>
+          <li style="margin-top: 0.5rem;">
+            <span class="muted" style="font-size: 0.85rem; display: block; margin-bottom: 0.2rem;">Get in touch:</span>
+            <a href="mailto:gbmatteazzi93@gmail.com" style="color: var(--text-color); font-weight: 500;">gbmatteazzi93@gmail.com</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-col" style="padding: 1.5rem; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border-color);">
+        <h4 style="margin-top: 0; margin-bottom: 0.8rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-color);">Parent Project</h4>
+        <p style="font-size: 0.9rem; margin-bottom: 1rem;">Università degli Studi di Modena e Reggio Emilia (UNIMORE)</p>
+        <a href="http://www.parametricomparison.unimore.it/siet/home.html" target="_blank" rel="noopener"
+           style="display: inline-block; padding: 0.5rem 1rem; background: var(--primary-color, #2c3e50); color: white; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+           Visit Website ↗
         </a>
-      </li>
-
-      {# Sezione solo Admin #}
-      {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
-        <li><a class="btn {% if urln == 'parameter_list' %}is-current{% endif %}" href="{% url 'parameter_list' %}">Parameters</a></li>
-        <li><a class="btn {% if urln == 'questions_list' %}is-current{% endif %}" href="{% url 'questions_list' %}">Questions</a></li>
-        <li><a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}" href="{% url 'parameters_graph' %}">Network</a></li>
-        <li><a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}" href="{% url 'tablea_index' %}">Table A</a></li>
-        <li><a class="btn {% if urln|slice:':7' == 'queries' %}is-current{% endif %}" href="{% url 'queries:home' %}">Filters</a></li>
-        <li><a class="btn {% if urln == 'submissions_list' %}is-current{% endif %}" href="{% url 'submissions_list' %}">Saved</a></li>
-        <li><a class="btn {% if urln == 'accounts_list' %}is-current{% endif %}" href="{% url 'accounts_list' %}">Accounts</a></li>
-      {% endif %}
-
-      {# Instructions #}
-      <li><a class="btn {% if urln == 'instruction' %}is-current{% endif %}" href="{% url 'instruction' %}">Instructions</a></li>
-
-      {# Glossary #}
-      <li><a class="btn {% if urln == 'glossary_list' %}is-current{% endif %}" href="{% url 'glossary_list' %}">Glossary</a></li>
-
-    {% endif %}
-
-    <li class="nav-spacer" aria-hidden="true"></li>
-
-    {# 3. MY ACCOUNT: Sempre visibile per tutti (inclusi i Public) #}
-    <li>
-      <a class="btn {% if urln == 'my_account' %}is-current{% endif %}"
-         href="{% url 'my_account' %}"
-         {% if urln == 'my_account' %}aria-current="page"{% endif %}>
-         My Account
-      </a>
-    </li>
-
-    {# 4. LOGOUT E DARK/LIGHT MODE: Sempre visibili #}
-    <li class="nav-session">
-      <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
-        <button class="btn" type="submit">Logout</button>
-      </form>
-      <button id="theme-toggle" type="button" class="btn theme-toggle"></button>
-    </li>
-  </ul>
-</nav>
-      {% endwith %}
-
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-  <ol>
-    {# 1. Radice fissa: Sempre cliccabile #}
-    <li>
-        <a href="{% url 'dashboard' %}">Dashboard</a>
-    </li>
-
-    {# 2. Blocco per le pagine figlie #}
-    {% block breadcrumb %}{% endblock %}
-  </ol>
-</nav>
+      </div>
 
     </div>
-  </header>
 
-  <main id="main" role="main" tabindex="-1">
-    <div class="container">
-      {% block content %}{% endblock %}
-    </div>
-  </main>
+    <div style="padding-top: 2rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <p class="muted" style="margin: 0; font-size: 0.85rem;">
+        © {% now "Y" %} — PCM Hub Database. All rights reserved.
+      </p>
 
-  <footer class="site-footer" role="contentinfo">
-    <div class="container">
-      {% if request.user.role == 'admin' or request.user.is_staff %}
-        <p class="muted">© {% now "Y" %} – Admin area</p>
-      {% elif request.user.role == 'public' %}
-        <p class="muted">© {% now "Y" %} – Public area</p>
-      {% else %}
-        <p class="muted">© {% now "Y" %} – User area</p>
-      {% endif %}
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 20px; background: var(--border-color); color: var(--text-color); font-weight: 600; text-transform: uppercase;">
+          {% if request.user.role == 'admin' or request.user.is_staff %}Admin Access
+          {% elif request.user.role == 'public' %}Public View
+          {% else %}User Access{% endif %}
+        </span>
+      </div>
+
     </div>
-  </footer>
+
+  </div>
+</footer>
 
   {% block extra_js %}{% endblock %}
   <script>
@@ -160,20 +398,6 @@
   <button id="backToTop" class="back-to-top is-hidden" type="button" aria-label="Back to top" title="Back to top">↑</button>
   <script src="{% static 'js/back_to_top.js' %}"></script>
   <script src="{% static 'js/messages.js' %}" defer></script>
-
-  {% comment %}
-  <script>
-    (function() {
-      // Eseguiamo subito
-      var hero = document.querySelector('.dashboard-hero');
-      if (hero) {
-        // 'behavior: auto' forza il salto istantaneo senza animazione
-        hero.scrollIntoView({ behavior: 'auto', block: 'start' });
-      }
-    })();
-  </script>
-  {% endcomment %}
-
 
 </body>
 </html>

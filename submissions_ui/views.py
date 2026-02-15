@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
@@ -9,7 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
-
+from django.db.models import Count
 from core.models import (
     Language,
     Submission,
@@ -52,44 +53,93 @@ def submission_create_for_language(request, language_id):
     return render(request, "submissions/confirm_create.html", {"language": lang})
 
 from django.core.paginator import Paginator
-from django.db.models import OuterRef, Subquery, IntegerField, Prefetch, Q  
+from django.db.models import OuterRef, Subquery, IntegerField, Prefetch, Q
+
+from django.db.models import Count
+
 
 @login_required
 @user_passes_test(_is_admin)
 def submissions_list(request):
-    qs = Submission.objects.select_related("language", "submitted_by").order_by("-submitted_at", "-id")
+    selected_ts = request.GET.get("timestamp")
+    q = (request.GET.get("q") or "").strip()
 
-    q = (request.GET.get("q") or "").strip()  
-    if q:
-        # match su id lingua (parziale, case-insensitive) OR su full name (parziale)
-        qs = qs.filter(Q(language__id__icontains=q) | Q(language__name_full__icontains=q))
+    if selected_ts:
+        # --- VISTA CONTENUTO (Dentro la cartella) ---
+        qs = Submission.objects.filter(submitted_at=selected_ts).select_related("language", "submitted_by")
 
-    submitted_by = (request.GET.get("submitted_by") or "").strip()
-    if submitted_by.isdigit():
-        qs = qs.filter(submitted_by_id=int(submitted_by))
+        if q:
+            qs = qs.filter(Q(language__id__icontains=q) | Q(language__name_full__icontains=q))
 
-    date_from = (request.GET.get("date_from") or "").strip()
-    if date_from:
-        qs = qs.filter(submitted_at__date__gte=date_from)
+        # --- LOGICA ORDINAMENTO (NUOVA) ---
+        sort = request.GET.get("sort", "name")  # default per nome
+        direction = request.GET.get("dir", "asc")
 
-    date_to = (request.GET.get("date_to") or "").strip()
-    if date_to:
-        qs = qs.filter(submitted_at__date__lt=date_to)
+        # Mappa i parametri URL ai campi del database (tramite la relazione language__)
+        order_map = {
+            "id": "language__id",
+            "name": "language__name_full",
+            "family": "language__family",  # Se vuoi ordinare anche per famiglia
+        }
 
-    paginator = Paginator(qs, 20)
-    page = paginator.get_page(request.GET.get("page"))
+        # Recupera il campo o usa il default
+        db_sort = order_map.get(sort, "language__name_full")
 
-    return render(
-        request,
-        "submissions/list.html",
-        {
+        # Gestione direzione
+        if direction == "desc":
+            db_sort = f"-{db_sort}"
+
+        # Applica ordinamento
+        qs = qs.order_by(db_sort)
+
+        # Helper per generare i link mantenendo il timestamp e la ricerca
+        def make_sort_url(field):
+            params = request.GET.copy()
+            params["sort"] = field
+            # Inverte la direzione se sto cliccando sulla colonna già attiva
+            params["dir"] = "desc" if sort == field and direction == "asc" else "asc"
+            return f"?{params.urlencode()}"
+
+        sort_urls = {
+            "id": make_sort_url("id"),
+            "name": make_sort_url("name"),
+            # "family": make_sort_url("family"),
+        }
+
+        # Paginazione
+        paginator = Paginator(qs, 200)
+        page = paginator.get_page(request.GET.get("page"))
+
+        return render(request, "submissions/list.html", {
             "page": page,
-            "q": q,  
-            "submitted_by": submitted_by,
-            "date_from": date_from,
-            "date_to": date_to,
-        },
-    )
+            "q": q,
+            "is_folder_view": False,
+            "selected_ts": selected_ts,
+            # Passiamo i dati per l'ordinamento al template
+            "sort": sort,
+            "dir": direction,
+            "sort_urls": sort_urls,
+        })
+
+    else:
+        # --- VISTA CARTELLE (Invariata) ---
+        # ... (codice precedente per le cartelle) ...
+        groups = Submission.objects.values('submitted_at', 'note', 'submitted_by__email') \
+            .annotate(lang_count=Count('id')) \
+            .order_by('-submitted_at')
+        if q:
+            groups = groups.filter(Q(note__icontains=q) | Q(submitted_at__icontains=q))
+
+        paginator = Paginator(groups, 20)
+        page = paginator.get_page(request.GET.get("page"))
+
+        return render(request, "submissions/list.html", {
+            "page": page,
+            "q": q,
+            "is_folder_view": True
+        })
+
+
 
 @login_required
 @user_passes_test(_is_admin)
@@ -184,3 +234,48 @@ def submission_detail(request, submission_id):
             "sub_params": list(sub.params.all()),
         },
     )
+
+
+
+
+@login_required
+@user_passes_test(_is_admin)
+def submission_create_all_languages(request):
+    if request.method == "POST":
+        note = request.POST.get("note") or "Bulk creation"
+        languages = Language.objects.all()
+
+        fixed_time = timezone.now().replace(microsecond=0)
+
+        with transaction.atomic():
+            for lang in languages:
+                # Creiamo la submission normalmente
+                res = create_language_submission(lang, request.user, note=note)
+                # 2. FORZIAMO la data identica per tutti
+                res.submission.submitted_at = fixed_time
+                res.submission.save()
+
+        messages.success(request, _("Backup globale creato correttamente."))
+        return redirect("submissions_list")
+
+    return render(request, "submissions/confirm_create_all.html")
+
+
+@login_required
+@user_passes_test(_is_admin)
+def submission_delete_backup(request):
+    if request.method == "POST":
+        # Recuperiamo la data dal form
+        timestamp_str = request.POST.get("timestamp")
+
+        if timestamp_str:
+            # Cancelliamo tutte le submission che hanno ESATTAMENTE quella data
+            # Django gestisce la conversione stringa -> datetime automaticamente nel filtro
+            deleted_count, _ = Submission.objects.filter(submitted_at=timestamp_str).delete()
+
+            if deleted_count > 0:
+                messages.success(request, f"Backup del {timestamp_str} eliminato ({deleted_count} elementi rimossi).")
+            else:
+                messages.warning(request, "Nessun backup trovato con questa data.")
+
+    return redirect("submissions_list")

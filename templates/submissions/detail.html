@@ -1,97 +1,304 @@
 {% extends "base.html" %}
-{% block title %}Submission #{{ sub.id }}{% endblock %}
+{% block title %}Backup #{{ sub.id }}{% endblock %}
+
+{% block breadcrumb %}
+  <li><a href="{% url 'submissions_list' %}">Backup List</a></li>
+  <li aria-current="page">Backup #{{ sub.id }}</li>
+{% endblock %}
+
 {% block content %}
-  <h1>Submission #{{ sub.id }}</h1>
-  <p>
-    <strong>Language:</strong> {{ sub.language.name_full }} ({{ sub.language_id }}) |
-    <strong>User:</strong> {{ sub.submitted_by.email }} |
-    <strong>Date:</strong> <time datetime="{{ sub.submitted_at|date:'c' }}">{{ sub.submitted_at|date:"Y-m-d H:i:s" }}</time>
-  </p>
-  {% if sub.note %}<p><strong>Submission note:</strong> {{ sub.note }}</p>{% endif %}
 
-  <h2>Parameters values</h2>
-  <div class="table-responsive">
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th scope="col">Parameter</th>
-          <th scope="col">Initial value</th>
-          <th scope="col">Warn (init)</th>
-          <th scope="col">Final value</th>
-          <th scope="col">Warn (final)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in sub_params %}
-          <tr>
-            <td>{{ p.parameter_id }}</td>
-            <td>{{ p.value_orig|default:"" }}</td>
-            <td>{{ p.warning_orig|yesno:"✔," }}</td>
-            <td>{{ p.value_eval|default:"" }}</td>
-            <td>{{ p.warning_eval|yesno:"✔," }}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5">No parameters</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="card lang-header-card" style="margin-bottom: 2rem;">
+
+    <div class="lang-title-block">
+      <h2>
+        {{ sub.language.name_full }}
+        <span class="muted" style="font-weight:400; font-size: 0.7em; vertical-align: middle;">
+            ({{ sub.language_id }})
+        </span>
+      </h2>
+    </div>
+
+    <div class="header-meta-grid">
+
+      <div class="header-meta-row">
+        <span class="meta-label">Backup Date</span>
+        <span class="meta-value">
+            <time datetime="{{ sub.submitted_at|date:'c' }}">
+                {{ sub.submitted_at|date:"Y-m-d H:i:s" }}
+            </time>
+        </span>
+      </div>
+
+      <div class="header-meta-row">
+        <span class="meta-label">Created By</span>
+        <span class="meta-value">{{ sub.submitted_by.name}} {{sub.submitted_by.surname }}</span>
+      </div>
+
+
+      {% if sub.note %}
+      <div class="header-meta-row" style="grid-column: 1 / -1;">
+        <span class="meta-label">Note</span>
+        <span class="meta-value">{{ sub.note }}</span>
+      </div>
+      {% else %}
+      <div class="header-meta-row">
+        <span class="meta-label">Note</span>
+        <span class="meta-value"><span class="muted">—</span></span>
+      </div>
+      {% endif %}
+
+    </div>
   </div>
 
-  <h2>Answers</h2>
-  <div class="table-responsive">
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th scope="col">Parameter</th>
-          <th scope="col">Question</th>
-          <th scope="col">Answer</th>
-          <th scope="col">Motivations</th>
-          <th scope="col">Comments</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in sub_answers %}
-          <tr>
-            <td>{{ a.param_id }}</td>
-            <td>{{ a.question_code }}</td>
-            <td>{{ a.response_text }}</td>
-            <td>{{ a.mot_text }}</td> 
-            <td>{{ a.comments }}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5">No answers</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
 
-  <h3>Language examples</h3>
-  <div class="table-responsive">
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th scope="col">Question</th>
-          <th scope="col">Example text</th>
-          <th scope="col">Transliteration</th>
-          <th scope="col">Gloss</th>
-          <th scope="col">English translation</th>
-          <th scope="col">Reference</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for e in sub_examples %}
-          <tr>
-            <td>{{ e.question_code }}</td>
-            <td>{{ e.textarea }}</td>
-            <td>{{ e.transliteration }}</td>
-            <td>{{ e.gloss }}</td>
-            <td>{{ e.translation }}</td>
-            <td>{{ e.reference }}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="6">No examples</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <div class="custom-accordion">
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAccordion(this)">
+        <div class="d-flex align-items-center gap-2">
+            <strong>Parameters values</strong>
+        </div>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="acc-content">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Parameter</th>
+                  <th>Initial value</th>
+                  <th>Warn (init)</th>
+                  <th>Final value</th>
+                  <th>Warn (final)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in sub_params %}
+                  <tr>
+                    <td>{{ p.parameter_id }}</td>
+                    <td>{{ p.value_orig|default:"" }}</td>
+                    <td>{{ p.warning_orig|yesno:"✔," }}</td>
+                    <td>{{ p.value_eval|default:"" }}</td>
+                    <td>{{ p.warning_eval|yesno:"✔," }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="5" class="p-3 text-muted">No parameters recorded.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAccordion(this)">
+        <div class="d-flex align-items-center gap-2">
+            <strong>Answers</strong>
+        </div>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="acc-content">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Param</th>
+                  <th>Question</th>
+                  <th>Answer</th>
+                  <th>Motivations</th>
+                  <th>Comments</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in sub_answers %}
+                  <tr>
+                    <td><small>{{ a.param_id }}</small></td>
+                    <td>{{ a.question_code }}</td>
+                    <td>
+                        {% if a.response_text == 'yes' %}
+                            <span class="text-success">Yes</span>
+                        {% elif a.response_text == 'no' %}
+                            <span class="text-danger">No</span>
+                        {% else %}
+                            {{ a.response_text }}
+                        {% endif %}
+                    </td>
+                    <td><small>{{ a.mot_text }}</small></td>
+                    <td><small>{{ a.comments }}</small></td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="5" class="p-3 text-muted">No answers recorded.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAccordion(this)">
+        <div class="d-flex align-items-center gap-2">
+            <strong>Language examples</strong>
+        </div>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="acc-content">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Question</th>
+                  <th>Example text</th>
+                  <th>Transliteration</th>
+                  <th>Gloss</th>
+                  <th>Translation</th>
+                  <th>Ref</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for e in sub_examples %}
+                  <tr>
+                    <td>{{ e.question_code }}</td>
+                    <td>{{ e.textarea }}</td>
+                    <td><small class="text-muted">{{ e.transliteration }}</small></td>
+                    <td><small class="text-muted">{{ e.gloss }}</small></td>
+                    <td>{{ e.translation }}</td>
+                    <td><small>{{ e.reference }}</small></td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="6" class="p-3 text-muted">No examples provided.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+
+  </div> <script>
+function toggleAccordion(header) {
+    // 1. Trova il contenuto associato (il fratello successivo)
+    var content = header.nextElementSibling;
+
+    // 2. Toggle della classe 'open' sull'header per ruotare la freccia
+    header.classList.toggle("active");
+
+    // 3. Logica Apri/Chiudi
+    if (content.style.maxHeight) {
+        // Se è aperto, chiudilo
+        content.style.maxHeight = null;
+        content.style.borderBottom = "none";
+    } else {
+        // Se è chiuso, aprilo (calcola altezza contenuto)
+        content.style.maxHeight = content.scrollHeight + "px";
+        content.style.borderBottom = "1px solid var(--border)";
+    }
+}
+</script>
+
+
+<style>
+/* --- STILI CARD HEADER (Uguali a data.html) --- */
+.lang-header-card {
+  padding: 1.5rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.lang-title-block h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.8rem;
+  color: var(--brand, #ff4500);
+}
+.header-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  column-gap: 4rem;
+  row-gap: 0.8rem;
+  align-items: start;
+}
+.header-meta-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: baseline;
+  gap: 1rem;
+}
+.meta-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-fg, #666);
+  text-align: right;
+}
+.meta-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text, #222);
+  line-height: 1.4;
+}
+
+/* --- STILI ACCORDION CUSTOM --- */
+.custom-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.acc-item {
+    border: 1px solid var(--border, #ccc);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface, #fff);
+}
+
+.acc-header {
+    background: var(--surface-2, #f8f9fa); /* Grigio chiaro */
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.acc-header:hover {
+    background: var(--border, #e9ecef); /* Hover effect */
+}
+
+/* Testo dell'header */
+.acc-header strong {
+    font-size: 1.1rem;
+    color: var(--text, #333);
+}
+
+/* Icona Freccia */
+.acc-icon {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+    color: var(--muted-fg, #666);
+}
+
+/* Quando è attivo (aperto) */
+.acc-header.active .acc-icon {
+    transform: rotate(180deg);
+}
+
+/* Contenuto nascosto di default */
+.acc-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background: var(--surface);
+}
+
+/* Fix per Dark Mode se presente */
+:root[data-theme="dark"] .acc-header {
+    background: rgba(255,255,255,0.05);
+}
+:root[data-theme="dark"] .acc-header:hover {
+    background: rgba(255,255,255,0.1);
+}
+</style>
+
 {% endblock %}

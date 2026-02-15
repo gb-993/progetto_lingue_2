@@ -7,108 +7,77 @@
     <a href="{% url 'language_list' %}">Languages</a>
   </li>
   <li>
-    <a href="{% url 'language_edit' language.id %}">{{ language.id }}</a>
+    {{ language.id }}
   </li>
   <li aria-current="page">Data</li>
 {% endblock %}
 
 {% block content %}
 <main class="{% with s=lang_status.overall %}{% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}is-readonly{% endif %}{% endwith %}">
-  <div class="card" style="display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:flex-start;">
-    <!-- Blocco titolo lingua -->
-    <div style="min-width:12rem; flex:1 1 auto;">
-      <h2 style="margin-top:0;">{{ language.name_full }} ({{ language.id }})</h2>
+  <div class="card lang-header-card">
+    <div class="lang-title-block">
+      <h2>
+        {{ language.name_full }}
+        <span class="muted" style="font-weight:400; font-size: 0.7em; vertical-align: middle;">({{ language.id }})</span>
+      </h2>
     </div>
 
-    <!-- Blocco metadati lingua -->
-    <div style="flex:1 1 16rem; max-width:32rem; font-size:.9rem; line-height:1.4;">
-    <dl  style="margin:0;">
-        {# Glottocode #}
-        <dt style="font-weight:600;">Glottocode</dt>
-        <dd>
-          {% if language.glottocode %}
-            {{ language.glottocode }}
+    <div class="header-meta-grid">
+
+      <div class="header-meta-row">
+        <span class="meta-label">Glottocode</span>
+        <span class="meta-value">{% if language.glottocode %}{{ language.glottocode }}{% else %}<span class="muted">—</span>{% endif %}</span>
+      </div>
+
+      <div class="header-meta-row">
+        <span class="meta-label">ISO code</span>
+        <span class="meta-value">{% if language.isocode %}{{ language.isocode }}{% else %}<span class="muted">—</span>{% endif %}</span>
+      </div>
+
+      <div class="header-meta-row">
+        <span class="meta-label">Lat / Long</span>
+        <span class="meta-value">
+          {% if language.latitude %}{{ language.latitude }}{% else %}-{% endif %} /
+          {% if language.longitude %}{{ language.longitude }}{% else %}-{% endif %}
+        </span>
+      </div>
+
+      <div class="header-meta-row">
+        <span class="meta-label">Historical</span>
+        <span class="meta-value">
+          {% if language.historical_language %}Yes{% else %}No{% endif %}
+        </span>
+      </div>
+
+      {% if language.source %}
+      <div class="header-meta-row" style="grid-column: 1 / -1;"> <span class="meta-label">Source</span>
+        <span class="meta-value">{{ language.source }}</span>
+      </div>
+      {% endif %}
+
+      <div class="header-meta-row">
+        <span class="meta-label">Supervisor</span>
+        <span class="meta-value">{% if language.supervisor %}{{ language.supervisor }}{% else %}<span class="muted">—</span>{% endif %}</span>
+      </div>
+
+      <div class="header-meta-row">
+        <span class="meta-label">Informant</span>
+        <span class="meta-value">{% if language.informant %}{{ language.informant }}{% else %}<span class="muted">—</span>{% endif %}</span>
+      </div>
+
+      {% if is_admin %}
+      <div class="header-meta-row">
+        <span class="meta-label">Assigned to</span>
+        <span class="meta-value">
+          {% if language.assigned_user %}
+            {{ language.assigned_user.name }} {{ language.assigned_user.surname }}
           {% else %}
             <span class="muted">—</span>
           {% endif %}
-        </dd>
+        </span>
+      </div>
+      {% endif %}
 
-        {# ISO code #}
-        <dt style="font-weight:600;">ISO code</dt>
-        <dd>
-          {% if language.isocode %}
-            {{ language.isocode }}
-          {% else %}
-            <span class="muted">—</span>
-          {% endif %}
-        </dd>
-
-    {# latitude #}
-        <dt style="font-weight:600;">Latitude</dt>
-        <dd>
-          {% if language.latitude %}
-            {{ language.latitude }}
-          {% else %}
-            <span class="muted">—</span>
-          {% endif %}
-        </dd>
-
-        {# longitude #}
-        <dt style="font-weight:600;">Longitude</dt>
-        <dd>
-          {% if language.longitude %}
-            {{ language.longitude }}
-          {% else %}
-            <span class="muted">—</span>
-          {% endif %}
-        </dd>
-
-
-        {# Historical #}
-        <dt style="font-weight:600;">Historical</dt>
-        <dd>
-          {% if language.historical_language %}
-            <span title="Historical language">Yes</span>
-          {% else %}
-            <span class="muted">No</span>
-          {% endif %}
-        </dd>
-
-        {# Source #}
-        <dt style="font-weight:600;">Source</dt>
-        <dd>
-          {% if language.source %}
-            {{ language.source }}
-          {% else %}
-            <span class="muted">—</span>
-          {% endif %}
-        </dd>
-
-        {# Supervisor #}
-        {% if language.supervisor %}
-          <dt style="font-weight:600;">Supervisor</dt>
-          <dd>{{ language.supervisor }}</dd>
-        {% endif %}
-
-        {# Informant #}
-        {% if language.informant %}
-          <dt style="font-weight:600;">Informant</dt>
-          <dd>{{ language.informant }}</dd>
-        {% endif %}
-
-        {# Assigned user: solo admin #}
-        {% if is_admin %}
-          <dt style="font-weight:600;">Assigned to</dt>
-          <dd>
-            {% if language.assigned_user %}
-              {{ language.assigned_user.name }} {{ language.assigned_user.surname }}
-            {% else %}
-              <span class="muted">—</span>
-            {% endif %}
-          </dd>
-        {% endif %}
-
-      </dl>
     </div>
   </div>
 
@@ -428,12 +397,35 @@
                         <input type="hidden" name="ex_{{ ex.id }}_number" value="{{ ex.number }}">
 
                         <div class="grid">
-                          {# Etichette standard, senza 'grigetto' #}
-                          <div><label>Example text</label><input name="ex_{{ ex.id }}_textarea" value="{{ ex.textarea }}"></div>
-                          <div><label>Transliteration</label><input name="ex_{{ ex.id }}_transliteration" value="{{ ex.transliteration }}"></div>
-                          <div><label>Gloss</label><input name="ex_{{ ex.id }}_gloss" value="{{ ex.gloss }}"></div>
-                          <div><label>English Translation</label><input name="ex_{{ ex.id }}_translation" value="{{ ex.translation }}"></div>
-                          <div><label>Reference</label><input name="ex_{{ ex.id }}_reference" value="{{ ex.reference }}"></div>
+                          {# 1. Example Text #}
+                          <div>
+                            <label>Example text</label>
+                            <textarea name="ex_{{ ex.id }}_textarea" rows="3" style="width:100%; resize:vertical;">{{ ex.textarea }}</textarea>
+                          </div>
+                        
+                          {# 2. Transliteration:  #}
+                          <div>
+                            <label>Transliteration</label>
+                            <textarea name="ex_{{ ex.id }}_transliteration" rows="1" style="width:100%; resize:vertical;">{{ ex.transliteration }}</textarea>
+                          </div>
+                        
+                          {# 3. Gloss:  #}
+                          <div>
+                            <label>Gloss</label>
+                            <textarea name="ex_{{ ex.id }}_gloss" rows="1" style="width:100%; resize:vertical;">{{ ex.gloss }}</textarea>
+                          </div>
+                        
+                          {# 4. English Translation:  #}
+                          <div>
+                            <label>English Translation</label>
+                            <textarea name="ex_{{ ex.id }}_translation" rows="1" style="width:100%; resize:vertical;">{{ ex.translation }}</textarea>
+                          </div>
+                        
+                          {# 5. Reference:  #}
+                          <div>
+                            <label>Reference</label>
+                            <textarea name="ex_{{ ex.id }}_reference" rows="1" style="width:100%; resize:vertical;">{{ ex.reference }}</textarea>
+                          </div>
                         </div>
 
                         <div class="toolbar" style="margin-top:.5rem; display: flex; justify-content: flex-end;">
@@ -476,7 +468,7 @@
           <!-- riga SAVE -->
           <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; width:100%;">
             <p class="muted" style="margin:0; font-size:.9rem;">
-              Click <strong>Save</strong> if you are confident in your answer.  
+                Click <strong style="color: var(--ok);">Save</strong> if you are <strong style="color: var(--ok);">confident</strong> in your answer.
               You can still edit or review it later.
             </p>
             <button type="submit"
@@ -484,29 +476,40 @@
                     data-submit-action="save"
                     style="margin-left:auto;"
               {% with s=lang_status.overall %}
+                {# CASO 1: Bottone Disabilitato (usa il title standard del browser) #}
                 {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
                   disabled aria-disabled="true" title="Editing locked until review"
+
+                {# CASO 2: Bottone Attivo (usa il nostro tooltip CSS istantaneo) #}
+                {% else %}
+                  data-tooltip="You can still change answer later"
                 {% endif %}
               {% endwith %}>
-              Save {{ p.id }}
+              Confident -> Save {{ p.id }}
             </button>
           </div>
 
           <!-- riga NEXT -->
           <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; width:100%;">
             <p class="muted" style="margin:0; font-size:.9rem;">
-              Click <strong>Next</strong> if you are unsure and want to return to this parameter later.  
+                Click <strong style="color: var(--bad);">Next</strong> if you are <strong style="color: var(--bad);">unsure</strong> in your answer.
+                You can still edit or review it later.
             </p>
             <button type="submit"
                     class="btn btn--bad"
                     data-submit-action="next"
                     style="margin-left:auto;"
               {% with s=lang_status.overall %}
+                {# CASO 1: Bottone Disabilitato #}
                 {% if not is_admin and s == 'waiting' or not is_admin and s == 'waiting_for_approval' or not is_admin and s == 'approved' or not is_admin and s == 'rejected' %}
                   disabled aria-disabled="true" title="Editing locked until review"
+
+                {# CASO 2: Bottone Attivo #}
+                {% else %}
+                  data-tooltip="You can still change answer later"
                 {% endif %}
               {% endwith %}>
-              Next
+              Unsure -> Next
             </button>
           </div>
 
@@ -862,6 +865,115 @@ textarea.auto-grow:focus { outline: 2px solid var(--focus, #2266ff); outline-off
   }
 }
 
+
+/* --- Stile Intestazione Lingua --- */
+.lang-header-card {
+  padding: 1.5rem 2rem;
+}
+
+.lang-title-block h2 {
+  margin: 0 0 1.5rem 0; /* Spazio sotto il titolo */
+  font-size: 1.8rem;
+  color: var(--brand); /* Opzionale: usa il colore brand per il titolo */
+}
+
+/* Griglia Principale: Distribuisce gli elementi su colonne larghe */
+.header-meta-grid {
+  display: grid;
+  /* Crea colonne automatiche larghe almeno 350px, riempiendo lo spazio disponibile */
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  column-gap: 4rem; /* Molto spazio orizzontale tra le colonne per dare "respiro" */
+  row-gap: 0.8rem;  /* Spazio verticale ridotto */
+  align-items: start;
+}
+
+/* Singola Riga: Etichetta a Sinistra, Valore a Destra */
+.header-meta-row {
+  display: grid;
+  /* Colonna 1 fissa (etichetta), Colonna 2 flessibile (valore) */
+  grid-template-columns: 140px 1fr;
+  align-items: baseline;
+  gap: 1rem;
+  border-bottom: 1px solid transparent; /* Per debug/allineamento */
+}
+
+/* Stile Etichetta (Simile ai Parametri) */
+.meta-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-align: right; /* Allinea l'etichetta vicino al valore */
+}
+
+/* Stile Valore */
+.meta-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* Mobile: Torna a una colonna singola */
+@media (max-width: 768px) {
+  .header-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .header-meta-row {
+    grid-template-columns: 100px 1fr; /* Etichetta più stretta su mobile */
+  }
+  .meta-label {
+    text-align: left; /* Su mobile meglio allineato a sinistra */
+  }
+}
+
+/* Stile per il tooltip personalizzato sui bottoni */
+.btn[data-tooltip] {
+  position: relative; /* Necessario per posizionare il fumetto */
+}
+
+/* Il fumetto che appare all'hover */
+.btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip); /* Prende il testo dall'attributo HTML */
+  position: absolute;
+  bottom: 110%; /* Lo posiziona sopra il bottone */
+  left: 50%;
+  transform: translateX(-50%); /* Lo centra perfettamente */
+
+  background-color: #333;
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap; /* Evita che il testo vada a capo */
+  z-index: 1000;
+  pointer-events: none; /* Il mouse non ci sbatte contro */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+
+  /* Animazione facoltativa */
+  opacity: 0;
+  animation: fadeInTooltip 0.2s forwards;
+}
+
+/* Piccola freccetta sotto il fumetto (opzionale) */
+.btn[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+  opacity: 0;
+  animation: fadeInTooltip 0.2s forwards;
+}
+
+@keyframes fadeInTooltip {
+  to { opacity: 1; }
+}
 
 
 </style>

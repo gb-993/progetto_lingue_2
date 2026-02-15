@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Methodology - PCM Hub{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Methodology</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <header class="dashboard-hero">
+    <h1>Methodology</h1>
+    <p class="hero-subtitle">Understanding the Parametric Comparison Method (PCM).</p>
+  </header>
+
+  <div style="display: grid; gap: 2rem; margin-top: 2rem;">
+
+    <div class="card" style="padding: 2rem;">
+      <h2 style="margin-top: 0;">What is a Parameter?</h2>
+      <p>
+        In the framework of Generative Grammar, a <strong>parameter</strong> is a binary switch (sets of <strong>Yes/No</strong> options) that defines the syntactic variability of a language.
+      </p>
+      <ul style="margin-top: 1rem; padding-left: 1.5rem; line-height: 1.6;">
+        <li><strong>Universal Grammar:</strong> The shared biological capacity for language.</li>
+        <li><strong>Parameters:</strong> The specific settings that differentiate, for example, English from Japanese.</li>
+      </ul>
+    </div>
+
+    <div class="card" style="padding: 2rem;">
+      <h2 style="margin-top: 0;">Data Collection Process</h2>
+      <p>
+        The PCM Hub collects data through a rigorous process:
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+
+        <div style="background: var(--surface-2); padding: 1rem; border-radius: 8px;">
+          <h4 style="margin: 0 0 0.5rem 0;">1. Elicitation</h4>
+          <p class="muted" style="font-size: 0.9rem;">Native speakers or experts answer binary questions designed to isolate specific syntactic rules.</p>
+        </div>
+
+        <div style="background: var(--surface-2); padding: 1rem; border-radius: 8px;">
+          <h4 style="margin: 0 0 0.5rem 0;">2. Review</h4>
+          <p class="muted" style="font-size: 0.9rem;">Data is reviewed by specific language experts to ensure accuracy and handle dialectal variation.</p>
+        </div>
+
+        <div style="background: var(--surface-2); padding: 1rem; border-radius: 8px;">
+          <h4 style="margin: 0 0 0.5rem 0;">3. Computation</h4>
+          <p class="muted" style="font-size: 0.9rem;">Algorithms (like KITSCH) calculate the distance between languages based on parameter differences.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; background: var(--surface-2); border-left: 4px solid var(--primary-color, #2c3e50);">
+      <h4 style="margin: 0 0 0.5rem 0;">Key References</h4>
+      <p style="font-size: 0.9rem; margin: 0;">
+        Longobardi, G., & Guardiano, C. (2009). <em>Evidence for syntax as a signal of historical relatedness</em>. Lingua, 119(11), 1679-1706.
+      </p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

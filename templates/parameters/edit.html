@@ -7,9 +7,7 @@
 {% endblock %}
 
 {% block breadcrumb %}
-  <li>
-    <a href="{% url 'parameter_list' %}">Parameters</a>
-  </li>
+  <li><a href="{% url 'parameter_list' %}">Parameters</a></li>
   <li aria-current="page">Edit Parameter {{ p.id }}</li>
 {% endblock %}
 

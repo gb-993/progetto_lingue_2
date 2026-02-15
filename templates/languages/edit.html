@@ -1,16 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Edit language{% endblock %}
 {% block breadcrumb %}
-  <li>
-    <a href="{% url 'language_list' %}">Languages</a>
-  </li>
-
-  <li>
-    <a href="{% url 'language_data' language.id %}">{{ language.id }}</a>
-  </li>
-
+  <li><a href="{% url 'language_list' %}">Languages</a></li>
+  <li>{{ language.id }}</li>
   <li aria-current="page">Edit</li>
 {% endblock %}
+
+
 {% block content %}
   <div class="card">
     <h2 class="h3">Edit language — {{ language.name_full }} ({{ language.id }})</h2>

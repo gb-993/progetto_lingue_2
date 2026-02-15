@@ -29,6 +29,10 @@
     <a class="btn" href="{% url 'language_import_excel' %}">
       Import from Excel
     </a>
+
+    <a class="btn btn-primary" href="{% url 'submission_create_all' %}" style="background-color: #ff4500; color: white;">
+      Backup all languages
+    </a>
   {% endif %}
 </div>
 
@@ -119,10 +123,14 @@
   {% endif %}
 </nav>
 {% endif %}
-{% endblock %}
 
-<style>
-  /* --- INIZIO MODIFICA CSS --- */
+    <style>
+
+  .dashboard-hero {
+    margin-bottom: 5rem;  /* . 4rem o 5rem per più spazio tra TITOLO E BODY */
+  }
+
+
   .sort-link {
     text-decoration: none;
     color: inherit;
@@ -142,5 +150,8 @@
     color: #ff4500;
     font-weight: bold;
   }
-  /* --- FINE MODIFICA CSS --- */
 </style>
+
+
+{% endblock %}
+

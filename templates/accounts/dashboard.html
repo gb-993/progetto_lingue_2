@@ -5,7 +5,6 @@
 
 
 {% block content %}
-<div class="container dashboard" role="main">
 
   <header class="dashboard-hero">
     <h1>Welcome, {{ request.user.name|default:request.user.email }}</h1>
@@ -69,10 +68,11 @@
           </div>
 
           <div style="flex-grow: 1; overflow: auto;">
-            <table class="table" style="margin: 0; width: 100%;">
+          <table class="table" style="margin: 0; width: 100%;">
               <thead style="background: var(--surface-2);">
                 <tr>
                   <th style="padding-left: 2rem;">Param</th>
+                  <th>Note</th>
                   <th>By</th>
                   <th>Date</th>
                 </tr>
@@ -80,13 +80,26 @@
               <tbody>
                 {% for log in recent_param_changes %}
                   <tr>
-                    <td style="padding-left: 2rem; font-weight: bold;">{{ log.parameter_id }}</td>
+                    <td style="padding-left: 2rem; font-weight: bold;">
+                        <a href="{% url 'parameter_edit' log.parameter_id %}" style="text-decoration: none; color: inherit;">
+                            {{ log.parameter_id }}
+                        </a>
+                    </td>
+
+                    <td style="max-width: 250px;">
+                        {% if log.recap %}
+                            <span title="{{ log.recap }}">{{ log.recap|truncatewords:10 }}</span>
+                        {% else %}
+                            <span class="muted">-</span>
+                        {% endif %}
+                    </td>
+
                     <td>{{ log.changed_by.name|default:log.changed_by.email }}</td>
                     <td class="muted">{{ log.changed_at|date:"d M, H:i" }}</td>
                   </tr>
                 {% empty %}
                    <tr>
-                     <td colspan="3" style="padding: 2rem; text-align: center;" class="muted">No recent changes found.</td>
+                     <td colspan="4" style="padding: 2rem; text-align: center;" class="muted">No recent changes found.</td>
                    </tr>
                 {% endfor %}
               </tbody>
@@ -125,12 +138,12 @@
 
   {% endif %}
 
-</div>
 
 <style>
 /* =========================================
    STILI CONDIVISI / UTILITÀ
    ========================================= */
+
 .h-full { height: 100%; }
 .muted { color: #6c757d; }
 
@@ -161,7 +174,7 @@
 .dashboard-grid-admin {
   display: grid;
   grid-template-columns: 1fr 1fr; /* 50% sinistra, 50% destra */
-  gap: 1.5rem;
+  gap: 2rem;
   align-items: stretch;
 }
 
@@ -265,5 +278,12 @@
   align-items: center;
   gap: 0.4rem;
 }
+
+
+.dashboard-hero {
+    margin-bottom: 4rem;
+}
+
+
 </style>
 {% endblock %}

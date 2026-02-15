@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About - PCM Hub{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">About</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <header class="dashboard-hero">
+    <h1>About the Project</h1>
+    <p class="hero-subtitle">The first centralized digital repository for the Parametric Comparison Method.</p>
+  </header>
+
+  <div class="card" style="padding: 2rem; margin-top: 2rem; line-height: 1.8;">
+    <h2 style="margin-top: 0;">Our Mission</h2>
+    <p>
+      The <strong>PCM Hub</strong> is a scientific project dedicated to the collection, storage, and analysis of syntactic data from the world's languages.
+      Our goal is to provide linguists and researchers with a reliable dataset to study the historical relationships between languages using the <strong>Parametric Comparison Method (PCM)</strong>.
+    </p>
+
+    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 2rem 0;">
+
+    <h3>Why Syntax?</h3>
+    <p>
+      Traditional historical linguistics often relies on lexical comparison (words). However, syntax — the abstract rules governing sentence structure — offers a deeper, more stable level of comparison. By analyzing binary parameters (e.g., "Does the adjective precede the noun?"), we can reconstruct phylogenetic trees with high precision, even for ancient divergence times.
+    </p>
+
+    <h3>Open Science</h3>
+    <p>
+      We believe in open access. The data collected in this hub is made available under the <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">Creative Commons BY 4.0</a> license, fostering collaboration and transparency in the scientific community.
+    </p>
+  </div>
+
+</div>
+{% endblock %}

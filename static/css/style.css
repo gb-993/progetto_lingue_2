@@ -176,8 +176,11 @@ a:hover{text-decoration:underline}
 :focus-visible{outline:2px solid var(--focus); outline-offset:2px}
 
 /* 3) Header / Navbar / Breadcrumb */
-.site-header{ border-bottom:1px solid var(--border); }
-.site-header .container{ max-width:1100px; margin:0 auto; padding:.75rem var(--sp-4) .75rem; }
+/* .site-header{ border-bottom:1px solid var(--border); } */
+.site-header .container{
+  max-width: 80%;
+  margin:0 auto;
+  padding:.75rem var(--sp-4) .75rem; }
 
 .site-title{ font-size:clamp(1.6rem,1.1rem + 2vw,2.4rem); margin:0; }
 .site-title .site-subtitle{
@@ -310,11 +313,7 @@ a:hover{text-decoration:underline}
 }
 
 /* 4) Layout & utility */
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem;
-}
+
 
 body.page-graph .card {
   max-width: 1100px;

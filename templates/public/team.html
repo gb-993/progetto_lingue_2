@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Team - PCM Hub{% endblock %}
+{% block breadcrumb %}
+  <li aria-current="page">Team</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <header class="dashboard-hero">
+    <h1>Research Team</h1>
+    <p class="hero-subtitle">The people behind the PCM Hub project.</p>
+  </header>
+
+  <div style="margin-top: 3rem;">
+    <h2 style="margin-bottom: 1.5rem;">Principal Investigators</h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem;">
+
+      <div class="card" style="text-align: center; padding: 2rem;">
+        <div style="width: 80px; height: 80px; background: #ddd; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
+        <h3 style="margin: 0.5rem 0 0;">Dr. Marco Longhin</h3>
+        <p class="muted" style="font-size: 0.9rem;">Project Lead</p>
+        <p style="font-size: 0.85rem; margin-top: 0.5rem;">University of Padua / UniPd</p>
+      </div>
+
+      <div class="card" style="text-align: center; padding: 2rem;">
+        <div style="width: 80px; height: 80px; background: #ddd; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
+        <h3 style="margin: 0.5rem 0 0;">Prof.ssa Cristina Guardiano</h3>
+        <p class="muted" style="font-size: 0.9rem;">Scientific Coordinator</p>
+        <p style="font-size: 0.85rem; margin-top: 0.5rem;">UNIMORE</p>
+      </div>
+
+      <div class="card" style="text-align: center; padding: 2rem;">
+        <div style="width: 80px; height: 80px; background: #ddd; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">💻</div>
+        <h3 style="margin: 0.5rem 0 0;">Technical Team</h3>
+        <p class="muted" style="font-size: 0.9rem;">Development & Maintenance</p>
+        <p style="font-size: 0.85rem; margin-top: 0.5rem;">PCM Hub Devs</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="margin-top: 3rem;">
+    <h2 style="margin-bottom: 1.5rem;">Institutional Partners</h2>
+    <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 2rem;">
+      <li class="card" style="padding: 1rem 2rem;">Università di Modena e Reggio Emilia</li>
+      <li class="card" style="padding: 1rem 2rem;">University of York</li>
+      <li class="card" style="padding: 1rem 2rem;">Università di Trieste</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

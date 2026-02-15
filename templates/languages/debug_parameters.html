@@ -3,7 +3,7 @@
 
 {% block breadcrumb %}
   <li><a href="{% url 'language_list' %}">Languages</a></li>
-  <li><a href="{% url 'language_edit' language.id %}">{{ language.id }}</a></li>
+  <li>{{ language.id }}</li>
   <li aria-current="page">Parameters Debug</li>
 {% endblock %}
 

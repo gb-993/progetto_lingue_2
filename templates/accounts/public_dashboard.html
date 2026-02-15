@@ -2,20 +2,17 @@
 {% load static %}
 
 {% block title %}Dashboard{% endblock %}
-{% block breadcrumb %}
-  <li aria-current="page">Dashboard</li>
-{% endblock %}
+
 
 {% block content %}
 <div class="container dashboard" role="main">
 
   {% if request.user.role == 'public' %}
     <header class="dashboard-hero">
-      <h1>Welcome to the PCM Database</h1>
+      <h1>Welcome to PCM Hub</h1>
       <p style="font-size: 1.1rem; max-width: 900px; line-height: 1.6;">
-        The database of the <strong>Parametric Comparison Method (PCM)</strong> aims to collect structural and syntactic data of the world's languages.
-        By comparing language parameters, it is possible to reconstruct historical relationships and infer divergence patterns.
-        Explore the glossary for terminology or visit your assigned languages in your profile.
+        The Hub of the <strong>Parametric Comparison Method (PCM)</strong> aims to collect structural and syntactic data of the world's languages.
+        By comparing language parameters, it is possible to reconstruct relationships and infer divergence patterns.
       </p>
     </header>
 
@@ -29,11 +26,11 @@
         </p>
       </div>
 
-      <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-  <img src="{% static 'img/img.png' %}"
+        <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+            <img src="{% static 'img/img.png' %}"
        alt="PCM Hub Logo"
        style="width: 220px; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));">
-</div>
+        </div>
 
       <div class="card" style="padding: 0;">
         <table class="table" style="margin: 0; font-size: 0.95rem;">
@@ -62,6 +59,18 @@
         </table>
       </div>
     </div>
+
+      <div class="card" style="margin-top: 2rem; padding: 1.5rem; border-left: 4px solid #2c3e50;">
+  <h3 style="margin-top: 0;">Collabora con noi</h3>
+  <p>
+    Sei interessato a contribuire alla raccolta dati o a proporre una collaborazione scientifica?
+    Siamo aperti a nuovi contributi per espandere il database PCM.
+  </p>
+  <p style="margin-bottom: 0;">
+    Puoi scriverci all'indirizzo:
+    <strong><a href="mailto:info@pcmhub.org" style="color: var(--text-color);">info@pcmhub.org</a></strong>
+  </p>
+</div>
 
   {% else %}
     <header class="dashboard-hero">
