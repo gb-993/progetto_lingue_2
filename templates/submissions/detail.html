@@ -299,6 +299,124 @@ function toggleAccordion(header) {
 :root[data-theme="dark"] .acc-header:hover {
     background: rgba(255,255,255,0.1);
 }
+
+/* --- MOBILE BACKUP DETAIL (< 900px) --- */
+@media (max-width: 900px) {
+
+    /* 1. Header Card - Layout verticale */
+    .header-meta-grid {
+        grid-template-columns: 1fr; /* Una colonna */
+        column-gap: 0;
+        row-gap: 1rem;
+    }
+    .header-meta-row {
+        grid-template-columns: 100px 1fr; /* Label fissa, valore flex */
+    }
+    .lang-title-block h2 {
+        font-size: 1.5rem; /* Titolo un po' più piccolo */
+    }
+
+    /* 2. Tabelle negli Accordion -> Card */
+    .acc-content .table thead { display: none; }
+
+    .acc-content .table tbody tr {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        gap: 0.4rem;
+    }
+    .acc-content .table tbody tr:last-child { border-bottom: none; }
+
+    .acc-content .table tbody td {
+        display: block;
+        padding: 0;
+        border: none;
+        width: 100%;
+        font-size: 0.95rem;
+    }
+
+    /* --- A. PRIMA TABELLA: PARAMETERS (accordion item #1) --- */
+    /* Col1: Param, Col2: Init, Col3: WarnI, Col4: Final, Col5: WarnF */
+
+    .acc-item:nth-of-type(1) .table tbody td:nth-child(1) {
+        font-weight: 800;
+        color: var(--brand);
+        font-size: 1.1rem;
+        margin-bottom: 0.2rem;
+    }
+
+    /* Init Value */
+    .acc-item:nth-of-type(1) .table tbody td:nth-child(2)::before { content: "Initial: "; color: var(--text-muted); font-size: 0.85rem;}
+
+    /* Final Value */
+    .acc-item:nth-of-type(1) .table tbody td:nth-child(4)::before { content: "Final: "; color: var(--text-muted); font-size: 0.85rem; font-weight: bold; }
+    .acc-item:nth-of-type(1) .table tbody td:nth-child(4) { font-weight: bold; }
+
+    /* Nascondiamo le celle Warn (Col 3 e 5) o le mettiamo inline se servono,
+       ma spesso sono solo icone. Mettiamole accanto ai valori usando float o flex se necessario.
+       Per semplicità qui le nascondiamo se sono vuote, o le lasciamo sotto. */
+
+    /* --- B. SECONDA TABELLA: ANSWERS (accordion item #2) --- */
+    /* Col1: Param, Col2: Question, Col3: Answer, Col4: Motivations, Col5: Comments */
+
+    /* Header scheda: Param + Question code */
+    .acc-item:nth-of-type(2) .table tbody td:nth-child(1) {
+        display: inline-block;
+        font-weight: bold;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+    .acc-item:nth-of-type(2) .table tbody td:nth-child(2) {
+        display: inline-block;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Risposta in grande */
+    .acc-item:nth-of-type(2) .table tbody td:nth-child(3) {
+        font-size: 1.1rem;
+        font-weight: bold;
+        padding: 0.25rem 0;
+    }
+
+    /* Motivazioni e Commenti */
+    .acc-item:nth-of-type(2) .table tbody td:nth-child(4):not(:empty)::before { display:block; content: "Motivation:"; font-size: 0.75rem; color:var(--text-muted); }
+    .acc-item:nth-of-type(2) .table tbody td:nth-child(5):not(:empty)::before { display:block; content: "Note:"; font-size: 0.75rem; color:var(--text-muted); }
+
+    /* --- C. TERZA TABELLA: EXAMPLES (accordion item #3) --- */
+    /* Col1: QCode, Col2: Text, Col3: Translit, Col4: Gloss, Col5: Transl, Col6: Ref */
+
+    .acc-item:nth-of-type(3) .table tbody td:nth-child(1) {
+        font-weight: 800;
+        background: var(--surface-2);
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        width: fit-content;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Testo Esempio */
+    .acc-item:nth-of-type(3) .table tbody td:nth-child(2) {
+        font-style: italic;
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Gloss / Translation */
+    .acc-item:nth-of-type(3) .table tbody td:nth-child(4)::before { content: "Gloss: "; opacity: 0.7; font-size: 0.8rem;}
+    .acc-item:nth-of-type(3) .table tbody td:nth-child(5)::before { content: "Transl: "; opacity: 0.7; font-size: 0.8rem;}
+
+    /* Ref */
+    .acc-item:nth-of-type(3) .table tbody td:nth-child(6) {
+        text-align: right;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+}
 </style>
 
 {% endblock %}

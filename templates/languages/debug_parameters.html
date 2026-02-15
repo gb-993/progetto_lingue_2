@@ -171,4 +171,205 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 </script>
+    <style>
+/* --- MOBILE DEBUG LAYOUT (< 900px) --- */
+@media (max-width: 900px) {
+
+  /* 1. Resetta la tabella in blocchi */
+  .table thead { display: none; } /* Via l'intestazione classica */
+
+  .table tbody tr {
+    display: grid;
+    /* Definiamo una griglia a 2 colonne */
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    position: relative; /* Per posizionamenti assoluti */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  }
+
+  /* Resetta le celle */
+  .table tbody td {
+    display: block;
+    padding: 0;
+    border: none;
+    width: auto;
+  }
+
+  /* --- POSIZIONAMENTO CELLE NELLA GRIGLIA --- */
+
+  /* [POSIZIONE #] - In alto a destra assoluto */
+  .table tbody td:nth-child(1) {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-weight: bold;
+    opacity: 0.6;
+  }
+  .table tbody td:nth-child(1)::before { content: "#"; }
+
+  /* [LABEL / ID] - Titolo grande (colonna 2 originale) */
+  .table tbody td:nth-child(2) {
+    grid-column: 1 / -1; /* Tutta la larghezza */
+    grid-row: 1;
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .table tbody td:nth-child(2) a {
+    color: var(--brand);
+    text-decoration: none !important;
+  }
+
+  /* --- SEZIONE Q & A (Domande e Risposte) --- */
+
+  /* [QUESTIONS] - Colonna Sinistra */
+  .table tbody td:nth-child(3) {
+    grid-column: 1;
+    grid-row: 2;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .table tbody td:nth-child(3)::before {
+    content: "Questions";
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 2px;
+    color: var(--text-muted);
+  }
+
+  /* [ANSWERS] - Colonna Destra */
+  .table tbody td:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: right;
+    font-weight: 600;
+  }
+  .table tbody td:nth-child(4)::before {
+    content: "Answers";
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 2px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  /* --- SEZIONE VALORI (Initial vs Final) --- */
+
+  /* Wrapper visivo per Initial Value */
+  .table tbody td:nth-child(5) {
+    grid-column: 1;
+    grid-row: 3;
+    background: var(--surface-2);
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+  .table tbody td:nth-child(5)::before {
+    content: "Initial Val";
+    display: block;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  /* Icona Warn Initial (sovrapposta o vicina) */
+  .table tbody td:nth-child(6) {
+    grid-column: 1;
+    grid-row: 3;
+    pointer-events: none; /* Per non disturbare il click */
+    display: flex;
+    justify-content: flex-end;
+    align-items: start;
+    margin-top: 0.2rem;
+    margin-right: 0.2rem;
+  }
+
+  /* Wrapper visivo per Final Value (Più evidente) */
+  .table tbody td:nth-child(9) {
+    grid-column: 2;
+    grid-row: 3;
+    background: var(--surface-2); /* O un colore brand light se vuoi */
+    border: 1px solid var(--brand); /* Bordo colorato per evidenziare il risultato */
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+  }
+  .table tbody td:nth-child(9)::before {
+    content: "Final Val";
+    display: block;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    opacity: 0.7;
+    font-weight: normal;
+  }
+
+  /* Icona Warn Final */
+  .table tbody td:nth-child(10) {
+    grid-column: 2;
+    grid-row: 3;
+    pointer-events: none;
+    display: flex;
+    justify-content: flex-end;
+    align-items: start;
+    margin-top: 0.2rem;
+    margin-right: 0.2rem;
+  }
+
+  /* --- SEZIONE LOGICA (Implications) --- */
+
+  /* [CONDITION] - Il codice dell'implicazione */
+  .table tbody td:nth-child(7) {
+    grid-column: 1 / -1; /* Full width */
+    grid-row: 4;
+    background: #2a2f37; /* Sfondo scuro per effetto 'terminale' */
+    color: #a8b3cf;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    word-break: break-all;
+    position: relative;
+  }
+  /* Nascondiamo se vuoto */
+  .table tbody td:nth-child(7):empty { display: none; }
+
+  .table tbody td:nth-child(7)::before {
+    content: "Logic:";
+    display: block;
+    font-size: 0.6rem;
+    color: #666;
+    margin-bottom: 2px;
+  }
+
+  /* [CHECK] - Risultato implicazione (TRUE/FALSE) */
+  .table tbody td:nth-child(8) {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    text-align: right;
+    margin-top: -2.5rem; /* Trucco: lo spostiamo sopra il blocco nero della logica */
+    margin-right: 0.5rem;
+    z-index: 2; /* Sopra il background */
+  }
+}
+</style>
 {% endblock %}

@@ -65,10 +65,128 @@
     </tbody>
   </table>
 
-
     <style>
-  .dashboard-hero {
+      .dashboard-hero {
     margin-bottom: 4rem;
+  }
+  /* Modifiche specifiche per la lista parametri su mobile (< 900px) */
+  @media (max-width: 900px) {
+
+    /* 1. Resettiamo la griglia generica di mobile.css per usare un layout personalizzato */
+    .table tbody tr {
+      display: grid;
+      grid-template-columns: 1fr auto; /* Colonna sinistra elastica, destra fissa */
+      gap: 0.5rem;
+      padding: 1rem;
+      position: relative;
+    }
+
+    /* 2. Resettiamo lo stile delle celle (td) */
+    .table tbody td {
+      display: block; /* Non più grid interna */
+      padding: 0;
+      border: none;
+      grid-column: 1 / -1; /* Di base occupano tutta la larghezza */
+    }
+
+    /* Nascondiamo le label generate automaticamente (::before) per i campi dove non servono */
+    .table tbody td[data-label="Label"]::before,
+    .table tbody td[data-label="Name"]::before,
+    .table tbody td[data-label="Status"]::before,
+    .table tbody td[data-label="Actions"]::before {
+      display: none;
+    }
+
+    /* --- LAYOUT ELEMENTI --- */
+
+    /* A. LABEL (Il codice, es. FGM) - In alto a sinistra, stile "Badge" */
+    .table tbody td[data-label="Label"] {
+      grid-column: 1;
+      grid-row: 1;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--brand);
+      font-size: 0.9rem;
+      background: var(--surface-2);
+      padding: 2px 8px;
+      border-radius: 6px;
+      width: fit-content;
+      margin-bottom: 0.25rem;
+    }
+
+    /* B. STATUS - In alto a destra */
+    .table tbody td[data-label="Status"] {
+      grid-column: 2;
+      grid-row: 1;
+      text-align: right;
+      font-size: 0.85rem;
+    }
+
+    /* C. NAME - Grande, riga successiva */
+    .table tbody td[data-label="Name"] {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    /* D. METADATI (Schema, Type, Level) - Piccoli e raggruppati */
+    .table tbody td[data-label="Schema"],
+    .table tbody td[data-label="Type"],
+    .table tbody td[data-label="Lvl comparison"] {
+      display: inline-block; /* Messi in linea */
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-right: 12px;
+      margin-bottom: 4px;
+      width: auto;
+    }
+    /* Rimettiamo la label per questi, ma più piccola e inline */
+    .table tbody td[data-label="Schema"]::before,
+    .table tbody td[data-label="Type"]::before,
+    .table tbody td[data-label="Lvl comparison"]::before {
+      content: attr(data-label) ": ";
+      font-weight: 600;
+      margin-right: 3px;
+      display: inline;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    /* E. STATISTICHE (#Q, #Stop) - Raggruppate in basso a sinistra */
+    .table tbody td[data-label="#Q"],
+    .table tbody td[data-label="#Stop"] {
+      display: inline-block;
+      width: auto;
+      margin-right: 1rem;
+      margin-top: 0.5rem;
+      font-weight: 600;
+      background: var(--surface-2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    /* Personalizziamo la label per essere più corta/iconica se vogliamo, o teniamo standard */
+    .table tbody td[data-label="#Q"]::before { content: "Q: "; font-weight: normal; opacity: 0.7; }
+    .table tbody td[data-label="#Stop"]::before { content: "Stop: "; font-weight: normal; opacity: 0.7; }
+
+    /* F. AZIONI (Bottone Edit) - In basso a destra o tutta larghezza sotto */
+    .table tbody td.row-actions {
+      grid-column: 1 / -1;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      justify-content: flex-end; /* Allineato a destra */
+    }
+    .table tbody td.row-actions .btn {
+      width: auto; /* Non full width */
+      padding: 0.4rem 1.5rem;
+    }
   }
 </style>
 {% endblock %}

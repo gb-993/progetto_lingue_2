@@ -151,7 +151,130 @@
     font-weight: bold;
   }
 </style>
+<style>
+  /* ... mantieni il CSS esistente (.dashboard-hero, .sort-link, etc) ... */
 
+  /* --- MODIFICHE LAYOUT MOBILE PER LINGUE (< 900px) --- */
+  @media (max-width: 900px) {
+
+    /* 1. Trasformiamo la riga in una Card Grid */
+    .table tbody tr {
+      display: grid;
+      grid-template-columns: 1fr auto; /* Colonna sx elastica, dx fissa per la data */
+      gap: 0.5rem;
+      padding: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    /* 2. Reset delle celle (TD) */
+    .table tbody td {
+      display: block;
+      padding: 0;
+      border: none;
+      grid-column: 1 / -1; /* Di base occupano tutta la larghezza */
+      width: auto !important; /* Forza larghezza auto */
+    }
+
+    /* 3. Nascondiamo le label automatiche per i campi principali */
+    .table tbody td[data-label="Id"]::before,
+    .table tbody td[data-label="Name"]::before,
+    .table tbody td[data-label="Last modified"]::before,
+    .table tbody td[data-label="Actions"]::before {
+      display: none;
+    }
+
+    /* --- LAYOUT INTERNO DELLA CARD --- */
+
+    /* A. HEADER: ID (Badge) e Data (Piccola a dx) */
+    .table tbody td[data-label="Id"] {
+      grid-column: 1;
+      grid-row: 1;
+      width: fit-content;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 0.25rem;
+    }
+
+    .table tbody td[data-label="Last modified"] {
+      grid-column: 2;
+      grid-row: 1;
+      text-align: right;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      align-self: center;
+    }
+
+    /* B. TITOLO: Nome della lingua (Grande) */
+    .table tbody td[data-label="Name"] {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--brand);
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+
+    /* C. METADATI: Gerarchia (Top-level, Family, Group) */
+    /* Li mettiamo in una lista pulita con etichette allineate */
+    .table tbody td[data-label="Top-level"],
+    .table tbody td[data-label="Family"],
+    .table tbody td[data-label="Group"] {
+      display: flex;
+      align-items: baseline;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      color: var(--text);
+      padding-left: 0.2rem;
+    }
+
+    /* Stile delle etichette (Top-level:, Family:, etc.) */
+    .table tbody td[data-label="Top-level"]::before,
+    .table tbody td[data-label="Family"]::before,
+    .table tbody td[data-label="Group"]::before {
+      content: attr(data-label);
+      display: inline-block;
+      width: 80px; /* Larghezza fissa per allineare i valori */
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+
+    /* D. AZIONI: Bottoni in basso */
+    .table tbody td[data-label="Actions"] {
+      grid-column: 1 / -1;
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* I bottoni occupano lo spazio disponibile */
+    .table tbody td[data-label="Actions"] .row-actions-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .table tbody td[data-label="Actions"] .btn {
+      flex: 1; /* Bottoni "stretchati" per facile tocco */
+      justify-content: center;
+      padding: 0.6rem;
+    }
+  }
+</style>
 
 {% endblock %}
 

@@ -142,7 +142,35 @@
       opacity: 0.8;
       pointer-events: none;
     }
+    /* --- STILE DEL BOTTONE HAMBURGER (Default nascosto su desktop) --- */
+      .hamburger-btn {
+        display: none; /* Nascosto su desktop */
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        margin-right: 1rem;
+        color: var(--text);
+        flex-direction: column;
+        gap: 5px;
+      }
+      .hamburger-line {
+        width: 24px;
+        height: 2px;
+        background-color: var(--text-color, #333);
+        transition: all 0.3s ease;
+      }
 
+      /* OVERLAY Sfondo scuro quando il menu è aperto */
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 99; /* Sotto la sidebar (100) ma sopra il contenuto */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
     /* 2. MAIN LAYOUT */
     .main-layout {
       flex: 1;
@@ -202,11 +230,43 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    @media (max-width: 900px) {
-      .sidebar { display: none; }
-      .app-wrapper { display: block; }
-      .top-bar { padding: 1rem; }
+ @media (max-width: 900px) {
+
+    /* 1. Mostriamo il bottone hamburger */
+    .hamburger-btn {
+      display: flex;
     }
+
+    /* 2. La Sidebar non è più display:none, ma nascosta lateralmente */
+    .sidebar {
+      display: flex; /* La riattiviamo */
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 280px; /* Un po' più larga su mobile per comodità */
+      transform: translateX(-100%); /* Spostata fuori schermo a sinistra */
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: none;
+      z-index: 1000; /* Sopra tutto */
+    }
+
+    /* Stato APERTO della sidebar */
+    .sidebar.is-open {
+      transform: translateX(0); /* Torna visibile */
+      box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+    }
+
+    /* Overlay visibile quando sidebar è aperta */
+    .sidebar-overlay.is-visible {
+      display: block;
+      opacity: 1;
+    }
+
+    /* Layout generale mobile */
+    .app-wrapper { display: block; }
+    .top-bar { padding: 0.8rem 1rem; }
+  }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -215,7 +275,9 @@
 
 <div class="app-wrapper">
 
-  <aside class="sidebar">
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+  <aside class="sidebar" id="main-sidebar">
     <div class="sidebar-header">
       <h1 class="site-title">
         PCM Hub
@@ -278,7 +340,14 @@
   <div class="main-layout">
 
     <header class="top-bar">
-      <div class="top-bar-left">
+      <div class="top-bar-left" style="display: flex; align-items: center;">
+
+        <button id="sidebar-toggle" class="hamburger-btn" aria-label="Toggle Navigation">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+
         <nav class="breadcrumb" aria-label="Breadcrumb" style="margin:0;">
           <ol style="margin:0; padding:0; list-style:none; display:flex; gap:0.5rem;">
             <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
@@ -398,6 +467,37 @@
   <button id="backToTop" class="back-to-top is-hidden" type="button" aria-label="Back to top" title="Back to top">↑</button>
   <script src="{% static 'js/back_to_top.js' %}"></script>
   <script src="{% static 'js/messages.js' %}" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleBtn = document.getElementById('sidebar-toggle');
+      const sidebar = document.getElementById('main-sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+
+      function toggleMenu() {
+        if (!sidebar || !overlay) return;
+
+        if (sidebar.classList.contains('is-open')) {
+          sidebar.classList.remove('is-open');
+          overlay.classList.remove('is-visible');
+        } else {
+          sidebar.classList.add('is-open');
+          overlay.classList.add('is-visible');
+        }
+      }
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          toggleMenu();
+        });
+      }
+
+      if (overlay) {
+        overlay.addEventListener('click', toggleMenu);
+      }
+    });
+  </script>
 
 </body>
 </html>

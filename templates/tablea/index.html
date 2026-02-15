@@ -337,10 +337,149 @@ document.querySelectorAll('.dropdown-content a').forEach(link => {
 </script>
 
 
-    <style>
+<style>
   .dashboard-hero {
     margin-bottom: 4rem;
   }
+/* --- MOBILE OPTIMIZATION PER TABLE A (< 900px) --- */
+@media (max-width: 900px) {
+
+  /* 1. Header e View Switcher */
+  .dashboard-hero {
+    margin-bottom: 1.5rem; /* Riduciamo lo spazio vuoto */
+    text-align: center;
+  }
+  .view-switcher-wrapper {
+    margin-bottom: 1rem;
+  }
+  .view-switcher {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .view-switcher-item {
+    flex: 1;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+
+  /* 2. Control Panel (Filtri) - Più compatto */
+  .control-panel {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .filter-group-title {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Griglia filtri: 2 colonne invece di 1 per risparmiare altezza */
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  /* Input e Select più alti per il touch */
+  .filter-item select, .filter-item input {
+    height: 40px; /* Facile da toccare */
+    font-size: 16px; /* Evita lo zoom automatico su iPhone */
+  }
+
+  /* 3. Action Bar (Bottoni in fondo ai filtri) */
+  .action-bar {
+    flex-direction: column; /* Impilati verticalmente */
+    gap: 0.75rem;
+    align-items: stretch; /* A tutta larghezza */
+  }
+
+  .action-bar > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .action-bar .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.8rem;
+  }
+
+  /* Fix per il Dropdown Download su mobile:
+     Lo rendiamo statico o facile da gestire senza hover */
+  .dropdown {
+    width: 100%;
+  }
+  .dropdown-content {
+    width: 100%;
+    position: relative; /* Non più absolute, spinge il contenuto sotto */
+    box-shadow: none;
+    border: 1px solid var(--border);
+    margin-top: 0.25rem;
+  }
+
+  /* 4. TABELLA E SCROLL */
+
+  /* Contenitore scrollabile: occupa buona parte dello schermo verticale */
+  .table-scroll {
+    max-height: 65vh; /* Altezza massima per vedere header e scrollare il corpo */
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  /* Intestazioni (TH) */
+  .table thead th {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+    white-space: nowrap; /* Niente a capo nelle intestazioni lingua */
+    height: 40px;
+    vertical-align: middle;
+  }
+
+  /* Celle (TD) */
+  .table tbody td {
+    padding: 0.5rem;
+    height: 40px; /* Altezza minima riga */
+    vertical-align: middle;
+  }
+
+  /* COLONNE STICKY SU MOBILE */
+  /* Manteniamo le checkbox e l'ID fissi a sinistra,
+     ma aggiungiamo un'ombra per far capire che il resto scorre sotto */
+  .table.table--freeze .col-sticky-left {
+    background: var(--surface) !important; /* Copre il contenuto che scorre sotto */
+    z-index: 20; /* Assicura che stia sopra */
+  }
+
+  /* L'ultima colonna sticky (di solito l'ID o il Nome) deve proiettare l'ombra */
+  .table.table--freeze th:nth-child(2),
+  .table.table--freeze td:nth-child(2) {
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    border-right: 1px solid var(--border);
+  }
+
+  /* Override delle larghezze minime definite inline nell'HTML */
+  /* Riduciamo un po' la larghezza del "Parameter Name" su mobile per vedere più dati */
+  .table th:nth-child(3),
+  .table td:nth-child(3) {
+    min-width: 140px !important;
+    max-width: 160px !important;
+    white-space: normal; /* Permetti al nome di andare a capo */
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  /* Nascondiamo la colonna "Implication" su mobile per guadagnare spazio?
+     Opzionale: scommenta se vuoi nasconderla */
+  /*
+  .table th:nth-child(4),
+  .table td:nth-child(4) {
+     display: none;
+  }
+  */
+}
 </style>
 
 

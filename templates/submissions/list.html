@@ -172,5 +172,114 @@
     color: #ff4500;
     font-weight: bold;
   }
+
+  /* --- MOBILE BACKUP LIST (< 900px) --- */
+@media (max-width: 900px) {
+
+    /* 1. Header e Toolbar */
+    .dashboard-hero {
+        text-align: center;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .toolbar__form {
+        flex-direction: column;
+    }
+    .toolbar__form input,
+    .toolbar__form button,
+    .toolbar__form a.btn {
+        width: 100%;
+        margin: 0 !important; /* Reset margini inline */
+    }
+
+    /* 2. Trasformiamo la tabella in una lista di Card */
+    .table thead { display: none; }
+
+    .table tbody tr {
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        gap: 0.5rem;
+    }
+
+    .table tbody td {
+        display: block;
+        padding: 0;
+        border: none;
+        width: 100%;
+        text-align: left !important; /* Sovrascrive allineamenti inline */
+    }
+
+    /* --- SPECIFICO PER VISTA CARTELLE (Folder View) --- */
+    /* td1: Icona, td2: Data, td3: Nota, td4: Lingue, td5: Email, td6: Azioni */
+
+    /* Icona cartella e Data sulla stessa riga visiva */
+    .table tbody tr td:first-child {
+        font-size: 1.2rem;
+        margin-bottom: -1.5rem; /* Trucco per sovrapporlo */
+    }
+    .table tbody tr td:nth-child(2) {
+        padding-left: 2rem; /* Spazio per l'icona */
+        font-size: 1.1rem;
+        color: var(--brand);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Label per Nota e Utente */
+    .table tbody tr td:nth-child(3)::before { content: "Note: "; font-weight: bold; color: var(--text-muted); }
+    .table tbody tr td:nth-child(5)::before { content: "User: "; font-weight: bold; color: var(--text-muted); }
+
+    /* Badge numero lingue */
+    .table tbody tr td:nth-child(4) {
+        order: -1; /* Lo spostiamo in alto a destra se possibile, o lasciamo flow */
+        margin-bottom: 0.5rem;
+    }
+
+    /* Azioni (Bottoni) */
+    .table tbody tr td:last-child {
+        margin-top: 1rem;
+        border-top: 1px dashed var(--border);
+        padding-top: 1rem;
+    }
+    .table tbody tr td:last-child > div {
+        width: 100%;
+        display: flex;
+        flex-direction: column; /* Bottoni impilati */
+        gap: 0.5rem;
+    }
+    .table tbody tr td:last-child .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* --- SPECIFICO PER VISTA LINGUE (Language View) --- */
+    /* Se la tabella ha meno colonne (4), adattiamo */
+
+    /* Nome lingua */
+    .table tbody tr td:nth-child(1) strong {
+        font-size: 1.2rem;
+        color: var(--text);
+    }
+
+    /* ID lingua */
+    .table tbody tr td:nth-child(2) {
+        font-family: var(--mono);
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Bottone Vedi Dati */
+    .table tbody tr td:last-child a.btn {
+        display: flex;
+        width: 100%;
+        margin-top: 0.5rem;
+        justify-content: center;
+    }
+}
 </style>
 {% endblock %}
