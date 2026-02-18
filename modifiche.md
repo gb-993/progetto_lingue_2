@@ -4,7 +4,7 @@
 - [ ] Servizi informatici per casella noreply
 
 ## GENERALI
-- [x] Verificare che "instructions" sia sempre al plurale
+- [ ] "Instructions" al plurale in edit question
 - [x] Rendere cliccabili i link nel menù (link circolari)
 - [x] Aggiornare i nomi delle pagine (Graph -> Parameter networks, Submissions -> Saved languages, Queries -> Filters)
 - [x] Aggiornare ordine nel menù User: Dashboard > Languages > Instructions > Glossary > My account
@@ -26,8 +26,8 @@
 - [x] Lista delle questions con lo stesso ordine dei parametri
 
 ## LISTA LINGUE
-- [x] Togliere l'attributo position (non serve più)
-- [x] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua) ?? obbligatori o no ??
+- [ ] Togliere l'attributo position (non serve più)
+- [ ] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua) ?? obbligatori o no ??
 - [x] Errori "parlanti" al caricamento di un file(?) 
 - [x] Equiparare Qs a QS nello script(?)
 - [x] Fare in modo che se nel file excel ci sono ID delle questions che non si trovano nel database, i dati di quelle questions non vengano copiati
@@ -53,18 +53,17 @@
 
 ## PARAMETERS EDIT
 - [x] Inserire un nuovo attributo Level of comparison con i due valori mutualmente esclusivi Canonico e Deuterocanonico
-- [x] Inserire due altre celle di testo libero una sotto l'altra intitolate "Long description" e "Explication of the implicational condition(s)"
-- [x] Inserire un bottone di download alla fine della pagina di edit del parametro per scaricare un pdf con tutte le informazioni di un parametro e delle sue questions
+- [ ] Inserire due altre celle di testo libero una sotto l'altra intitolate "Long description" e "Explication of the implicational condition(s)"
+- [ ] Inserire un bottone di download alla fine della pagina di edit del parametro per scaricare un pdf con tutte le informazioni di un parametro e delle sue questions
 
 ## TABLE A
-- [ ] Togliere dallo script che genera le distanze quelle che trasformano gli 0 in - 
 - [x] Poter cliccare sul valore di un parametro o su YES/NO di una question e visualizzare le questions e gli esempi che hanno permesso di fissare quel parametro/risposta (solo se si riesce) 
 - [x] Poter selezionare le lingue anche per Family e per Group, oltre che per Top-level family, e i parametri per Level of Comparison
 - [x] Poter selezionare singole lingue (oltre che con i filtri) e singoli parametri, tipo con checkbox vicino a ogni lingua/parametro per il download delle distanze e dei dendrogrammi
 - [x] Far scaricare solo distanze Hamming e Jaccard[+] (eliminare le altre quattro)
 - [x] Scaricare dendrogramma UPGMA adattando dendrogram.py (magari con lo stesso pulsante delle distanze: Export distances and dendrograms)
 - [ ] Scaricare una PCA 
-- [ ] Scaricare una heatmaps 
+- [ ] Scaricare una mappa 
 
 ## FILTERS
 - [x] Inserire l'ordine alfabetico per la ricerca delle lingue anziché quello basato su position

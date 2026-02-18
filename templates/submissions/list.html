@@ -13,9 +13,9 @@
         <h1>Backup History</h1>
     {% else %}
         <div class="d-flex align-items-center gap-3">
-             <a href="{% url 'submissions_list' %}" class="btn btn-outline-secondary">← Torna alle cartelle</a>
+             <a href="{% url 'submissions_list' %}" class="btn btn-outline-secondary">← Back to all folders</a>
              <div>
-                <h1 class="m-0">Backup del {{ selected_ts }}</h1>
+                <h1 class="m-0">Backup: {{ selected_ts }}</h1>
              </div>
         </div>
     {% endif %}
@@ -24,7 +24,7 @@
 <section class="toolbar" role="search" style="margin-bottom: 1.5rem;">
   <form method="get" class="toolbar__form d-flex gap-2">
     <input id="q" name="q" class="form-control" type="search" value="{{ q|default:'' }}"
-           placeholder="{% if is_folder_view %}Cerca backup...{% else %}Cerca lingua...{% endif %}">
+           placeholder="{% if is_folder_view %}Cerca backup...{% else %}Search languages...{% endif %}">
 
     {% if selected_ts %}
         <input type="hidden" name="timestamp" value="{{ selected_ts }}">
@@ -32,7 +32,7 @@
         {% if dir %}<input type="hidden" name="dir" value="{{ dir }}">{% endif %}
     {% endif %}
 
-    <button class="btn btn-primary" type="submit">Cerca</button>
+    <button class="btn btn-primary" type="submit">Search</button>
 
     {% if is_folder_view and is_admin %}
          <a class="btn btn-warning" href="{% url 'submission_create_all' %}" style="background-color: #ff4500; color: white; border:none; margin-left:auto;">
@@ -48,11 +48,11 @@
       {% if is_folder_view %}
         <tr>
           <th style="width: 50px;"></th>
-          <th>Data Backup</th>
-          <th>Nota</th>
-          <th>Lingue</th>
-          <th>Utente</th>
-          <th style="text-align: right;">Azioni</th>
+          <th>Date</th>
+          <th>Notes</th>
+          <th>Languages</th>
+          <th>Admin</th>
+          <th style="text-align: right;">Actions</th>
         </tr>
       {% else %}
         <tr>
@@ -74,8 +74,8 @@
             </a>
           </th>
 
-          <th>Stato</th>
-          <th style="text-align: right;">Dettagli</th>
+          <th>Status</th>
+          <th style="text-align: right;">Details</th>
         </tr>
       {% endif %}
     </thead>
@@ -114,7 +114,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="text-center py-4">Nessun backup trovato.</td></tr>
+          <tr><td colspan="6" class="text-center py-4">No backup found.</td></tr>
         {% endfor %}
 
       {% else %}
@@ -123,13 +123,13 @@
           <tr>
             <td><strong>{{ s.language.name_full }}</strong></td>
             <td><code>{{ s.language_id }}</code></td>
-            <td><span class="badge bg-success">Salvato</span></td>
+            <td><span class="badge bg-success">Saved</span></td>
             <td style="text-align: right;">
-               <a class="btn btn-sm btn-outline-primary" href="{% url 'submission_detail' s.id %}">Vedi Dati</a>
+               <a class="btn btn-sm btn-outline-primary" href="{% url 'submission_detail' s.id %}">Data</a>
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="4" class="text-center py-4">Nessuna lingua trovata.</td></tr>
+          <tr><td colspan="4" class="text-center py-4">No language found.</td></tr>
         {% endfor %}
       {% endif %}
     </tbody>
@@ -140,11 +140,11 @@
 <nav class="pagination d-flex justify-content-center mt-4">
   <div class="btn-group">
       {% if page.has_previous %}
-        <a class="btn btn-outline-secondary" href="?page={{ page.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_ts %}&timestamp={{ selected_ts }}&sort={{ sort }}&dir={{ dir }}{% endif %}">Precedente</a>
+        <a class="btn btn-outline-secondary" href="?page={{ page.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_ts %}&timestamp={{ selected_ts }}&sort={{ sort }}&dir={{ dir }}{% endif %}">Previous</a>
       {% endif %}
-      <span class="btn btn-disabled disabled">Pagina {{ page.number }} di {{ page.paginator.num_pages }}</span>
+      <span class="btn btn-disabled disabled">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
       {% if page.has_next %}
-        <a class="btn btn-outline-secondary" href="?page={{ page.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_ts %}&timestamp={{ selected_ts }}&sort={{ sort }}&dir={{ dir }}{% endif %}">Successiva</a>
+        <a class="btn btn-outline-secondary" href="?page={{ page.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_ts %}&timestamp={{ selected_ts }}&sort={{ sort }}&dir={{ dir }}{% endif %}">Next</a>
       {% endif %}
   </div>
 </nav>
