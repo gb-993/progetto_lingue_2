@@ -111,7 +111,7 @@
   {% elif request.user.role == 'user' %}
 
     <section class="section">
-      <h3>Your Assigned Languages</h3>
+      <h3>Your assigned languages</h3>
       <div class="projects-list">
         {% for item in user_projects %}
           <a href="{% url 'language_data' item.lang.id %}" class="card project-item-simple">
