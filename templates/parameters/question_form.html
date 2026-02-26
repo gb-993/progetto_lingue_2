@@ -2,12 +2,12 @@
 {% load static %}
 {% block title %}{% if is_create %}Add question{% else %}Edit question{% endif %}{% endblock %}
 {% block breadcrumb %}
-  <li>
-    <a href="{% url 'parameter_list' %}">Parameters</a>
-  </li>
-  <li>
-    <a href="{% url 'parameter_edit' parameter.id %}">{{ parameter.id }}</a>
-  </li>
+  {% if request.GET.from == 'questions' %}
+    <li><a href="{% url 'questions_list' %}">Questions</a></li>
+  {% else %}
+    <li><a href="{% url 'parameter_list' %}">Parameters</a></li>
+    <li><a href="{% url 'parameter_edit' parameter.id %}">{{ parameter.id }}</a></li>
+  {% endif %}
   <li aria-current="page">{% if is_create %}Add question{% else %}Edit {{ form.initial.id|default_if_none:"" }}{% endif %}</li>
 {% endblock %}
 
@@ -15,7 +15,7 @@
 <div class="card">
   <h2>{% if is_create %}Add question{% else %}Edit question{% endif %} — {{ parameter.id }}</h2>
 
-  <form method="post" novalidate>
+  <form method="post" action="{% if request.GET.from %}?from={{ request.GET.from }}{% endif %}" novalidate>
     {% csrf_token %}
 
     {% if form.non_field_errors %}
@@ -105,7 +105,11 @@
 
     <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
       <button class="btn btn--primary" type="submit">{% if is_create %}Add{% else %}Save{% endif %}</button>
-      <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Cancel</a>
+      {% if request.GET.from == 'questions' %}
+        <a class="btn" href="{% url 'questions_list' %}">Cancel</a>
+      {% else %}
+        <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Cancel</a>
+      {% endif %}
     </div>
   </form>
 </div>

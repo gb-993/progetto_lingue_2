@@ -115,6 +115,7 @@ class Language(models.Model):
     family = models.CharField(max_length=255, blank=True, default="")
     latitude = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=11, decimal_places=6, null=True, blank=True)
+    location = models.CharField(max_length=255, blank=True, default="")
     assigned_user = models.ForeignKey(
         "core.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="languages"
     )
@@ -267,6 +268,8 @@ class ParameterDef(models.Model):
     id = models.CharField(primary_key=True, max_length=10)
     name = models.CharField(max_length=200)
     short_description = models.TextField(blank=True, default="")
+    long_description = models.TextField(blank=True, default="")
+    description_of_the_implicational_condition = models.TextField(blank=True, default="")
     implicational_condition = models.CharField(max_length=255, null=True, blank=True, default="")
     is_active = models.BooleanField(default=True)
     position = models.PositiveIntegerField()

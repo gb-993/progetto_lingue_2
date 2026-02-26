@@ -3,12 +3,12 @@
 
 {% block title %}{% trans "Delete question" %} {{ question.id }}{% endblock %}
 {% block breadcrumb %}
-  <li>
-    <a href="{% url 'parameter_list' %}">Parameters</a>
-  </li>
-  <li>
-    <a href="{% url 'parameter_edit' parameter.id %}">{{ parameter.id }}</a>
-  </li>
+  {% if request.GET.from == 'questions' %}
+    <li><a href="{% url 'questions_list' %}">Questions</a></li>
+  {% else %}
+    <li><a href="{% url 'parameter_list' %}">Parameters</a></li>
+    <li><a href="{% url 'parameter_edit' parameter.id %}">{{ parameter.id }}</a></li>
+  {% endif %}
   <li aria-current="page">{% trans "Delete" %} {{ question.id }}</li>
 {% endblock %}
 
@@ -29,7 +29,7 @@
     </p>
   </article>
 
-  <form method="post" novalidate style="margin-top:1rem">
+<form method="post" action="{% if request.GET.from %}?from={{ request.GET.from }}{% endif %}" novalidate style="margin-top:1rem">
     {% csrf_token %}
 
     {% if can_force %}
@@ -40,14 +40,16 @@
         <button type="submit" name="force" value="1" class="btn btn--danger">
           ⚠️ {% trans "Force delete and remove linked data" %}
         </button>
-        <a class="btn" href="{% url 'parameter_edit' parameter.id %}">
+        <a class="btn" href="{% if request.GET.from == 'questions' %}{% url 'questions_list' %}{% else %}{% url 'parameter_edit' parameter.id %}{% endif %}">
           {% trans "Cancel" %}
         </a>
       </div>
     {% else %}
       <div class="actions" style="display:flex;gap:.5rem;flex-wrap:wrap;">
         <button type="submit" class="btn btn--danger">{% trans "Delete" %}</button>
-        <a class="btn" href="{% url 'parameter_edit' parameter.id %}">{% trans "Cancel" %}</a>
+        <a class="btn" href="{% if request.GET.from == 'questions' %}{% url 'questions_list' %}{% else %}{% url 'parameter_edit' parameter.id %}{% endif %}">
+          {% trans "Cancel" %}
+        </a>
       </div>
     {% endif %}
   </form>

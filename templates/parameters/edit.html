@@ -41,6 +41,8 @@
         data-tracked='[
           "{{ form.name.html_name|escapejs }}",
           "{{ form.short_description.html_name|escapejs }}",
+          "{{ form.long_description.html_name|escapejs }}",
+          "{{ form.description_of_the_implicational_condition.html_name|escapejs }}",
           "{{ form.implicational_condition.html_name|escapejs }}",
           "{{ form.is_active.html_name|escapejs }}",
           "{{ form.position.html_name|escapejs }}"{% if form.warning_default %},
@@ -106,10 +108,24 @@
       {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
     </div>
 
-    <div class="form-row">
-      <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
-      {{ form.short_description }}
-      {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
+  <div class="form-row">
+        <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
+        {{ form.short_description }}
+        {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
+  </div>
+
+  <div class="form-row"
+         style="display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem;">
+        <label for="{{ form.long_description.id_for_label }}">{{ form.long_description.label }}</label>
+        {{ form.long_description }}
+        {% if form.long_description.errors %}<div class="form-error">{{ form.long_description.errors }}</div>{% endif %}
+    </div>
+
+  <div class="form-row"
+            style="display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem;">
+            <label for="{{ form.description_of_the_implicational_condition.id_for_label }}">{{ form.description_of_the_implicational_condition.label }}</label>
+            {{ form.description_of_the_implicational_condition }}
+            {% if form.description_of_the_implicational_condition.errors %}<div class="form-error">{{ form.description_of_the_implicational_condition.errors }}</div>{% endif %}
     </div>
 
     <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">

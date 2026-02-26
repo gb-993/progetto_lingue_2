@@ -16,28 +16,37 @@
       {{ form.non_field_errors }}
 
       <div class="grid grid-2">
-
-        {% for field in form %}
-          {% if field.name != "assigned_user" %}
-            <div class="form-row">
-              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field }}
-              {% if field.errors %}<div class="error">{{ field.errors|striptags }}</div>{% endif %}
-              {% if field.help_text %}<div class="muted">{{ field.help_text }}</div>{% endif %}
-            </div>
-          {% endif %}
-        {% endfor %}
+          {% for field in form %}
+              {% if field.name != "assigned_user" %}
+                <div class="form-row">
+                  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.errors %}<div class="error">{{ field.errors|striptags }}</div>{% endif %}
+                  {% if field.help_text %}<div class="muted">{{ field.help_text }}</div>{% endif %}
+                </div>
+              {% else %}
+                {# Questo impedisce a Django di svuotare il campo al salvataggio #}
+                {{ field.as_hidden }}
+              {% endif %}
+          {% endfor %}
 
         {# --- Campo di sola lettura per l'assegnatario --- #}
         <div class="form-row">
           <label>Assigned to</label>
-          <div class="form-control is-plaintext" aria-readonly="true">
-            {% if language.assigned_user %}
-              {{ language.assigned_user.name }} {{ language.assigned_user.surname }} ({{ language.assigned_user.email }})
-            {% else %}
-              <span class="muted">—</span>
-            {% endif %}
-          </div>
+            <div class="form-control is-plaintext" aria-readonly="true">
+              {% if language.users.exists %}
+                <ul style="margin: 0; padding-left: 1.2rem;">
+                  {% for u in language.users.all %}
+                    <li>{{ u.name }} {{ u.surname }} ({{ u.email }})</li>
+                  {% endfor %}
+                </ul>
+              {% elif language.assigned_user %}
+                {# Fallback per eventuali vecchi dati non ancora migrati #}
+                {{ language.assigned_user.name }} {{ language.assigned_user.surname }} ({{ language.assigned_user.email }})
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </div>
           <div class="muted">
             <a href="{% url 'accounts_list' %}" class="link-muted">
               Editable from the account page

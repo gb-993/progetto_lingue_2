@@ -929,7 +929,7 @@ def language_debug(request, lang_id: str):
 
 
 # -----------------------
-# Azione: esecuzione DAG manuale
+# Azione: esecuzione DAG manuale (Forza Approvazione anche se parziale)
 # -----------------------
 @login_required
 @require_POST
@@ -938,11 +938,29 @@ def language_run_dag(request, lang_id: str):
         messages.error(request, _t("You are not allowed to run the DAG."))
         return redirect("language_debug", lang_id=lang_id)
 
+    lang = get_object_or_404(Language, pk=lang_id)
+
+    # 1. Approva le risposte attuali FORZATAMENTE (senza controllare se sono tutte compilate)
+    # Aggiorniamo tutte le risposte non ancora approvate bloccandole.
+    changed = Answer.objects.filter(
+        language=lang
+    ).exclude(
+        status=AnswerStatus.APPROVED
+    ).update(
+        status=AnswerStatus.APPROVED, modifiable=False
+    )
+
+    # 2. Registra l'azione nell'audit log per tracciare chi ha forzato l'approvazione
+    if changed > 0:
+        LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
+
+    # 3. Esecuzione del DAG sui dati attuali (calcolerà i parametri anche se mancano risposte)
     try:
         report = run_dag_for_language(lang_id)
         msg = _t(
-            "DAG completed: processed %(p)d, forced to zero %(fz)d, missing orig %(mo)d, warnings propagated %(wp)d."
+            "Forced approval on %(n)d answers. DAG completed: processed %(p)d, forced to zero %(fz)d, missing orig %(mo)d, warnings propagated %(wp)d."
         ) % {
+            "n": changed,
             "p": len(report.processed or []),
             "fz": len(report.forced_zero or []),
             "mo": len(report.missing_orig or []),
@@ -954,7 +972,7 @@ def language_run_dag(request, lang_id: str):
             msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6]) + ("…" if len(report.parse_errors) > 6 else "")
         messages.success(request, msg)
     except Exception as e:
-        messages.error(request, _t("DAG failed: %(err)s") % {"err": str(e)})
+        messages.error(request, _t("Approved, but DAG failed: %(err)s") % {"err": str(e)})
 
     return redirect("language_debug", lang_id=lang_id)
 
@@ -1128,8 +1146,9 @@ def language_list_export_xlsx(request):
     qs = (
         Language.objects
         .select_related("assigned_user")
+        .prefetch_related("users")  # <-- AGGIUNTO PER IL MANY-TO-MANY
         .annotate(last_change=Max("answers__updated_at"))
-        .order_by("position")  
+        .order_by("position")
     )
     if q:
         qs = qs.filter(
@@ -1159,14 +1178,23 @@ def language_list_export_xlsx(request):
             return v.replace(tzinfo=None) if v.tzinfo else v
         return v
 
-    def _full_name(u):
-        if not u:
-            return ""
-        nm = f"{(u.name or '').strip()} {(u.surname or '').strip()}".strip()
-        return nm or (u.email or "")
+    def _get_assigned_names(lang):
+        users = list(lang.users.all())
+        if users:
+            return ", ".join(
+                f"{(u.name or '').strip()} {(u.surname or '').strip()}".strip() or (u.email or "") for u in users)
+        if lang.assigned_user:
+            u = lang.assigned_user
+            return f"{(u.name or '').strip()} {(u.surname or '').strip()}".strip() or (u.email or "")
+        return ""
 
-    def _email(u):
-        return "" if not u else (u.email or "")
+    def _get_assigned_emails(lang):
+        users = list(lang.users.all())
+        if users:
+            return ", ".join(u.email for u in users if u.email)
+        if lang.assigned_user:
+            return lang.assigned_user.email or ""
+        return ""
 
     HEADERS = [
         "ID",
@@ -1194,7 +1222,7 @@ def language_list_export_xlsx(request):
         cell.font = Font(bold=True)
 
     # rows
-    for L in qs.iterator():
+    for L in qs.iterator(chunk_size=1000):
         row = [
             _xlsx_sanitize(L.id),
             _xlsx_sanitize(L.name_full),
@@ -1207,8 +1235,8 @@ def language_list_export_xlsx(request):
             _xlsx_sanitize(L.longitude),
             _xlsx_sanitize(L.historical_language),
             _xlsx_sanitize(L.source),
-            _xlsx_sanitize(_full_name(L.assigned_user)),
-            _xlsx_sanitize(_email(L.assigned_user)),
+            _xlsx_sanitize(_get_assigned_names(L)),
+            _xlsx_sanitize(_get_assigned_emails(L)),
             _xlsx_sanitize(L.last_change),
         ]
         ws.append(row)

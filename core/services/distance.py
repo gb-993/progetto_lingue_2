@@ -83,15 +83,14 @@ def main():
                 new_parts.append(char)
         zero_to_minus.append(new_parts)
 
+
+    # Create output directory if it doesn't exist -> anche in RAM
     output_dir = Path("distances")
     output_dir.mkdir(exist_ok=True)
 
     distance_matrix(hamming, original, languages, output_dir / "hamming.txt")
     distance_matrix(jaccard, original, languages, output_dir / "jaccard[+].txt", identity="+")
-    distance_matrix(jaccard, original, languages, output_dir / "jaccard[-].txt", identity="-")
-    distance_matrix(hamming, zero_to_minus, languages, output_dir / "hamming[NO_0].txt")
-    distance_matrix(jaccard, zero_to_minus, languages, output_dir / "jaccard[+_NO_0].txt", identity="+")
-    distance_matrix(jaccard, zero_to_minus, languages, output_dir / "jaccard[-_NO_0].txt", identity="-")
+
 
     print(f"Six distance matrices generated successfully.")
 

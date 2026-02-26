@@ -111,7 +111,7 @@ def tablea_export_xlsx(request):
     languages, rows, view_mode = get_tablea_filtered_data(request)
     wb = Workbook()
     ws = wb.active
-    ws.append(["Label", "Name", "Implication"] + [l.id for l in languages])
+    ws.append(["Label", "Name", "Implicational Conditions"] + [l.id for l in languages])
     for r in rows:
         name_val = getattr(r['p'], 'name', getattr(r['p'], 'text', ''))
         impl_val = r['p'].parameter_id if view_mode == "questions" else getattr(r['p'], 'implicational_condition', '')
@@ -131,9 +131,9 @@ def tablea_export_csv(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="tableA_{view_mode}_transposed.csv"'
     writer = csv.writer(response)
-    writer.writerow(["Language ID", "Top Family", "Family"] + [r['p'].id for r in rows])
+    writer.writerow(["Language"] + [r['p'].id for r in rows])
     for i, lang in enumerate(languages):
-        writer.writerow([lang.id, lang.top_level_family, lang.family] + [r['cells'][i]['val'] for r in rows])
+        writer.writerow([lang.id] + [r['cells'][i]['val'] for r in rows])
     return response
 
 

@@ -1,56 +1,137 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Team - The PCM Hub{% endblock %}
+{% block title %}Contact Us - The PCM Hub{% endblock %}
+
 {% block breadcrumb %}
-  <li aria-current="page">Team</li>
+  <li aria-current="page">Contact</li>
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container contact-page">
 
   <header class="dashboard-hero">
-    <h1>Research Team</h1>
-    <p class="hero-subtitle">The people behind the PCM Hub project.</p>
+    <h1>Contact Us</h1>
   </header>
 
-  <div style="margin-top: 3rem;">
-    <h2 style="margin-bottom: 1.5rem;">Principal Investigators</h2>
+  <div class="contact-grid">
 
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
-
-      <div class="card" style="text-align: center; padding: 2rem; height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <div style="width: 80px; height: 80px; background: #ddd; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
-        <h3 style="margin: 0.5rem 0 0;">Dr. Marco Longhin</h3>
-        <p class="muted" style="font-size: 0.9rem;">Project Lead</p>
-        <p style="font-size: 0.85rem; margin-top: 0.5rem;">University of Padua / UniPd</p>
+    <section class="contact-person">
+      <h2>Coordination</h2>
+      <div class="card profile-card">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-details">
+          <h3>Prof. Cristina Guardiano</h3>
+          <p class="role">Coordinator</p>
+          <p class="affiliation">UNIMORE - Università di Modena e Reggio Emilia</p>
+          <a href="mailto:cristina.guardiano@unimore.it" class="contact-link">Send an Email</a>
+        </div>
       </div>
+    </section>
 
-      <div class="card" style="text-align: center; padding: 2rem; height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <div style="width: 80px; height: 80px; background: #ddd; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
-        <h3 style="margin: 0.5rem 0 0;">Prof. Cristina Guardiano</h3>
-        <p class="muted" style="font-size: 0.9rem;">Scientific Coordinator</p>
-        <p style="font-size: 0.85rem; margin-top: 0.5rem;">UNIMORE</p>
+    <section class="contact-institution">
+      <h2>Headquarters</h2>
+      <div class="card institution-card">
+        <div class="placeholder-map">
+          <span>[ Interactive Map Placeholder ]</span>
+        </div>
+        <div class="institution-details">
+          <h3>UNIMORE</h3>
+          <p>Dipartimento di Studi Linguistici e Culturali</p>
+          <address>
+            Largo S. Eufemia, 19<br>
+            41121 Modena (MO) - Italy
+          </address>
+        </div>
       </div>
+    </section>
 
-      <div class="card" style="text-align: center; padding: 2rem; height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <div style="width: 80px; height: 80px; background: #ddd; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">💻</div>
-        <h3 style="margin: 0.5rem 0 0;">Technical Team</h3>
-        <p class="muted" style="font-size: 0.9rem;">Development & Maintenance</p>
-        <p style="font-size: 0.85rem; margin-top: 0.5rem;">The PCM Hub Devs</p>
-      </div>
-
-    </div>
   </div>
 
-  <div style="margin-top: 3rem;">
-    <h2 style="margin-bottom: 1.5rem;">Institutional Partners</h2>
-    <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 2rem;">
-      <li class="card" style="padding: 1rem 2rem;">Università di Modena e Reggio Emilia</li>
-      <li class="card" style="padding: 1rem 2rem;">University of York</li>
-      <li class="card" style="padding: 1rem 2rem;">Università di Trieste</li>
-    </ul>
-  </div>
+  <section class="collaboration-box card accent-border">
+    <h3>General Inquiries & Collaborations</h3>
+    <p>For technical support, data submission, or scientific partnership proposals, please reach out to our main address:</p>
+    <a href="mailto:info@pcmhub.org" class="main-email">info@pcmhub.org</a>
+  </section>
 
 </div>
+<style>
+/* Layout della pagina Contatti */
+.contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+}
+
+/* Card del Profilo */
+.profile-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    background: var(--surface-2, #eee);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+/* Placeholder per la Mappa */
+.placeholder-map {
+    width: 100%;
+    height: 200px;
+    background: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px 8px 0 0;
+    color: #888;
+    font-style: italic;
+}
+
+.institution-details {
+    padding: 1.5rem;
+}
+
+/* Stile per l'indirizzo */
+address {
+    font-style: normal;
+    margin-top: 0.5rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+/* Box Accento (Collaborazioni) */
+.accent-border {
+    border-left: 5px solid #2c3e50;
+    padding: 2rem;
+}
+
+.main-email {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #2c3e50;
+    text-decoration: none;
+}
+
+/* Responsive per schermi piccoli */
+@media (max-width: 850px) {
+    .contact-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
 {% endblock %}

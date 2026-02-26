@@ -26,8 +26,8 @@
 - [x] Lista delle questions con lo stesso ordine dei parametri
 
 ## LISTA LINGUE
-- [ ] Togliere l'attributo position (non serve più)
-- [ ] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua) ?? obbligatori o no ??
+- [x] Togliere l'attributo position (non serve più)
+- [x] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua)
 - [x] Errori "parlanti" al caricamento di un file(?) 
 - [x] Equiparare Qs a QS nello script(?)
 - [x] Fare in modo che se nel file excel ci sono ID delle questions che non si trovano nel database, i dati di quelle questions non vengano copiati
@@ -47,6 +47,7 @@
 
 ## GLOSSARIO
 - [x] Caricare voci
+- [ ] controllare corrispondenza tra versione online e locale
 
 ## DEBUG
 - [ ] Warning in caso di risposte non date

@@ -10,7 +10,6 @@ class LanguageForm(forms.ModelForm):
         fields = [
             "id",
             "name_full",
-            "position",
             "top_level_family",
             "family",
             "grp",
@@ -20,13 +19,14 @@ class LanguageForm(forms.ModelForm):
             "informant",
             "source",
             "historical_language",
+            "latitude",
+            "longitude",
         ]
 
         
         labels = {
             "id": "Id",  
             "name_full": "Name",
-            "position": "Position",
             "top_level_family": "Top-level family",
             "family": "Family",
             "grp": "Group",
@@ -36,6 +36,8 @@ class LanguageForm(forms.ModelForm):
             "informant": "Informant",
             "source": "Source",
             "historical_language": "Historical language",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
         }
 
         
@@ -48,13 +50,6 @@ class LanguageForm(forms.ModelForm):
             "name_full": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Full language name",
-            }),
-            "position": forms.NumberInput(attrs={
-                "class": "form-control",
-                "min": "1",
-                "step": "1",
-                "inputmode": "numeric",
-                "placeholder": "Order / position",
             }),
             "top_level_family": forms.TextInput(attrs={
                 "class": "form-control",
@@ -92,6 +87,24 @@ class LanguageForm(forms.ModelForm):
                 "class": "",
                 
             }),
+            "latitude": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.000001",
+                "inputmode": "decimal",
+                "placeholder": "e.g., 45.4642 (range: -90 to 90)",
+                "min": "-90",
+                "max": "90",
+                "title": "Latitude must be between -90 and 90",
+            }),
+            "longitude": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.000001",
+                "inputmode": "decimal",
+                "placeholder": "e.g., 9.1900 (range: -180 to 180)",
+                "min": "-180",
+                "max": "180",
+                "title": "Longitude must be between -180 and 180",
+            }),
         }
 
     def clean_position(self):
@@ -99,6 +112,18 @@ class LanguageForm(forms.ModelForm):
         if pos is None or pos < 1:
             raise forms.ValidationError("Position must be a positive integer (>= 1).")
         return pos
+
+    def clean_latitude(self):
+        lat = self.cleaned_data.get("latitude")
+        if lat is not None and (lat < -90 or lat > 90):
+            raise forms.ValidationError("Latitude must be between -90 and 90.")
+        return lat
+
+    def clean_longitude(self):
+        lon = self.cleaned_data.get("longitude")
+        if lon is not None and (lon < -180 or lon > 180):
+            raise forms.ValidationError("Longitude must be between -180 and 180.")
+        return lon
 
 
 

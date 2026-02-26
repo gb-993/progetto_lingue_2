@@ -4,65 +4,165 @@
   <li aria-current="page">Questions</li>
 {% endblock %}
 
-{% block content %}
+{% block body_class %}questions-list{% endblock %}
 
+{% block content %}
 <header class="dashboard-hero">
   <h1>Questions</h1>
 </header>
 
-{# Integrazione coerente della toolbar #}
+{# Integrazione coerente della toolbar (senza i tasti di export/import) #}
 {% include "_toolbar_search.html" with q=q placeholder="Search questions or parameters…" %}
 
 <h2 id="table-heading" class="sr-only">Question list</h2>
 
-<table class="table" role="table" aria-describedby="table-caption">
-  <caption id="table-caption" class="sr-only">
-    Global list of questions ordered by parameter position.
-    {% if questions %} Total items: {{ questions|length }}.{% endif %}
-  </caption>
-  <thead>
-    <tr>
-      <th scope="col">ID</th>
-      <th scope="col">Text Snippet</th>
-      <th scope="col">Type</th>
-      <th scope="col" style="text-align: right;">Actions</th>
-    </tr>
-  </thead>
+<div class="table-responsive">
+  <table class="table" role="table" aria-describedby="table-caption">
+    <caption id="table-caption" class="sr-only">
+      Global list of questions ordered by parameter position.
+      {% if questions %} Total items: {{ questions|length }}.{% endif %}
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col" >Text Snippet</th>
+        <th scope="col">Type</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
 
-  <tbody>
-    {% for q in questions %}
-    <tr>
-      <td data-label="ID">
-          <strong>{{ q.id }}</strong>
-      </td>
-      <td data-label="Text">
-        {{ q.text|truncatechars:100 }}
-      </td>
-      <td data-label="Type">
-        {% if q.is_stop_question %}
-          <span style="color: var(--danger, #d9534f);">Stop</span>
-        {% else %}
-          <span class="muted">Standard</span>
-        {% endif %}
-      </td>
-      <td data-label="Actions" class="row-actions" style="text-align: right;">
-        <a class="btn" href="{% url 'question_edit' q.parameter.id q.id %}">Edit</a>
-        <a class="btn btn--danger" href="{% url 'question_delete' q.parameter.id q.id %}">Delete</a>
-      </td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="5">
-        <p class="muted" role="status" aria-live="polite">No questions found.</p>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    <tbody>
+      {% for q in questions %}
+      <tr>
+        <td data-label="ID">
+          {{ q.id }}
+        </td>
+        <td data-label="Text">
+          {{ q.text|truncatechars:70 }}
+        </td>
+        <td data-label="Type">
+          {% if q.is_stop_question %}
+            <span style="color: var(--danger, #d9534f); font-weight: bold;">Stop</span>
+          {% else %}
+            <span class="muted">Standard</span>
+          {% endif %}
+        </td>
+        <td class="row-actions" data-label="Actions">
+          <div class="row-actions-buttons" style="display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end;">
+            <a class="btn" href="{% url 'question_edit' q.parameter.id q.id %}?from=questions">Edit</a>
+              <a class="btn btn--bad" href="{% url 'question_delete' q.parameter.id q.id %}?from=questions">Delete</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">
+          <p class="muted" role="status" aria-live="polite" style="padding: 1rem; text-align: center;">No questions found.</p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    <style>
+<style>
   .dashboard-hero {
-    margin-bottom: 4rem;
+    margin-bottom: 5rem;
+  }
+
+  /* --- MODIFICHE LAYOUT MOBILE PER QUESTIONS (< 900px) --- */
+  @media (max-width: 900px) {
+
+    /* 1. Trasformiamo la riga in una Card Grid */
+    .table tbody tr {
+      display: grid;
+      grid-template-columns: 1fr auto; /* Colonna sx elastica, dx fissa per Type */
+      gap: 0.5rem;
+      padding: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    /* 2. Reset delle celle (TD) */
+    .table tbody td {
+      display: block;
+      padding: 0;
+      border: none;
+      grid-column: 1 / -1;
+      width: auto !important;
+    }
+
+    /* 3. Nascondiamo le label automatiche */
+    .table tbody td[data-label="ID"]::before,
+    .table tbody td[data-label="Text"]::before,
+    .table tbody td[data-label="Type"]::before,
+    .table tbody td[data-label="Actions"]::before {
+      display: none;
+    }
+
+    /* --- LAYOUT INTERNO DELLA CARD --- */
+
+    /* A. HEADER: ID (Badge) e Type (Piccola a dx) */
+    .table tbody td[data-label="ID"] {
+      grid-column: 1;
+      grid-row: 1;
+      width: fit-content;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 0.25rem;
+    }
+
+    .table tbody td[data-label="Type"] {
+      grid-column: 2;
+      grid-row: 1;
+      text-align: right;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      align-self: center;
+    }
+
+    /* B. TITOLO: Snippet di testo della Question */
+    .table tbody td[data-label="Text"] {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+
+    /* C. AZIONI: Bottoni in basso */
+    .table tbody td[data-label="Actions"] {
+      grid-column: 1 / -1;
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* I bottoni occupano lo spazio disponibile uniformemente */
+    .table tbody td[data-label="Actions"] .row-actions-buttons {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: stretch !important;
+    }
+
+    .table tbody td[data-label="Actions"] .btn {
+      flex: 1;
+      justify-content: center;
+      padding: 0.6rem;
+    }
   }
 </style>
+
 {% endblock %}

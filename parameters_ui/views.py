@@ -108,6 +108,8 @@ def parameter_list(request):
             Q(id__icontains=q)
             | Q(name__icontains=q)
             | Q(short_description__icontains=q)
+            | Q(long_description__icontains=q)
+            | Q(description_of_the_implicational_condition__icontains=q)
             | Q(implicational_condition__icontains=q)
             | Q(schema__icontains=q)
             | Q(param_type__icontains=q)
@@ -536,8 +538,13 @@ def question_edit(request, param_id: str, question_id: str):
         q_form = QuestionForm(request.POST, instance=question)
 
         if q_form.is_valid():
-            q_form.save()  
+            q_form.save()
             messages.success(request, "Question updated.")
+
+            # Se proveniamo dalla lista globale delle domande, torniamo lì
+            if request.GET.get('from') == 'questions':
+                return redirect('questions_list')
+
             return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
             messages.error(request, "Correggi gli errori nella domanda.")
@@ -645,6 +652,11 @@ def question_delete(request, param_id: str, question_id: str):
         question.delete()
 
     messages.success(request, f"Question {question_id} deleted.")
+
+    # Se proveniamo dalla lista globale delle domande, torniamo lì
+    if request.GET.get('from') == 'questions':
+        return redirect('questions_list')
+
     return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
 
 
