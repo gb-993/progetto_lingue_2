@@ -128,6 +128,26 @@
         <div class="filters-main-layout">
             <div class="filter-column">
                 <span class="filter-group-title">Language Filters</span>
+
+                <div class="filter-item">
+                    <label>Specific Languages</label>
+                    <div style="max-height: 120px; overflow-y: auto; border: 1px solid var(--border); padding: 0.5rem; background: var(--surface-2); border-radius: var(--radius-sm);">
+                        {% for lang in opt_all_languages %}
+                            <div style="display: flex; align-items: center; margin-bottom: 0.3rem;">
+                                <input type="checkbox"
+                                       name="f_lang_specific"
+                                       value="{{ lang.id }}"
+                                       id="lang_{{ lang.id }}"
+                                       {% if lang.id in selected_specific_langs %}checked{% endif %}
+                                       style="width: auto; margin-right: 0.5rem; cursor: pointer;">
+                                <label for="lang_{{ lang.id }}" style="margin: 0; text-transform: none; font-weight: normal; cursor: pointer;">
+                                    {{ lang.name_full }} ({{ lang.id }})
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
                 <div class="filter-grid">
                     <div class="filter-item">
                         <label>Top Family</label>
@@ -216,11 +236,15 @@
             <div class="dropdown">
                 <button type="button" class="btn btn--accent">Download Data ▾</button>
                 <div class="dropdown-content">
-                    <a href="{% url 'tablea_export_xlsx' %}?{{ request.GET.urlencode }}">Export .xlsx (Standard)</a>
+                    {% if view == 'questions' %}
+                        <a href="{% url 'tablea_export_questions_xlsx' %}?{{ request.GET.urlencode }}">Export .xlsx (Standard)</a>
+                    {% else %}
+                        <a href="{% url 'tablea_export_xlsx' %}?{{ request.GET.urlencode }}">Export .xlsx (Standard)</a>
+                    {% endif %}
                     <a href="{% url 'tablea_export_csv' %}?{{ request.GET.urlencode }}">Export .csv (Transposed)</a>
                     {% if view == 'params' %}
-                        <a href="{% url 'tablea_export_distances_zip' %}?{{ request.GET.urlencode }}">Distances (.zip)</a>
-                        <a href="{% url 'tablea_export_dendrogram' %}?{{ request.GET.urlencode }}">Dendrogram UPGMA (.png)</a>
+                        <a href="{% url 'tablea_export_distances_zip' %}?{{ request.GET.urlencode }}">Distances (.txt zip)</a>
+                        <a href="{% url 'tablea_export_dendrogram' %}?{{ request.GET.urlencode }}">Dendrograms (.png zip)</a>
                     {% endif %}
                 </div>
             </div>
@@ -471,14 +495,6 @@ document.querySelectorAll('.dropdown-content a').forEach(link => {
     line-height: 1.2;
   }
 
-  /* Nascondiamo la colonna "Implication" su mobile per guadagnare spazio?
-     Opzionale: scommenta se vuoi nasconderla */
-  /*
-  .table th:nth-child(4),
-  .table td:nth-child(4) {
-     display: none;
-  }
-  */
 }
 </style>
 

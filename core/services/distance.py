@@ -1,42 +1,44 @@
 from collections import defaultdict
-from pathlib import Path
+import sys
 
 
-"""
-distance.py
-
-This script computes pairwise distance matrices. It supports two distance metrics:
-- Hamming distance: counts both '+' and '-' as possible identity symbols.
-- Jaccard distance: counts identities only on a chosen symbol (either '+' or '-').
-"""
-
-
-def hamming(P1, P2):
+def hamming(P1, P2, include_zero=False):
     id = 0.0
     dif = 0.0
     for i in range(len(P1)):
-        # an identity on '+' or on '-' is counted as an identity
-        if P1[i] == P2[i] == "+" or P1[i] == P2[i] == "-":
-            id += 1
-        # differences are counted on the characters that exhibit a '+'/'-' contrast. Other symbols are ignored
-        elif (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
-            dif += 1
-    dist = dif / (dif + id)
-    return dist
+        if include_zero:
+            # identities are counted on '+', '-', and '0'
+            if P1[i] == P2[i] and P1[i] in {"+", "-", "0"}:
+                id += 1
+            # differences include all mismatches among '+', '-', and '0'
+            elif P1[i] in {"+", "-", "0"} and P2[i] in {"+", "-", "0"}:
+                dif += 1
+        else:
+            # identities are counted on '+', and '-'
+            if P1[i] == P2[i] == "+" or P1[i] == P2[i] == "-":
+                id += 1
+            # differences include all mismatches among '+' and '-', other symbols are ignored
+            elif (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
+                dif += 1
+    return dif / (dif + id)
 
 
-def jaccard(P1, P2, identity):
+def jaccard(P1, P2, identity, include_zero=False):
     id = 0.0
     dif = 0.0
     for i in range(len(P1)):
-        # an identity ONLY on the chosen symbol is counted as an identity
+        # identities are counted ONLY on the chosen symbol
         if P1[i] == P2[i] == identity:
             id += 1
-        # differences are counted on the characters that exhibit a '+'/'-' contrast. Other symbols are ignored
-        elif (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
-            dif += 1
-    dist = dif / (dif + id)
-    return dist
+        elif include_zero:
+            # differences include all mismatches among '+', '-', '0'
+            if P1[i] in {"+", "-", "0"} and P2[i] in {"+", "-", "0"} and P1[i] != P2[i]:
+                dif += 1
+        else:
+            # differences include all mismatches among '+' and '-', other symbols are ignored
+            if (P1[i] == "+" and P2[i] == "-") or (P1[i] == "-" and P2[i] == "+"):
+                dif += 1
+    return dif / (dif + id)
 
 
 def distance_matrix(dist_func, data, languages, output_path, identity=None):
@@ -44,9 +46,11 @@ def distance_matrix(dist_func, data, languages, output_path, identity=None):
     for lang1 in data:
         for lang2 in data:
             if identity is None:
-                dist[lang1[0]][lang2[0]] = round(dist_func(lang1, lang2), 3)
+                # dist[lang1[0]][lang2[0]] = round(dist_func(lang1, lang2), 3)
+                dist[lang1[0]][lang2[0]] = dist_func(lang1, lang2)
             else:
-                dist[lang1[0]][lang2[0]] = round(dist_func(lang1, lang2, identity), 3)
+                # dist[lang1[0]][lang2[0]] = round(dist_func(lang1, lang2, identity), 3)
+                dist[lang1[0]][lang2[0]] = dist_func(lang1, lang2, identity)
 
     with open(output_path, "w") as output:
         output.write("Language" + "\t" + "\t".join(languages) + "\n")
@@ -56,15 +60,11 @@ def distance_matrix(dist_func, data, languages, output_path, identity=None):
 
 def main():
 
-    while True:
-        table_a = input("Enter the path to Table_A: ").strip()
-        file_path = Path(table_a)
-        if not file_path.is_file():
-            print("File not found, please enter a valid path.")
-        elif file_path.suffix.lower() != ".txt":
-            print("The file must have a .txt extension.")
-        else:
-            break
+    if len(sys.argv) != 2:
+        print("Usage: python distance.py <Table_A.txt>")
+        sys.exit(1)
+
+    table_a = sys.argv[1]
 
     with open(table_a, "r") as f:
         lines = f.readlines()
@@ -84,15 +84,21 @@ def main():
         zero_to_minus.append(new_parts)
 
 
-    # Create output directory if it doesn't exist -> anche in RAM
-    output_dir = Path("distances")
-    output_dir.mkdir(exist_ok=True)
-
-    distance_matrix(hamming, original, languages, output_dir / "hamming.txt")
-    distance_matrix(jaccard, original, languages, output_dir / "jaccard[+].txt", identity="+")
+    # solo queste due
+    distance_matrix(hamming, original, languages, "hamming.txt")
+    distance_matrix(jaccard, original, languages, "jaccard[+].txt", identity="+")
 
 
-    print(f"Six distance matrices generated successfully.")
+    # non servono
+    distance_matrix(jaccard, original, languages, "jaccard[-].txt", identity="-")
+    distance_matrix(hamming, zero_to_minus, languages, "hamming[NO_0].txt")
+    distance_matrix(jaccard, zero_to_minus, languages, "jaccard[+_NO_0].txt", identity="+")
+    distance_matrix(jaccard, zero_to_minus, languages, "jaccard[-_NO_0].txt", identity="-")
+    distance_matrix(lambda x, y: hamming(x, y, include_zero=True), original, languages, "hamming[0].txt")
+    distance_matrix(lambda x, y: jaccard(x, y, identity="+", include_zero=True), original, languages, "jaccard[+_0].txt")
+    distance_matrix(lambda x, y: jaccard(x, y, identity="-", include_zero=True), original, languages, "jaccard[-_0].txt")
+
+    print(f"Nine distance matrices generated successfully.")
 
 
 if __name__ == "__main__":
