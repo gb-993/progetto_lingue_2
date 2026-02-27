@@ -1,0 +1,50 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Welcome - Termini e Condizioni</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .container { max-width: 600px; margin: 0 auto; padding: 5rem 1.5rem; }
+    .terms-box { padding: 2rem; background: var(--surface-2); border-radius: 8px; margin-bottom: 2rem; font-size: 0.9rem;}
+    .checkbox-row { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 2rem; font-weight: bold; }
+    .checkbox-row input[type="checkbox"] { transform: scale(1.3); margin-top: 0.2rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Benvenuto in PCM Hub</h1>
+      <p class="muted">Prima di procedere al tuo account, ti chiediamo di prendere visione delle nostre policy.</p>
+
+      {% if messages %}
+        <div class="alert alert-error">
+          {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="terms-box">
+        <ul style="margin:0; padding-left: 1.5rem;">
+          <li><a href="{% static 'docs/Informativa WebAPP_revDPO.pdf' %}" target="_blank">Informativa Privacy WebAPP</a></li>
+          <li><a href="{% static 'docs/Terms_of_use_CG.pdf' %}" target="_blank">Terms of Use & Data Contributor License Agreement</a></li>
+        </ul>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="checkbox-row">
+          <input type="checkbox" id="accept" name="accept" required>
+          <label for="accept">Dichiaro di aver letto e compreso l'Informativa Privacy e di accettare integralmente i Terms of Use.</label>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <a href="{% url 'logout' %}" class="muted">Annulla e fai Logout</a>
+          <button type="submit" class="btn btn--primary">Accetta e Continua</button>
+        </div>
+      </form>
+
+    </section>
+  </main>
+</body>
+</html>

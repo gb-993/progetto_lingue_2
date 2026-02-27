@@ -13,7 +13,7 @@ urlpatterns = [
     path("methodology/", TemplateView.as_view(template_name="public/methodology.html"), name="methodology"),
     path("contacts/", TemplateView.as_view(template_name="public/contacts.html"), name="contacts"),
     # --------------------------------------------
-
+    path('accept-terms/', views.accept_terms, name='accept_terms'),
     # Le altre tue URL
     path("", views.accounts_list, name="accounts_list"),
     path("add/", views.accounts_add, name="accounts_add"),

@@ -42,6 +42,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=100)
     surname = models.CharField(max_length=100)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="user")
+    terms_accepted = models.BooleanField(default=False)
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
 
     m2m_languages  = models.ManyToManyField(
         "core.Language",      

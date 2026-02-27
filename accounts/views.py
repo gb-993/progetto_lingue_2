@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q, Count
+from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import update_session_auth_hash
 from django.utils.translation import gettext as _
@@ -344,3 +345,21 @@ def accounts_delete(request, user_id: int):
         "changelog_count": changelog_count,
     }
     return render(request, "accounts/delete_confirm.html", ctx)
+
+
+@login_required
+def accept_terms(request):
+    # Se l'utente ha già accettato, lo mandiamo via
+    if request.user.terms_accepted:
+        return redirect('dashboard')
+
+    if request.method == "POST":
+        if request.POST.get("accept") == "on":
+            request.user.terms_accepted = True
+            request.user.terms_accepted_at = timezone.now()
+            request.user.save(update_fields=["terms_accepted", "terms_accepted_at"])
+            return redirect(request.GET.get('next', 'dashboard'))
+        else:
+            messages.error(request, "Devi spuntare la casella per poter continuare.")
+
+    return render(request, "accounts/accept_terms.html")
