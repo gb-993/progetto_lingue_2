@@ -8,8 +8,7 @@ from core.models import Glossary
 from .forms import GlossaryForm
 
 def _is_admin(user):
-    return user.is_authenticated and user.is_staff
-
+    return user.is_authenticated and (getattr(user, 'role', '') == 'admin' or user.is_superuser)
 @login_required
 def glossary_list(request):
     """
