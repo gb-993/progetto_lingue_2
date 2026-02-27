@@ -339,37 +339,36 @@ document.addEventListener("DOMContentLoaded", function () {
         const list = form.querySelector(`.examples-list[data-qid="${qid}"]`);
         if (!list) return;
 
-        let hasNonEmpty = false;
 
-        
+        let nonEmptyCount = 0;
+
+        // Cerca gli esempi già presenti (o nuovi rigenerati)
         const rows = list.querySelectorAll('.example-row');
         for (const row of rows) {
-          
           const delHidden = row.querySelector('input[type="hidden"][name^="del_ex_"]');
           const isDeleted = delHidden && delHidden.value === "1";
           if (isDeleted) continue;
 
           const txt = row.querySelector('[name$="_textarea"]');
-          if (txt && txt.value.trim()) { hasNonEmpty = true; break; }
+          if (txt && txt.value.trim()) { nonEmptyCount++; }
         }
 
-        
-        if (!hasNonEmpty) {
-          // Cerca anche qui textarea o input genericamente
-          const newInputs = list.querySelectorAll(`[name^="newex_${qid}_"][name$="_textarea"]`);
-          for (const inp of newInputs) {
-            if ((inp.value || "").trim()) { hasNonEmpty = true; break; }
-          }
+        // Cerca tra gli input appena generati via JS (aggiungiamo al contatore)
+        const newInputs = list.querySelectorAll(`[name^="newex_${qid}_"][name$="_textarea"]`);
+        for (const inp of newInputs) {
+          if ((inp.value || "").trim()) { nonEmptyCount++; }
         }
 
-        if (!hasNonEmpty) {
+        // Se il contatore è minore di 2, blocca il form
+        if (nonEmptyCount < 2) {
           invalid = true;
           const err = form.querySelector(`.js-yes-examples-error[data-qid="${qid}"]`);
           if (err) {
-            err.textContent = "With YES you must add at least one example with a non-empty Example text.";
+            err.textContent = "With YES you must add at least two examples with a non-empty Example text.";
             err.style.display = "";
           }
         }
+
       });
 
       if (invalid) {

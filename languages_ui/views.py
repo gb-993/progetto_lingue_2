@@ -543,25 +543,34 @@ def parameter_save(request, lang_id, param_id):
                 continue
             buckets.setdefault(uid, {})[field] = (val or "").strip()
 
+
+
         if response_text == "yes":
-            has_textarea_final = False
+            nonempty_count = 0
             existing_qs = Example.objects.filter(answer__language=lang, answer__question=q)
             existing_map = {ex.id: ex for ex in existing_qs}
+
+            # Conta gli esempi esistenti validi (non eliminati)
             for ex_id, ex in existing_map.items():
                 if ex_id in del_ids:
                     continue
                 tx = updated_textareas.get(ex_id, (ex.textarea or "").strip())
                 if tx:
-                    has_textarea_final = True
-                    break
-            if not has_textarea_final and buckets:
+                    nonempty_count += 1
+
+            # Conta i nuovi esempi validi creati
+            if buckets:
                 for _uid, data in buckets.items():
                     if (data.get("textarea") or "").strip():
-                        has_textarea_final = True
-                        break
-            if not has_textarea_final:
-                messages.error(request, _t("If you answer YES, you must provide at least one example with a non-empty text."))
+                        nonempty_count += 1
+
+            if nonempty_count < 2:
+                messages.error(request,
+                               _t("If you answer YES, you must provide at least two examples with a non-empty text."))
                 return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{param.id}")
+
+
+
 
         answer.response_text = response_text
         answer.comments = comments
@@ -754,77 +763,52 @@ def answer_save(request, lang_id, question_id):
 
     # 5.4) VALIDAZIONE per YES
     if response_text == "yes":
-        has_nonempty_textarea = False
 
-        existing_qs = Example.objects.filter(answer=answer).exclude(id__in=del_ids).only("id", "textarea")
-        for ex in existing_qs:
-            final_txt = updated_textareas.get(ex.id, (ex.textarea or ""))
-            if final_txt.strip():
-                has_nonempty_textarea = True
-                break
+        if del_ids:
+            Example.objects.filter(answer=answer, id__in=del_ids).delete()
 
-        if not has_nonempty_textarea:
-            for _uid, data in buckets.items():
-                if (data.get("textarea") or "").strip():
-                    has_nonempty_textarea = True
-                    break
-
-        if not has_nonempty_textarea:
-            messages.error(
-                request,
-                _t(f"Question {question.id}: with YES you must provide at least one example with a non-empty Example text.")
-            )
-            transaction.set_rollback(True)
-            return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.parameter_id}")
-
-    # 5.5) APPLICAZIONE MUTAZIONI
-
-    # delete
-    if del_ids:
-        Example.objects.filter(answer=answer, id__in=del_ids).delete()
-
-    # update esistenti (tutti i campi)
-    for key, val in request.POST.items():
-        if not key.startswith("ex_"):
-            continue
-        try:
-            _ex, ex_id, field = key.split("_", 2)
-            ex_id = int(ex_id)
-        except ValueError:
-            continue
-        if field not in FIELDS:
-            continue
-        cleaned = (val or "").strip()
-        Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
-
-    # create nuovi
-    if buckets:
-        to_create = []
-        for idx, (uid, data) in enumerate(buckets.items()):
-            has_payload = any([
-                data.get("textarea"),
-                data.get("transliteration"),
-                data.get("gloss"),
-                data.get("translation"),
-                data.get("reference"),
-            ])
-
-            if not has_payload:
+        # update esistenti (tutti i campi)
+        for key, val in request.POST.items():
+            if not key.startswith("ex_"):
                 continue
-            to_create.append(Example(
-                answer=answer,
-                num=str(idx + 1),
-                textarea=data.get("textarea", ""),
-                transliteration=data.get("transliteration", ""),
-                gloss=data.get("gloss", ""),
-                translation=data.get("translation", ""),
-                reference=data.get("reference", ""),
-            ))
-        if to_create:
-            Example.objects.bulk_create(to_create, ignore_conflicts=True)
+            try:
+                _ex, ex_id, field = key.split("_", 2)
+                ex_id = int(ex_id)
+            except ValueError:
+                continue
+            if field not in FIELDS:
+                continue
+            cleaned = (val or "").strip()
+            Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
 
-    messages.success(request, _t("Answer saved."))
-    return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.parameter_id}")
+        # create nuovi
+        if buckets:
+            to_create = []
+            for idx, (uid, data) in enumerate(buckets.items()):
+                has_payload = any([
+                    data.get("textarea"),
+                    data.get("transliteration"),
+                    data.get("gloss"),
+                    data.get("translation"),
+                    data.get("reference"),
+                ])
+
+                if not has_payload:
+                    continue
+                to_create.append(Example(
+                    answer=answer,
+                    num=str(idx + 1),
+                    textarea=data.get("textarea", ""),
+                    transliteration=data.get("transliteration", ""),
+                    gloss=data.get("gloss", ""),
+                    translation=data.get("translation", ""),
+                    reference=data.get("reference", ""),
+                ))
+            if to_create:
+                Example.objects.bulk_create(to_create, ignore_conflicts=True)
+
+        messages.success(request, _t("Answer saved."))
+        return redirect(f"{reverse('language_data', kwargs={'lang_id': lang.id})}#p-{question.parameter_id}")
 
 
 

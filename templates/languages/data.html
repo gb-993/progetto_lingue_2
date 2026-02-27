@@ -388,8 +388,10 @@
                 {# Colonna Destra: Tutto il contenuto (Errori, Card, Bottone Add) #}
                 <div class="info-row__content">
 
-                  {# Spazio per errori JS #}
-                  <div class="field-error js-yes-examples-error" data-qid="{{ q.id }}" aria-live="polite" style="display:none; margin-bottom: 1rem;"></div>
+                {# Spazio per errori JS #}
+                  <div class="field-error js-yes-examples-error" data-qid="{{ q.id }}" aria-live="polite"
+                       style="display:none; margin-bottom: 1rem; padding: 0.75rem; background-color: #ffe8e8; color: #842029; border: 1px solid #f5c2c7; border-radius: 6px; font-weight: 600;">
+                  </div>
 
                   <div class="examples-list" data-qid="{{ q.id }}">
                     {% for ex in q.ans.examples %}

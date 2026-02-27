@@ -370,9 +370,22 @@
       </div>
     </header>
 
-    <main id="main" role="main" tabindex="-1">
+<main id="main" role="main" tabindex="-1">
     <div class="container-fluid" style="padding: 1rem 3rem; max-width: 1600px; margin: 0 auto;">
-    {% block content %}{% endblock %}
+      {% if messages %}
+        <div class="django-messages-wrapper" style="position: sticky; top: 1rem; z-index: 1050; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 1rem 1.5rem; border-radius: 8px; font-weight: 500; font-size: 1.05rem; box-shadow: 0 6px 16px rgba(0,0,0,0.15); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+              {% if message.tags == 'error' %}background-color: rgba(255, 232, 232, 0.95); color: #842029; border: 1px solid #f5c2c7;
+              {% elif message.tags == 'success' %}background-color: rgba(230, 247, 233, 0.95); color: #0f5132; border: 1px solid #badbcc;
+              {% elif message.tags == 'warning' %}background-color: rgba(255, 243, 205, 0.95); color: #664d03; border: 1px solid #ffecb5;
+              {% else %}background-color: rgba(226, 227, 229, 0.95); color: #41464b; border: 1px solid #d3d6d8;{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
       </div>
     </main>
 
@@ -498,6 +511,31 @@
       }
     });
   </script>
+
+<script>
+        document.addEventListener("DOMContentLoaded", function() {
+          // Cerca tutti i messaggi che hanno la classe 'alert-success' (quelli verdi)
+          const successAlerts = document.querySelectorAll('.alert-success');
+
+          successAlerts.forEach(function(alert) {
+            // Imposta il timer: 3000 = 3 secondi. Cambia questo numero come preferisci!
+            setTimeout(function() {
+              // Effetto dissolvenza
+              alert.style.transition = "opacity 0.5s ease, margin 0.5s ease, padding 0.5s ease, height 0.5s ease";
+              alert.style.opacity = "0";
+              alert.style.margin = "0";
+              alert.style.padding = "0";
+              alert.style.height = "0";
+              alert.style.overflow = "hidden";
+
+              // Rimuove l'elemento dal codice dopo la dissolvenza
+              setTimeout(function() {
+                alert.remove();
+              }, 500);
+            }, 2000); //per modificare la durata degli avvisi di conferma
+          });
+        });
+      </script>
 
 </body>
 </html>
