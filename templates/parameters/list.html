@@ -49,7 +49,10 @@
             <span  aria-label="Status: Disabled">Disabled</span>
           {% endif %}
         </td>
-        <td data-label="Actions" class="row-actions">
+        <td data-label="Actions" class="row-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+          <a class="btn" href="{% url 'parameter_download_pdf' p.id %}" style="background-color: var(--surface-2); border: 1px solid var(--border);" title="Download PDF" aria-label="Download PDF for parameter {{ p.id }}">
+            Download PDF
+          </a>
           <a class="btn" href="{% url 'parameter_edit' p.id %}" aria-label="Modify parameter {{ p.id }}">
             Edit<span class="sr-only"> parameter {{ p.id }}</span>
           </a>

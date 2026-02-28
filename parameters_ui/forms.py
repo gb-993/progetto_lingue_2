@@ -184,9 +184,14 @@ class QuestionForm(forms.ModelForm):
             "example_yes",
             "instruction_yes", 
             "instruction_no",
-            "template_type",
             "is_stop_question",
         ]
+
+        labels = {
+            "instruction": "Instructions",
+        }
+
+
         widgets = {
             "id": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
             "text": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
@@ -269,7 +274,6 @@ QuestionFormSet = inlineformset_factory(
         "example_yes",
         "instruction_yes",
         "instruction_no",
-        "template_type",
         "is_stop_question",
     ],
     extra=1,

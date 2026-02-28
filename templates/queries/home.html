@@ -230,8 +230,8 @@
   <div class="query-results" id="results-anchor">
       {% if tab == "q1" and q1 %}
         <div class="alert alert-info">
-            <strong>Condizione Implicazionale:</strong>
-            <code>{{ q1.raw_condition|default:"Nessuna (Sempre Attivo)" }}</code>
+            <strong>Implicational Condition:</strong>
+            <code>{{ q1.raw_condition|default:"None (Always active)" }}</code>
 
             {% if q1.pretty_condition %}
                 <br><small>{{ q1.pretty_condition }}</small>

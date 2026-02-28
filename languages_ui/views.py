@@ -997,7 +997,7 @@ def language_approve(request, lang_id):
 
     # Regola: tutte risposte devono esserci
     if not _all_questions_answered(lang):
-        messages.error(request, _t("Impossibile approvare: ci sono domande senza risposta. Completa tutte le risposte prima di avviare il DAG."))
+        messages.error(request, _t("Cannot approve: there are unanswered questions. Complete all answers before starting the DAG."))
         return redirect("language_data", lang_id=lang.id)
 
     # Approva solo ciò che è in WAITING; resta modifiable=False

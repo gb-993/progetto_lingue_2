@@ -8,13 +8,14 @@
 
 {% block breadcrumb %}
   <li><a href="{% url 'parameter_list' %}">Parameters</a></li>
-  <li aria-current="page">Edit Parameter {{ p.id }}</li>
+  <li aria-current="page">{% if is_create %}Add Parameter{% else %}Edit Parameter {{ p.id }}{% endif %}</li>
 {% endblock %}
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <script defer src="{% static 'js/parameter_edit.js' %}"></script>
   <style>
+    /* CSS per la lista delle domande */
     .q-list { display: grid; gap: .5rem; }
     .q-row {
       display: flex; align-items: flex-start; justify-content: space-between;
@@ -25,235 +26,298 @@
     .q-row__text { flex: 1 1 auto; min-width: 0; }
     .q-row__id { font-weight: 600; margin-right: .5rem; white-space: nowrap; }
     .q-row__actions { flex: 0 0 auto; display: inline-flex; gap: .5rem; }
-    .q-section-title { margin: .25rem 0 .5rem; color: var(--text-muted,#61656b); font-weight: 600; }
+
+    /* CSS per l'interruttore (Toggle Switch) */
+    .toggle-wrapper { display: flex; align-items: center; gap: 0.75rem; }
+    .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1; transition: .3s; border-radius: 24px;
+    }
+    .toggle-slider:before {
+      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background-color: white; transition: .3s; border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+.toggle-switch input[type="checkbox"]:checked ~ .toggle-slider { background-color: #10b981; }
+.toggle-switch input[type="checkbox"]:checked ~ .toggle-slider:before { transform: translateX(20px); }
+.toggle-switch input[type="checkbox"]:disabled ~ .toggle-slider { background-color: #6ee7b7; cursor: not-allowed; opacity: 0.7; }
+    .toggle-switch.locked { cursor: not-allowed; }
   </style>
 {% endblock %}
 
 {% block content %}
-<section class="card" aria-labelledby="param-heading">
-  <h2 id="param-heading">{% if is_create %}Add parameter{% else %}Edit parameter — {{ parameter.id }}{% endif %}</h2>
+<h2 class="main-title" style="margin-bottom: 1.5rem;" id="param-heading">
+  {% if is_create %}Add parameter{% else %}Edit parameter — {{ parameter.id }}{% endif %}
+</h2>
 
-  <form id="param-edit-form" method="post" novalidate
-        {% if not is_create %}
-          data-requires-change-note="true"
-          data-change-note-name="{{ form.change_note.html_name|escapejs }}"
-        {% endif %}
-        data-tracked='[
-          "{{ form.name.html_name|escapejs }}",
-          "{{ form.short_description.html_name|escapejs }}",
-          "{{ form.long_description.html_name|escapejs }}",
-          "{{ form.description_of_the_implicational_condition.html_name|escapejs }}",
-          "{{ form.implicational_condition.html_name|escapejs }}",
-          "{{ form.is_active.html_name|escapejs }}",
-          "{{ form.position.html_name|escapejs }}"{% if form.warning_default %},
-          "{{ form.warning_default.html_name|escapejs }}"{% endif %},
-          "{{ form.schema.html_name|escapejs }}",
-          "{{ form.param_type.html_name|escapejs }}",
-          "{{ form.level_of_comparison.html_name|escapejs }}"
-        ]'
-        data-external-dirty="{% if external_dirty %}true{% else %}false{% endif %}"
-        >
-    {% csrf_token %}
+<form id="param-edit-form" method="post" novalidate
+      {% if not is_create %}
+        data-requires-change-note="true"
+        data-change-note-name="{{ form.change_note.html_name|escapejs }}"
+      {% endif %}
+      data-tracked='[
+        "{{ form.name.html_name|escapejs }}",
+        "{{ form.short_description.html_name|escapejs }}",
+        "{{ form.long_description.html_name|escapejs }}",
+        "{{ form.description_of_the_implicational_condition.html_name|escapejs }}",
+        "{{ form.implicational_condition.html_name|escapejs }}",
+        "{{ form.is_active.html_name|escapejs }}",
+        "{{ form.position.html_name|escapejs }}"{% if form.warning_default %},
+        "{{ form.warning_default.html_name|escapejs }}"{% endif %},
+        "{{ form.schema.html_name|escapejs }}",
+        "{{ form.param_type.html_name|escapejs }}",
+        "{{ form.level_of_comparison.html_name|escapejs }}"
+      ]'
+      data-external-dirty="{% if external_dirty %}true{% else %}false{% endif %}"
+      >
+  {% csrf_token %}
 
-    <input type="hidden" name="had_external_changes" value="{% if external_dirty %}1{% else %}0{% endif %}">
+  <input type="hidden" name="had_external_changes" value="{% if external_dirty %}1{% else %}0{% endif %}">
 
-    {% if is_create %}
+  {% if form.non_field_errors %}
+    <div class="alert alert-error" role="alert">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <section class="card mb-2">
+    <h3>Basic Info</h3>
+
+    <div class="grid" style="grid-template-columns: 1fr 1.5fr; gap: 1rem; align-items: start;">
       <div class="form-row">
         <label for="{{ form.id.id_for_label }}">{{ form.id.label }}</label>
-        {{ form.id }}
+        {% if is_create %}
+          {{ form.id }}
+        {% else %}
+          <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
+          {{ form.id.as_hidden }}
+        {% endif %}
         {% if form.id.errors %}<div class="form-error">{{ form.id.errors }}</div>{% endif %}
       </div>
-    {% else %}
-      <div class="form-row">
-        <label for="{{ form.id.id_for_label }}">{{ form.id.label }}</label>
-        <input class="form-control" value="{{ form.id.value|default_if_none:'' }}" readonly>
-        {{ form.id.as_hidden }}
-      </div>
-    {% endif %}
 
-    <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
-      <div class="form-row">
-        <label for="{{ form.label.id_for_label }}">{{ form.label.label }}</label>
-        {{ form.label }}
-        {% if form.label.errors %}<div class="form-error">{{ form.label.errors }}</div>{% endif %}
-      </div>
-
-      <div class="form-row">
+      <div class="form-row" style="display: none;">
         <label for="{{ form.position.id_for_label }}">{{ form.position.label }}</label>
         {{ form.position }}
         {% if form.position.errors %}<div class="form-error">{{ form.position.errors }}</div>{% endif %}
       </div>
 
       <div class="form-row">
-        <label for="{{ form.is_active.id_for_label }}">Active</label>
+        <label>Status</label>
+        <div class="toggle-wrapper" style="margin-top: 0.35rem;">
+          <label class="toggle-switch {% if form.instance.is_active and not can_deactivate %}locked{% endif %}">
+            {% if form.instance.is_active and not can_deactivate %}
+              <input type="hidden" name="{{ form.is_active.html_name }}" value="1">
+              <input type="checkbox" id="{{ form.is_active.id_for_label }}" checked disabled aria-disabled="true">
+            {% else %}
+              {{ form.is_active }}
+            {% endif %}
+            <span class="toggle-slider"></span>
+          </label>
+          <span id="status-text" style="font-weight: 600;">Active</span>
+        </div>
+
         {% if form.instance.is_active and not can_deactivate %}
-          <input
-            type="checkbox"
-            id="{{ form.is_active.id_for_label }}"
-            checked
-            disabled
-            aria-disabled="true"
-          >
-          <input type="hidden" name="{{ form.is_active.html_name }}" value="1">
-        {% else %}
-          {{ form.is_active }}
+          <div class="muted" style="font-size: 0.85rem; margin-top: 0.25rem;">
+            Locked. Used in other parameters.
+          </div>
         {% endif %}
         {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
       </div>
     </div>
 
-    <div class="form-row">
+    <div class="form-row mt-1">
       <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
       {{ form.name }}
       {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
     </div>
+  </section>
 
-  <div class="form-row">
-        <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
-        {{ form.short_description }}
-        {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
-  </div>
+  <section class="card mb-2">
+    <h3>Descriptions</h3>
 
-  <div class="form-row"
-         style="display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem;">
-        <label for="{{ form.long_description.id_for_label }}">{{ form.long_description.label }}</label>
-        {{ form.long_description }}
-        {% if form.long_description.errors %}<div class="form-error">{{ form.long_description.errors }}</div>{% endif %}
+    <div class="form-row">
+      <label for="{{ form.short_description.id_for_label }}">{{ form.short_description.label }}</label>
+      {{ form.short_description }}
+      {% if form.short_description.errors %}<div class="form-error">{{ form.short_description.errors }}</div>{% endif %}
     </div>
 
-  <div class="form-row"
-            style="display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem;">
-            <label for="{{ form.description_of_the_implicational_condition.id_for_label }}">{{ form.description_of_the_implicational_condition.label }}</label>
-            {{ form.description_of_the_implicational_condition }}
-            {% if form.description_of_the_implicational_condition.errors %}<div class="form-error">{{ form.description_of_the_implicational_condition.errors }}</div>{% endif %}
+    <div class="form-row mt-1">
+      <label for="{{ form.long_description.id_for_label }}">{{ form.long_description.label }}</label>
+      {{ form.long_description }}
+      {% if form.long_description.errors %}<div class="form-error">{{ form.long_description.errors }}</div>{% endif %}
     </div>
+  </section>
 
-    <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+  <section class="card mb-2">
+    <h3>Classification & Logic</h3>
 
-      <div class="form-row" style="flex: 0 1 auto;">
+    <div class="grid grid-3" style="gap: 1rem;">
+      <div class="form-row">
         <label for="{{ form.schema.id_for_label }}">{{ form.schema.label }}</label>
         {{ form.schema }}
         {% if form.schema.errors %}<div class="form-error">{{ form.schema.errors }}</div>{% endif %}
       </div>
 
-      <div class="form-row" style="flex: 0 1 auto;">
+      <div class="form-row">
         <label for="{{ form.param_type.id_for_label }}">{{ form.param_type.label }}</label>
         {{ form.param_type }}
         {% if form.param_type.errors %}<div class="form-error">{{ form.param_type.errors }}</div>{% endif %}
       </div>
 
-      <div class="form-row" style="flex: 0 1 auto;">
+      <div class="form-row">
         <label for="{{ form.level_of_comparison.id_for_label }}">{{ form.level_of_comparison.label }}</label>
         {{ form.level_of_comparison }}
         {% if form.level_of_comparison.errors %}<div class="form-error">{{ form.level_of_comparison.errors }}</div>{% endif %}
       </div>
+    </div>
 
-      <div class="actions" style="margin-bottom: .25rem;">
-        <a class="btn" href="{% url 'param_lookups_manage' %}">
-          Edit schema, type & level
-        </a>
-      </div>
-
-      <div class="form-row" style="flex: 1;">
-        <label for="{{ form.implicational_condition.id_for_label }}">{{ form.implicational_condition.label }}</label>
-        {{ form.implicational_condition }}
-        {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
-      </div>
-
+    <div class="actions" style="margin-top: 0.5rem; text-align: right;">
+      <a class="btn btn-link" href="{% url 'param_lookups_manage' %}" style="font-size: 0.9rem;">⚙️ Edit schema, type & level</a>
     </div>
 
     <div class="form-row">
-      <label class="sr-only" for="{{ form.warning_default.id_for_label }}">Warning default</label>
-      {{ form.warning_default }}
-      {% if form.warning_default.errors %}<div class="form-error">{{ form.warning_default.errors }}</div>{% endif %}
+      <label for="{{ form.implicational_condition.id_for_label }}">{{ form.implicational_condition.label }}</label>
+      {{ form.implicational_condition }}
+      {% if form.implicational_condition.errors %}<div class="form-error">{{ form.implicational_condition.errors }}</div>{% endif %}
     </div>
 
-    {% if not is_create %}
-        <div class="grid grid--2">
-          <div>
-            <label>Questions</label>
-            {% if questions_normal and questions_normal|length > 0 %}
-              <div class="q-list">
-                {% for q in questions_normal %}
-                  <div class="q-row">
-                    <div class="q-row__text">
-                      <span class="q-row__id">{{ q.id }}</span>
-                      <span>{{ q.text }}</span>
-                    </div>
-                    <div class="q-row__actions">
-                      <a class="btn" href="{% url 'question_edit' parameter.id q.id %}">Edit</a>
-                      <a class="btn" href="{% url 'question_delete' parameter.id q.id %}">Delete</a>
-                    </div>
-                  </div>
-                {% endfor %}
+    <div class="form-row mt-1">
+      <label for="{{ form.description_of_the_implicational_condition.id_for_label }}">{{ form.description_of_the_implicational_condition.label }}</label>
+      {{ form.description_of_the_implicational_condition }}
+      {% if form.description_of_the_implicational_condition.errors %}<div class="form-error">{{ form.description_of_the_implicational_condition.errors }}</div>{% endif %}
+    </div>
+
+  </section>
+
+  {% if not is_create %}
+  <section class="card mb-2">
+    <h3>Questions</h3>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div>
+        <label class="q-section-title">Normal Questions</label>
+        {% if questions_normal and questions_normal|length > 0 %}
+          <div class="q-list">
+            {% for q in questions_normal %}
+              <div class="q-row">
+                <div class="q-row__text">
+                  <span class="q-row__id">{{ q.id }}</span>
+                  <span>{{ q.text }}</span>
+                </div>
+                <div class="q-row__actions">
+                  <a class="btn" href="{% url 'question_edit' parameter.id q.id %}">Edit</a>
+                  <a class="btn" href="{% url 'question_delete' parameter.id q.id %}">Delete</a>
+                </div>
               </div>
-            {% else %}
-              <p class="muted">No questions</p>
-            {% endif %}
+            {% endfor %}
           </div>
+        {% else %}
+          <div class="q-row" style="justify-content: center;"><span class="muted">No questions</span></div>
+        {% endif %}
+      </div>
 
-          <div>
-            <label>Stop questions</label>
-            {% if questions_stop and questions_stop|length > 0 %}
-              <div class="q-list">
-                {% for q in questions_stop %}
-                  <div class="q-row">
-                    <div class="q-row__text">
-                      <span class="q-row__id">{{ q.id }}</span>
-                      <span>{{ q.text }}</span>
-                    </div>
-                    <div class="q-row__actions">
-                      <a class="btn" href="{% url 'question_edit' parameter.id q.id %}">Edit</a>
-                      <a class="btn btn--danger" href="{% url 'question_delete' parameter.id q.id %}">Delete</a>
-                    </div>
-                  </div>
-                {% endfor %}
+      <div>
+        <label class="q-section-title">Stop questions</label>
+        {% if questions_stop and questions_stop|length > 0 %}
+          <div class="q-list">
+            {% for q in questions_stop %}
+              <div class="q-row">
+                <div class="q-row__text">
+                  <span class="q-row__id">{{ q.id }}</span>
+                  <span>{{ q.text }}</span>
+                </div>
+                <div class="q-row__actions">
+                  <a class="btn" href="{% url 'question_edit' parameter.id q.id %}">Edit</a>
+                  <a class="btn btn--danger" href="{% url 'question_delete' parameter.id q.id %}">Delete</a>
+                </div>
               </div>
-            {% else %}
-              <p class="muted">No stop questions</p>
-            {% endif %}
+            {% endfor %}
           </div>
-        </div>
+        {% else %}
+          <div class="q-row" style="justify-content: center;"><span class="muted">No stop questions</span></div>
+        {% endif %}
+      </div>
+    </div>
 
-        <div class="actions" style="margin: 1rem 0; text-align: right; display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap;">
-          <a class="btn" href="{% url 'question_clone' parameter.id %}">
-            Import question from another parameter
-          </a>
-          <a class="btn btn--primary" href="{% url 'question_add' parameter.id %}">
-            Add a new question
-          </a>
-        </div>
-    {% endif %}
+    <div class="actions" style="margin-top: 1.5rem; display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
+      <a class="btn" href="{% url 'question_clone' parameter.id %}">Import question from another parameter</a>
+      <a class="btn btn--primary" href="{% url 'question_add' parameter.id %}">Add a new question</a>
+    </div>
+  </section>
+  {% endif %}
 
+  <section class="card mb-2" style="background: var(--surface-2);">
     {% if not is_create %}
-          <label for="{{ form.change_note.id_for_label }}">{{ form.change_note.label }}</label>
-          <p id="changeNoteHint" class="help">This field is required only if you modified one or more fields of this parameter</p>
-          {{ form.change_note }}
-          {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
+      <div class="form-row">
+        <label for="{{ form.change_note.id_for_label }}">{{ form.change_note.label }}</label>
+        {{ form.change_note }}
+        <p id="changeNoteHint" class="muted" style="font-size: 0.85rem; margin-top: 0.25rem;">
+          Mandatory if you modified one or more fields of this parameter.
+        </p>
+        {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
+      </div>
     {% endif %}
 
     <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1rem;">
-      <button id="saveBtn" type="submit" class="btn btn--primary" aria-disabled="false">Save</button>
+      {% if not is_create %}
+        <a class="btn" href="{% url 'parameter_download_pdf' parameter.id %}" style="margin-right: auto; background-color: var(--surface-2); border: 1px solid var(--border);">
+          Download PDF
+        </a>
+      {% endif %}
       <a class="btn" href="{% url 'parameter_list' %}">Cancel</a>
+      <button id="saveBtn" type="submit" class="btn btn--primary" aria-disabled="false">Save Parameter</button>
     </div>
-  </form>
-</section>
+  </section>
+</form>
 
+{% if not is_create %}
 <section class="card" aria-labelledby="where-used-heading">
   <h3 id="where-used-heading">Implicational conditions mentioning this parameter</h3>
   {% if where_used and where_used|length > 0 %}
-    <p class="muted">The following parameters reference this parameter in their implicational condition(s): edit their implicational condition(s) before deactivating this parameter.</p>
-    <ul class="list">
+    <p class="muted" style="margin-bottom: 1rem;">The following parameters reference this parameter in their implicational condition(s). Edit their implicational condition(s) before deactivating this parameter.</p>
+    <div class="q-list">
       {% for target, cond in where_used %}
-        <li>
-          <a href="{% url 'parameter_edit' target.id %}"><strong>{{ target.id }}</strong> — {{ target.name }}</a>
-          <div class="muted"><code>{{ cond }}</code></div>
-        </li>
+        <div class="q-row" style="align-items: center;">
+          <div class="q-row__text">
+            <a href="{% url 'parameter_edit' target.id %}" style="text-decoration: none;">
+              <strong style="color: var(--text);">{{ target.id }}</strong> — <span class="muted">{{ target.name }}</span>
+            </a>
+          </div>
+          <div class="q-row__actions">
+            <code style="background: var(--surface-2); padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid var(--border);">{{ cond }}</code>
+          </div>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   {% else %}
-    <p class="muted">No implicational conditions mentioning this parameter: you can proceed with deactivation.</p>
+    <p class="muted">No implicational conditions mentioning this parameter. You can proceed with deactivation.</p>
   {% endif %}
 </section>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleInput = document.getElementById('{{ form.is_active.id_for_label }}');
+    const statusText = document.getElementById('status-text');
+
+    if (toggleInput && statusText) {
+      function updateStatusText() {
+        if (toggleInput.checked) {
+          statusText.textContent = 'Active';
+          statusText.style.color = 'inherit';
+        } else {
+          statusText.textContent = 'Disabled';
+          statusText.style.color = '#64748b'; // Colore grigio chiaro per stato disattivato
+        }
+      }
+
+      // Controlla lo stato appena la pagina viene caricata
+      updateStatusText();
+
+      // Aggiorna lo stato ogni volta che l'utente clicca l'interruttore
+      toggleInput.addEventListener('change', updateStatusText);
+    }
+  });
+</script>
 
 {% endblock %}

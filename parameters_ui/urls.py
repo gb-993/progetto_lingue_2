@@ -13,6 +13,7 @@ urlpatterns = [
     path("lookups/", views.lookups_manage, name="param_lookups_manage"),
     path("parameters/motivations/", views.motivations_manage, name="motivations_manage"),
     path("<str:param_id>/questions/import/", views.question_clone, name="question_clone"),
+    path('parameters/<str:param_id>/pdf/', views.parameter_download_pdf, name='parameter_download_pdf'),
 
 
 

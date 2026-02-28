@@ -9,8 +9,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.db.models import Q, Count, Sum, Case, When, IntegerField
-
+from django.db.models import Q, Count, Sum, Case, When, IntegerField, Max
+import io
+from django.http import FileResponse
+from fpdf import FPDF
 from core.models import (
     ParameterDef,
     Question,
@@ -123,21 +125,47 @@ def parameter_list(request):
     
     return render(request, "parameters/list.html", {"parameters": qs, "q": q})
 
+
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
 def parameter_add(request):
     if request.method == "POST":
         form = ParameterForm(request.POST)
+
+        # RIMUOVIAMO l'errore di validazione su 'position' generato dal form
+        # perché ora lo gestiamo automaticamente lato server.
+        if "position" in form.errors:
+            del form.errors["position"]
+
+        # Forziamo un valore "fittizio" in cleaned_data per far passare la validazione generale
+        if hasattr(form, 'cleaned_data'):
+            form.cleaned_data['position'] = 1
+
         if form.is_valid():
-            form.save()
+            # commit=False ci permette di modificare l'oggetto prima di salvarlo nel DB
+            new_param = form.save(commit=False)
+
+            # --- INIZIO NUOVA LOGICA POSITION ---
+            # Trova il valore massimo attuale della colonna 'position'
+            max_pos_aggr = ParameterDef.objects.aggregate(Max('position'))
+            current_max = max_pos_aggr['position__max']
+
+            # Se non ci sono parametri nel DB, current_max sarà None. In tal caso partiamo da 1.
+            if current_max is None:
+                new_param.position = 1
+            else:
+                new_param.position = current_max + 1
+            # --- FINE NUOVA LOGICA POSITION ---
+
+            new_param.save()
             messages.success(request, "Parameter added successfully.")
             return redirect("parameter_list")
     else:
         form = ParameterForm()
 
     schema_options = list(ParamSchema.objects.order_by("label").values_list("label", flat=True))
-    type_options   = list(ParamType.objects.order_by("label").values_list("label", flat=True))
+    type_options = list(ParamType.objects.order_by("label").values_list("label", flat=True))
     level_options = list(ParamLevelOfComparison.objects.order_by("label").values_list("label", flat=True))
 
     return render(
@@ -193,7 +221,7 @@ def parameter_edit(request, param_id: str):
                     "change_note",
                     "Insert recap of changes made to this parameter, its questions, or motivations."
                 )
-                messages.error(request, "Please add a recap of the external changes.")
+                messages.error(request, "Please correct the errors in the form below.")
             else:
                 param = form.save()
 
@@ -221,7 +249,7 @@ def parameter_edit(request, param_id: str):
                 return redirect("parameter_edit", param_id=param.id)
 
         else:
-            messages.error(request, "Please add a recap of the external changes.")
+            messages.error(request, "Please correct the errors in the question form below.")
 
         questions = (
             param.questions
@@ -500,7 +528,7 @@ def question_add(request, param_id: str):
             messages.success(request, "Question created.")
             return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
-            messages.error(request, "Please add a recap of the external changes.")
+            messages.error(request, "Please correct the errors in the question form below.")
             return render(
                 request,
                 "parameters/question_form.html",
@@ -547,7 +575,7 @@ def question_edit(request, param_id: str, question_id: str):
 
             return redirect(f"{reverse('parameter_edit', args=[param.id])}?q_changed=1")
         else:
-            messages.error(request, "Correggi gli errori nella domanda.")
+            messages.error(request, "Fix the errors in the question.")
             return render(
                 request,
                 "parameters/question_form.html",
@@ -877,3 +905,148 @@ def motivations_manage(request):
 
     motivations = Motivation.objects.order_by("code")
     return render(request, "parameters/motivations.html", {"motivations": motivations})
+
+
+# --- Classe per Intestazione e Piè di pagina ---
+class PDFParamReport(FPDF):
+    def header(self):
+        # Text-muted: var(--text-muted)
+        self.set_font("helvetica", style="B", size=9)
+        self.set_text_color(97, 101, 107)
+        self.cell(0, 10, "Parameter Detail Report", ln=True, align="R")
+
+        # Linea separatrice: var(--border)
+        self.set_draw_color(218, 221, 226)
+        self.line(10, 18, 200, 18)
+        self.ln(5)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("helvetica", style="I", size=8)
+        self.set_text_color(97, 101, 107)  # var(--text-muted)
+        self.set_draw_color(218, 221, 226)  # var(--border)
+        self.line(10, self.get_y(), 200, self.get_y())
+        self.cell(0, 10, f"Page {self.page_no()}", align="C")
+
+
+# --- Vista di download ---
+@login_required
+@user_passes_test(_is_admin)
+def parameter_download_pdf(request, param_id: str):
+    param = get_object_or_404(ParameterDef, pk=param_id)
+
+    pdf = PDFParamReport()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # --- Helpers con i colori del tuo CSS ---
+
+    def add_section_title(title):
+        pdf.ln(5)
+        pdf.set_font("helvetica", style="B", size=12)
+        pdf.set_fill_color(241, 242, 244)  # var(--surface-2)
+        pdf.set_text_color(209, 65, 36)  # var(--brand)
+        pdf.cell(0, 10, f"  {title}", ln=True, fill=True)
+        pdf.ln(3)
+
+    def add_line(label, value=""):
+        pdf.set_font("helvetica", style="B", size=10)
+        pdf.set_text_color(97, 101, 107)  # var(--text-muted)
+        pdf.write(6, str(label) + " ")
+        if value:
+            pdf.set_font("helvetica", size=10)
+            pdf.set_text_color(27, 29, 32)  # var(--text)
+            safe_text = str(value).encode('latin-1', 'replace').decode('latin-1')
+            pdf.write(6, safe_text)
+        pdf.ln(7)
+
+    def add_long_text(label, value):
+        add_line(label)
+        pdf.set_font("helvetica", size=10)
+        pdf.set_text_color(27, 29, 32)  # var(--text)
+        safe_text = str(value or "-").encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 5, safe_text)
+        pdf.ln(4)
+
+    # --- Costruzione del Documento ---
+
+    # Titolo Principale (Text + Brand)
+    pdf.set_font("helvetica", style="B", size=18)
+    pdf.set_text_color(27, 29, 32)
+    pdf.cell(pdf.get_string_width("Parameter: "), 10, "Parameter: ", ln=False)
+    pdf.set_text_color(209, 65, 36)  # var(--brand) per l'ID
+    pdf.cell(0, 10, f"{param.id}", ln=True)
+
+    # Sottotitolo (Text Muted)
+    pdf.set_font("helvetica", size=14)
+    pdf.set_text_color(97, 101, 107)
+    pdf.cell(0, 8, str(param.name).encode('latin-1', 'replace').decode('latin-1'), ln=True)
+    pdf.ln(2)
+
+    # 1. INFO DI BASE
+    add_section_title("Basic Information")
+    status = "Active" if param.is_active else "Disabled"
+    add_line("Status:", status)
+    add_line("Schema:", param.schema or "-")
+    add_line("Type:", param.param_type or "-")
+    add_line("Level of comparison:", param.level_of_comparison or "-")
+
+    # 2. DESCRIZIONI
+    add_section_title("Descriptions")
+    add_long_text("Short Description:", param.short_description)
+    add_long_text("Long Description:", param.long_description)
+
+    # 3. LOGICA
+    add_section_title("Logic & Conditions")
+    add_line("Implicational Condition:", param.implicational_condition or "-")
+    add_long_text("Condition Description:", param.description_of_the_implicational_condition)
+
+    # 4. DOMANDE
+    add_section_title("Questions")
+    questions = param.questions.order_by('is_stop_question', 'id').prefetch_related('allowed_motivations')
+
+    if not questions.exists():
+        pdf.set_font("helvetica", style="I", size=10)
+        pdf.set_text_color(97, 101, 107)  # var(--text-muted)
+        pdf.cell(0, 8, "No questions linked to this parameter.", ln=True)
+    else:
+        for q in questions:
+            q_type = "Stop Question" if q.is_stop_question else "Normal Question"
+
+            # Box ID Domanda (Sfondo var(--surface-2), Bordo var(--border))
+            pdf.set_font("helvetica", style="B", size=11)
+            pdf.set_text_color(27, 29, 32)
+            pdf.set_fill_color(241, 242, 244)
+            pdf.set_draw_color(218, 221, 226)
+            pdf.cell(0, 8, f"  {q.id} ({q_type})", ln=True, fill=True, border="B")
+            pdf.ln(3)
+
+            add_long_text("Text:", q.text)
+            if q.instruction: add_long_text("Instructions:", q.instruction)
+            if q.help_info: add_long_text("Help Info:", q.help_info)
+            if q.example_yes: add_long_text("Example (YES):", q.example_yes)
+            if q.instruction_yes: add_long_text("Instruction (YES):", q.instruction_yes)
+            if q.instruction_no: add_long_text("Instruction (NO):", q.instruction_no)
+
+            mots = q.allowed_motivations.all()
+            if mots.exists():
+                add_line("Allowed Motivations (NO):")
+                pdf.set_font("helvetica", size=10)
+                pdf.set_text_color(27, 29, 32)  # var(--text)
+
+                # --- MODIFICA QUI: Creiamo un elenco puntato ---
+                for m in mots:
+                    # Usiamo un trattino per evitare problemi di codifica con i pallini nativi
+                    safe_text = f"- {m.code} ({m.label})".encode('latin-1', 'replace').decode('latin-1')
+
+                    # Impostiamo il margine sinistro a 15 (indentazione rispetto al testo normale che parte da 10)
+                    pdf.set_x(15)
+                    pdf.multi_cell(0, 5, safe_text)
+                # -----------------------------------------------
+
+            pdf.ln(4)
+
+    # Output
+    buffer = io.BytesIO(pdf.output())
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename=f"Parameter_{param.id}.pdf")

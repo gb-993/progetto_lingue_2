@@ -1051,7 +1051,7 @@ document.addEventListener('change', async function(e){
     const btn = document.querySelector(`.param-btn[data-target="p-${pid}"] .badge-review`);
     if (btn) btn.hidden = (flag !== '1');
   } catch (err) {
-    alert('Errore nel salvataggio del promemoria. Riprova.');
+    alert('Error saving the reminder. Please try again.');
     el.checked = !el.checked;
   }
 });

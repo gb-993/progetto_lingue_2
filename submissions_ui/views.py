@@ -255,7 +255,7 @@ def submission_create_all_languages(request):
                 res.submission.submitted_at = fixed_time
                 res.submission.save()
 
-        messages.success(request, _("Backup globale creato correttamente."))
+        messages.success(request, _("Backup created successfully."))
         return redirect("submissions_list")
 
     return render(request, "submissions/confirm_create_all.html")
@@ -274,8 +274,8 @@ def submission_delete_backup(request):
             deleted_count, _ = Submission.objects.filter(submitted_at=timestamp_str).delete()
 
             if deleted_count > 0:
-                messages.success(request, f"Backup del {timestamp_str} eliminato ({deleted_count} elementi rimossi).")
+                messages.success(request, f"Backup from {timestamp_str} deleted. ({deleted_count} items removed).")
             else:
-                messages.warning(request, "Nessun backup trovato con questa data.")
+                messages.warning(request, "No backup found with this date.")
 
     return redirect("submissions_list")

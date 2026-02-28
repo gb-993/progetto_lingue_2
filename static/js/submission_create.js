@@ -14,7 +14,7 @@
     
     const mustConfirm = form.dataset.confirmMissing === '1';
     const msg = form.dataset.confirmMessage ||
-      'Attenzione: ci sono risposte mancanti. Vuoi creare comunque la submission?';
+      'Warning: there are missing answers. Do you want to create the submission anyway?';
     if (mustConfirm) {
       const ok = window.confirm(msg);
       if (!ok) {

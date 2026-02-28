@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}{% if is_create %}Add question{% else %}Edit question{% endif %}{% endblock %}
+
 {% block breadcrumb %}
   {% if request.GET.from == 'questions' %}
     <li><a href="{% url 'questions_list' %}">Questions</a></li>
@@ -12,105 +14,111 @@
 {% endblock %}
 
 {% block content %}
-<div class="card">
-  <h2>{% if is_create %}Add question{% else %}Edit question{% endif %} — {{ parameter.id }}</h2>
+<h2 class="main-title" style="margin-bottom: 1.5rem;">
+  {% if is_create %}Add question{% else %}Edit question{% endif %} — {{ parameter.id }}
+</h2>
 
-  <form method="post" action="{% if request.GET.from %}?from={{ request.GET.from }}{% endif %}" novalidate>
-    {% csrf_token %}
+<form method="post" action="{% if request.GET.from %}?from={{ request.GET.from }}{% endif %}" novalidate>
+  {% csrf_token %}
 
-    {% if form.non_field_errors %}
-      <div class="alert alert--error" role="alert">{{ form.non_field_errors }}</div>
-    {% endif %}
+  {% if form.non_field_errors %}
+    <div class="alert alert-error" role="alert">{{ form.non_field_errors }}</div>
+  {% endif %}
 
-    <div class="grid grid-2">
-    <div class="form-row">
-      <label for="{{ form.id.id_for_label }}">Id</label>
-      {% if is_create %}
-        {{ form.id }}  {# editabile #}
-      {% else %}
-        <input class="form-control" value="{{ form.instance.id }}" readonly>
-        {{ form.id.as_hidden }} 
-      {% endif %}
-      {% if form.id.errors %}<div class="field-error">{{ form.id.errors }}</div>{% endif %}
-    </div>
+  <section class="card mb-2">
+    <h3>Question Info</h3>
 
-
+    <div class="grid" style="grid-template-columns: 140px 1fr; gap: 1rem; align-items: start;">
       <div class="form-row">
-        {{ form.template_type.label_tag }} {{ form.template_type }}
-        {% if form.template_type.errors %}<div class="field-error">{{ form.template_type.errors }}</div>{% endif %}
+        <label for="{{ form.id.id_for_label }}">Id</label>
+        {% if is_create %}
+          {{ form.id }}
+        {% else %}
+          <input class="form-control" value="{{ form.instance.id }}" readonly>
+          {{ form.id.as_hidden }}
+        {% endif %}
+        {% if form.id.errors %}<div class="field-error">{{ form.id.errors }}</div>{% endif %}
       </div>
 
-      <div class="form-row" style="grid-column: 1 / -1;">
+      <div class="form-row">
         {{ form.text.label_tag }} {{ form.text }}
         {% if form.text.errors %}<div class="field-error">{{ form.text.errors }}</div>{% endif %}
       </div>
+    </div>
 
-      <div class="form-row" style="grid-column: 1 / -1;">
-        {{ form.example_yes.label_tag }} {{ form.example_yes }}
-        {% if form.example_yes.errors %}<div class="field-error">{{ form.example_yes.errors }}</div>{% endif %}
-      </div>
+    <div class="form-row mt-1">
+      {{ form.example_yes.label_tag }} {{ form.example_yes }}
+      {% if form.example_yes.errors %}<div class="field-error">{{ form.example_yes.errors }}</div>{% endif %}
+    </div>
 
-      <div class="form-row" style="grid-column: 1 / -1;">
-        {{ form.help_info.label_tag }} {{ form.help_info }}
-        <div class="muted">Short extra context shown to users via a little “More info” popover.</div>
-        {% if form.help_info.errors %}<div class="field-error">{{ form.help_info.errors }}</div>{% endif %}
-      </div>
+    <div class="form-row">
+      {{ form.help_info.label_tag }} {{ form.help_info }}
+      <div class="muted" style="font-size: 0.9rem;">Short extra context shown to users via a little “More info” popover.</div>
+      {% if form.help_info.errors %}<div class="field-error">{{ form.help_info.errors }}</div>{% endif %}
+    </div>
+  </section>
 
-      <div class="form-row" style="grid-column: 1 / -1;">
-        {{ form.instruction.label_tag }} {{ form.instruction }}
-        {% if form.instruction.errors %}<div class="field-error">{{ form.instruction.errors }}</div>{% endif %}
-      </div>
+  <section class="card mb-2">
+    <h3>Instructions</h3>
+    <div class="form-row">
+      {{ form.instruction.label_tag }} {{ form.instruction }}
+      {% if form.instruction.errors %}<div class="field-error">{{ form.instruction.errors }}</div>{% endif %}
+    </div>
 
-      <div class="form-row" style="grid-column: 1 / -1;">
+    <div class="grid grid-2 mt-1">
+      <div class="form-row">
         {{ form.instruction_yes.label_tag }} {{ form.instruction_yes }}
-        <div class="muted">Shown to the user only if the answer is YES.</div>
+        <div class="muted" style="font-size: 0.9rem;">Shown to the user only if the answer is YES.</div>
         {% if form.instruction_yes.errors %}<div class="field-error">{{ form.instruction_yes.errors }}</div>{% endif %}
       </div>
 
-      <div class="form-row" style="grid-column: 1 / -1;">
+      <div class="form-row">
         {{ form.instruction_no.label_tag }} {{ form.instruction_no }}
-        <div class="muted">Shown to the user only if the answer is NO.</div>
+        <div class="muted" style="font-size: 0.9rem;">Shown to the user only if the answer is NO.</div>
         {% if form.instruction_no.errors %}<div class="field-error">{{ form.instruction_no.errors }}</div>{% endif %}
       </div>
+    </div>
+  </section>
 
-      {% if form.is_stop_question and not form.is_stop_question.is_hidden %}
-      <div class="form-row">
-        <label class="form-check">
-          {{ form.is_stop_question }} Stop question
-        </label>
-        {% if form.is_stop_question.errors %}<div class="field-error">{{ form.is_stop_question.errors }}</div>{% endif %}
+  <section class="card mb-2">
+    <h3>Behavior & Motivations</h3>
+
+    {% if form.is_stop_question and not form.is_stop_question.is_hidden %}
+    <div class="form-row" style="margin-bottom: 1.5rem;">
+      <label class="form-check" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+        {{ form.is_stop_question }} Stop question
+      </label>
+      {% if form.is_stop_question.errors %}<div class="field-error">{{ form.is_stop_question.errors }}</div>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="form-row">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+        <label style="margin: 0;">Motivations linked to this question</label>
+        <a class="btn btn-link" href="{% url 'motivations_manage' %}" style="font-size: 0.9rem;">⚙️ Edit motivations</a>
       </div>
-      {% endif %}
 
-      <div class="form-row" style="grid-column: 1 / -1;">
-        <label>Motivations linked to this question</label>
+      <div class="muted" style="margin-bottom: 0.75rem; font-size: 0.9rem;">
+        Select which motivations will be available to users when they answer "NO" to this question.
+      </div>
 
+      <div class="checkbox-list" style="background: var(--surface-2); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); max-height: 250px; overflow-y: auto;">
         {{ form.motivations }}
-        {% if form.motivations.errors %}
-          <div class="field-error">{{ form.motivations.errors }}</div>
-        {% endif %}
-
-        <div class="muted" style="margin-top:.5rem;">
-          Select which motivations will be available to users when they answer "NO" to this question.
-        </div>
-
-        <div class="actions" style="margin-top:.75rem; text-align: right;">
-          <a class="btn" href="{% url 'motivations_manage' %}">
-            Edit motivations
-          </a>
-        </div>
       </div>
 
-    </div>
-
-    <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px;">
-      <button class="btn btn--primary" type="submit">{% if is_create %}Add{% else %}Save{% endif %}</button>
-      {% if request.GET.from == 'questions' %}
-        <a class="btn" href="{% url 'questions_list' %}">Cancel</a>
-      {% else %}
-        <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Cancel</a>
+      {% if form.motivations.errors %}
+        <div class="field-error" style="margin-top: 0.5rem;">{{ form.motivations.errors }}</div>
       {% endif %}
     </div>
-  </form>
-</div>
+  </section>
+
+  <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1rem;">
+    {% if request.GET.from == 'questions' %}
+      <a class="btn" href="{% url 'questions_list' %}">Cancel</a>
+    {% else %}
+      <a class="btn" href="{% url 'parameter_edit' parameter.id %}">Cancel</a>
+    {% endif %}
+    <button class="btn btn--primary" type="submit">{% if is_create %}Add Question{% else %}Save Question{% endif %}</button>
+  </div>
+</form>
 {% endblock %}

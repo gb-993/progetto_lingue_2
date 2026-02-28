@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Welcome - Termini e Condizioni</title>
+  <title>Welcome - Terms and Conditions</title>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <style>
     .container { max-width: 600px; margin: 0 auto; padding: 5rem 1.5rem; }
@@ -15,8 +15,8 @@
 <body>
   <main class="container">
     <section class="card">
-      <h1>Benvenuto in PCM Hub</h1>
-      <p class="muted">Prima di procedere al tuo account, ti chiediamo di prendere visione delle nostre policy.</p>
+      <h1>Welcome to PCM Hub</h1>
+      <p class="muted">Before proceeding to your account, we ask you to review our policies.</p>
 
       {% if messages %}
         <div class="alert alert-error">
@@ -26,7 +26,7 @@
 
       <div class="terms-box">
         <ul style="margin:0; padding-left: 1.5rem;">
-          <li><a href="{% static 'docs/Informativa WebAPP_revDPO.pdf' %}" target="_blank">Informativa Privacy WebAPP</a></li>
+          <li><a href="{% static 'docs/Informativa WebAPP_revDPO.pdf' %}" target="_blank">Privacy Policy</a></li>
           <li><a href="{% static 'docs/Terms_of_use_CG.pdf' %}" target="_blank">Terms of Use & Data Contributor License Agreement</a></li>
         </ul>
       </div>
@@ -35,12 +35,12 @@
         {% csrf_token %}
         <div class="checkbox-row">
           <input type="checkbox" id="accept" name="accept" required>
-          <label for="accept">Dichiaro di aver letto e compreso l'Informativa Privacy e di accettare integralmente i Terms of Use.</label>
+          <label for="accept">I declare that I have read and understood the Privacy Policy and fully accept the Terms of Use.</label>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <a href="{% url 'logout' %}" class="muted">Annulla e fai Logout</a>
-          <button type="submit" class="btn btn--primary">Accetta e Continua</button>
+          <a href="{% url 'logout' %}" class="muted">Cancel and Logout</a>
+          <button type="submit" class="btn btn--primary">Accept and Continue</button>
         </div>
       </form>
 

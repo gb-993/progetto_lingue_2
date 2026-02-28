@@ -98,12 +98,12 @@ def explain_logic_evaluation(expression: str, values: dict[str, str]):
             sign, param = node
             actual_val = values.get(param)
             # Gestione valore nullo/mancante
-            display_val = actual_val if actual_val is not None else "NON DEFINITO"
+            display_val = actual_val if actual_val is not None else "UNDEFINED"
             result = (actual_val == sign)
 
             steps.append({
                 "componente": f"{sign}{param}",
-                "operazione": f"Controllo se {param} ({display_val}) è uguale a '{sign}'",
+                "operazione": f"Checking if {param} ({display_val}) equals '{sign}'",
                 "risultato": result
             })
             return result
@@ -116,7 +116,7 @@ def explain_logic_evaluation(expression: str, values: dict[str, str]):
             result = not inner_res
             steps.append({
                 "componente": node_to_str(node),
-                "operazione": f"Inverto il risultato precedente (NOT {inner_res})",
+                "operazione": f"Inverting the previous result... (NOT {inner_res})",
                 "risultato": result
             })
             return result
@@ -144,7 +144,7 @@ def explain_logic_evaluation(expression: str, values: dict[str, str]):
                 combined_expr = f"({current_expr_str} {op_label} {right_expr_str})"
                 steps.append({
                     "componente": combined_expr,
-                    "operazione": f"Eseguo {old_res} {op_label} {right_res}",
+                    "operazione": f"Executing {old_res} {op_label} {right_res}",
                     "risultato": res
                 })
                 current_expr_str = combined_expr
@@ -159,7 +159,7 @@ def explain_logic_evaluation(expression: str, values: dict[str, str]):
         final_result = trace_eval(parsed[0], values, steps)
         return steps, final_result
     except Exception as e:
-        return [{"errore": f"Errore di sintassi: {str(e)}"}], False
+        return [{"errore": f"Sintax Error: {str(e)}"}], False
 
 
 def print_circuit_diagram(node, values):
@@ -172,7 +172,7 @@ def print_circuit_diagram(node, values):
         sign, param = node
         val = values.get(param, "None")
         res = (val == sign)
-        res_txt = "VERO" if res else "FALSO"
+        res_txt = "TRUE" if res else "FALSE"
         # Output: "+FGM (VERO) ──"
         line = f"{sign}{param} ({res_txt}) ──"
         return [line], 0, res
@@ -183,7 +183,7 @@ def print_circuit_diagram(node, values):
     if len(node) == 2 and str(node[0]).lower() == 'not':
         lines, conn_idx, res_interno = print_circuit_diagram(node[1], values)
         res_finale = not res_interno
-        res_txt = "VERO" if res_finale else "FALSO"
+        res_txt = "TRUE" if res_finale else "FALSE"
 
         # Estende la linea e aggiunge il NOT
         lines[conn_idx] += f"─► NOT ──► ({res_txt}) ──"
@@ -205,7 +205,7 @@ def print_circuit_diagram(node, values):
         # Calcolo del risultato finale del gruppo
         results = [b[2] for b in all_blocks]
         final_res = all(results) if op_txt == 'AND' else any(results)
-        final_txt = "VERO" if final_res else "FALSO"
+        final_txt = "TRUE" if final_res else "FALSE"
 
         # Assemblaggio grafico dei blocchi con le giunzioni
         output_lines = []
