@@ -8,4 +8,5 @@ path("export_questions.xlsx", views.tablea_export_questions_xlsx, name="tablea_e
     path("export.csv", views.tablea_export_csv, name="tablea_export_csv"),
     path("distances.zip", views.tablea_export_distances_zip, name="tablea_export_distances_zip"),
     path("dendrograms.zip", views.tablea_export_dendrogram, name="tablea_export_dendrogram"),
+    path("pca.png", views.tablea_export_pca, name="tablea_export_pca"),
 ]

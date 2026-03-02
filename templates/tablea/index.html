@@ -245,6 +245,7 @@
                     {% if view == 'params' %}
                         <a href="{% url 'tablea_export_distances_zip' %}?{{ request.GET.urlencode }}">Distances (.txt zip)</a>
                         <a href="{% url 'tablea_export_dendrogram' %}?{{ request.GET.urlencode }}">Dendrograms (.png zip)</a>
+                        <a href="{% url 'tablea_export_pca' %}?{{ request.GET.urlencode }}">PCA Scatterplot (.png)</a>
                     {% endif %}
                 </div>
             </div>

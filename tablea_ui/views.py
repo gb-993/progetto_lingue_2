@@ -16,7 +16,11 @@ from core.models import (
     Language, ParameterDef, LanguageParameterEval, Question, Answer,
     ParamSchema, ParamType, ParamLevelOfComparison
 )
-
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from adjustText import adjust_text
 
 # --- HELPER: LOGICA DI FILTRO (Il "Cuore" dei dati) ---
 
@@ -290,4 +294,73 @@ def tablea_export_dendrogram(request):
     zip_buf.seek(0)
     response = HttpResponse(zip_buf.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = 'attachment; filename="dendrograms.zip"'
+    return response
+
+
+@login_required
+def tablea_export_pca(request):
+    languages, rows, view_mode = get_tablea_filtered_data(request)
+
+    if not languages or not rows:
+        return HttpResponse("No data available to perform PCA.", status=400)
+
+    # 1. Costruiamo la matrice (Righe = Lingue, Colonne = Parametri)
+    lang_labels = [l.id for l in languages]
+    col_names = [str(r['p'].id) for r in rows]
+
+    matrix_data = [[r['cells'][i]['val'] for r in rows] for i in range(len(languages))]
+
+    # Creiamo il DataFrame Pandas
+    df = pd.DataFrame(matrix_data, index=lang_labels, columns=col_names)
+
+    # 2. Pulizia e conversione (Replica esatta del tuo pca_simplified.py)
+    df = df.replace({'+': 1, '-': 0, '0': 0})
+    # Forziamo a numerico e gestiamo eventuali stringhe inaspettate o celle vuote
+    df = df.apply(pd.to_numeric, errors='coerce').fillna(0.0).astype(float)
+
+    # Controlliamo i valori unici e droppiamo le colonne senza varianza
+    nunique = df.nunique()
+    cols_to_drop = nunique[nunique <= 1].index.tolist()
+    df = df.drop(columns=cols_to_drop)
+
+    if df.empty or df.shape[1] < 2:
+        return HttpResponse("Not enough variance or columns remaining to perform a 2D PCA.", status=400)
+
+    # 3. Esecuzione PCA
+    scaler = StandardScaler()
+    X_std = scaler.fit_transform(df)
+
+    pca = PCA()
+    vecs = pca.fit_transform(X_std)
+
+    if vecs.shape[1] < 2:
+        return HttpResponse("PCA generated less than 2 components.", status=400)
+
+    f1 = vecs[:, 0]
+    f2 = vecs[:, 1]
+    var1 = pca.explained_variance_ratio_[0] * 100
+    var2 = pca.explained_variance_ratio_[1] * 100
+
+    # 4. Creazione Grafico
+    plt.figure(figsize=(12, 8))
+    plt.scatter(f1, f2, c='black', s=10, alpha=0.75)
+
+    # Aggiunta label con adjustText per evitare sovrapposizioni
+    texts = [plt.text(x, y, label, fontsize=9) for x, y, label in zip(f1, f2, df.index)]
+    adjust_text(texts, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5))
+
+    plt.grid(True, linestyle='--', linewidth=0.5, alpha=0.75)
+    plt.xlabel(f'F1 ({var1:.2f}%)')
+    plt.ylabel(f'F2 ({var2:.2f}%)')
+    plt.axhline(0, color='gray', lw=0.5)
+    plt.axvline(0, color='gray', lw=0.5)
+    plt.tight_layout()
+
+    # 5. Salvataggio in memoria e risposta HTTP
+    img_buf = BytesIO()
+    plt.savefig(img_buf, format='png', dpi=300, bbox_inches="tight")
+    plt.close()
+
+    response = HttpResponse(img_buf.getvalue(), content_type="image/png")
+    response["Content-Disposition"] = f'attachment; filename="pca_scatterplot_{view_mode}.png"'
     return response
