@@ -17,7 +17,7 @@ from core.models import (
     ParamSchema, ParamType, ParamLevelOfComparison
 )
 import numpy as np
-
+from adjustText import adjust_text
 
 def get_tablea_filtered_data(request):
     """Estrae lingue e righe basandosi sui filtri della UI e sui checkbox selezionati."""
