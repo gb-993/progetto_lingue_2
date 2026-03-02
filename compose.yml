@@ -9,6 +9,12 @@ services:
     volumes:
       - dbdata:/var/lib/postgresql/data
     restart: unless-stopped
+    # Limite Log
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   web:
     build:
@@ -25,6 +31,12 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    # Limite Log
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   nginx:
     build:
@@ -39,6 +51,21 @@ services:
     volumes:
       - staticfiles:/static
       - media:/media
+    restart: unless-stopped
+    # Limite Log
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  
+  cleaner:
+    image: docker:20.10-cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Attende per 7 giorni (604800 secondi), fa pulizia in background e ricomincia
+    command: sh -c "while true; do sleep 604800; docker system prune -f; done"
     restart: unless-stopped
 
 volumes:
