@@ -24,21 +24,24 @@ python manage.py migrate --noinput
 
 # SEED INIZIALE — esegui solo se non esistono ancora utenti o risposte
 if ! python - <<'PY'
+import os
 import django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "progetto_lingua_2.settings")
 django.setup()
+
 from core.models import User, Answer
 import sys
 # restituisce 0 (exit code 0) se il DB ha già dati => seed non eseguito
 sys.exit(0 if (User.objects.exists() or Answer.objects.exists()) else 1)
 PY
 then
+    echo "DB empty, running initial seed..."
     python manage.py seed_from_csv
     python manage.py seed_question_motivations
 fi
 
 # Importa sempre il glossario (idempotente, aggiorna se necessario)
 python manage.py import_glossary
-
 
 # Collect static assets into /app/staticfiles
 python manage.py collectstatic --noinput
