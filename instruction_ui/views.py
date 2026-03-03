@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import SiteContent
+from core.models import SiteContent
 
 def instruction_page(request):
     """
