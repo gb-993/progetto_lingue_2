@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views
+from . import views 
 
 urlpatterns = [
-    path("", views.instruction_page, name="instruction"),
+    path('instructions/', views.instruction, name='instruction'),
+    path('api/update-content/', views.update_site_content, name='update_site_content'),
 ]

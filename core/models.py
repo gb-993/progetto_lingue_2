@@ -752,3 +752,47 @@ class SubmissionParam(models.Model):
         indexes = [
             models.Index(fields=["submission", "parameter_id"])
         ]
+
+
+# ============================
+# DYNAMIC SITE CONTENT
+# ============================
+class SiteContent(models.Model):
+    """
+    Modello scalabile per gestire i contenuti dinamici (testi o HTML) 
+    delle pagine originariamente statiche (Instructions, About, Team, ecc.).
+    """
+    key = models.CharField(
+        max_length=100, 
+        unique=True, 
+        help_text="Identificativo univoco del blocco (es. 'instructions_general', 'about_mission')."
+    )
+    page = models.CharField(
+        max_length=50, 
+        blank=True, 
+        default="", 
+        help_text="Nome della pagina per raggruppare i blocchi (es. 'Instructions', 'About')."
+    )
+    content = models.TextField(
+        blank=True, 
+        default="", 
+        help_text="Contenuto testuale o HTML."
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="updated_site_contents"
+    )
+
+    class Meta:
+        ordering = ["page", "key"]
+        indexes = [
+            models.Index(fields=["key"]),
+            models.Index(fields=["page"]),
+        ]
+
+    def __str__(self):
+        return f"[{self.page}] {self.key}" if self.page else self.key
