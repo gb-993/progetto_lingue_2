@@ -626,8 +626,8 @@ class LanguageParameterEval(models.Model):
         max_length=1,
         null=True,
         blank=True,
-        choices=(('+', '+'), ('-', '-'), ('0', '0')),
-        help_text="Valore valutato dal DAG: '+', '-', '0' oppure NULL (indeterminato/da mostrare vuoto).",
+        choices=(('+', '+'), ('-', '-'), ('0', '0'), ('?', '?')),
+        help_text="Valore valutato dal DAG: '+', '-', '0' oppure '?' .",
     )
 
     warning_eval = models.BooleanField(default=False)
@@ -636,7 +636,7 @@ class LanguageParameterEval(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="ck_value_eval_pm0_or_null",
-                check=Q(value_eval__in=['+', '-', '0']) | Q(value_eval__isnull=True),
+                check=Q(value_eval__in=['+', '-', '0', '?']) | Q(value_eval__isnull=True),
             ),
         ]
 
@@ -729,7 +729,7 @@ class SubmissionParam(models.Model):
         max_length=1,
         null=True,
         blank=True,
-        choices=(('+', '+'), ('-', '-'), ('0', '0'))
+        choices=(('+', '+'), ('-', '-'), ('0', '0'), ('?', '?')),
     )
     warning_eval = models.BooleanField(default=False)
     evaluated_at = models.DateTimeField(default=timezone.now)
@@ -741,11 +741,11 @@ class SubmissionParam(models.Model):
                 name="pk_submission_param"
             ),
             models.CheckConstraint(
-                check=models.Q(value_orig__in=["+", "-", "0"]) | models.Q(value_orig__isnull=True),
+                check=models.Q(value_orig__in=["+", "-", "0", "?"]) | models.Q(value_orig__isnull=True),
                 name="ck_sub_param_orig",
             ),
             models.CheckConstraint(
-                check=models.Q(value_eval__in=["+", "-", "0"]) | models.Q(value_eval__isnull=True),
+                check=models.Q(value_eval__in=["+", "-", "0", "?"]) | models.Q(value_eval__isnull=True),
                 name="ck_sub_param_eval",
             ),
         ]
