@@ -636,13 +636,19 @@ def parameter_save(request, lang_id, param_id):
             if to_create:
                 Example.objects.bulk_create(to_create, ignore_conflicts=True)
 
-    action = (request.POST.get("action") or "save").strip().lower()
+    action = (request.POST.get("action") or "save").strip().lower() 
+    
+    # is_complete è True solo se il numero di risposte salvate ("yes"/"no") è uguale al numero totale di domande del parametro.
+    is_complete = (len(questions) > 0 and saved_count == len(questions))
+
     try:
-        if action == "next":
+        # Attiviamo il flag se l'azione è "next" OPPURE se il parametro è incompleto
+        if action == "next" or not is_complete:
             ParameterReviewFlag.objects.update_or_create(
                 language=lang, parameter=param, user=request.user, defaults={"flag": True}
             )
         else:
+            # Rimuoviamo il flag solo se si clicca "save" E il parametro è completo al 100%
             ParameterReviewFlag.objects.update_or_create(
                 language=lang, parameter=param, user=request.user, defaults={"flag": False}
             )

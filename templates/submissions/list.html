@@ -85,7 +85,7 @@
         {# --- LOOP CARTELLE --- #}
         {% for g in page.object_list %}
           <tr>
-            <td style="font-size: 1.5rem;">📁</td>
+            <td style="font-size: 1.5rem;"></td>
             <td><strong>{{ g.submitted_at|date:"Y-m-d H:i:s" }}</strong></td>
             <td>{{ g.note|default:"-" }}</td>
             <td><span class="badge rounded-pill bg-secondary">{{ g.lang_count }}</span></td>

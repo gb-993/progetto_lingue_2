@@ -48,17 +48,26 @@
           </div>
         </div>
 
-        <div class="card counter-card">
-          <h3 class="admin-label">Total Answers Recorded</h3>
+        <div class="card counter-card {% if stats.total_red > 0 %}border-bad{% endif %}">
+          <h3 class="admin-label">Flagged / Unsure Parameters</h3>
           <div class="admin-big-number">
-            {{ stats.answers }}
-            <span class="numerator-small">
-               / {{ stats.total_answers }}
-            </span>
+            {{ stats.total_red|default:"0" }}
           </div>
-            <div class="progress-track">
-            <div class="progress-fill" style="width: {% widthratio stats.answers stats.total_answers 100 %}%;"></div>
-          </div>
+          
+          {% if red_langs %}
+            <div class="mt-2" style="max-height: 110px; overflow-y: auto; padding-right: 0.5rem;">
+              {% for lang in red_langs %}
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem;">
+                  <a href="{% url 'language_data' lang.language__id %}" style="text-decoration: none; color: inherit;">
+                    {{ lang.language__name_full|truncatechars:22 }}
+                  </a>
+                  <strong style="color: var(--bad, #b00020);">{{ lang.red_count }}</strong>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="muted small mt-1">No flagged parameters.</p>
+          {% endif %}
         </div>
 
       </div> <div class="admin-activity">

@@ -27,9 +27,7 @@ def dashboard(request):
     role = getattr(user, "role", "user")
     is_admin = _is_admin(user)
 
-    total_langs = Language.objects.count()
     total_questions = Question.objects.filter(parameter__is_active=True).count()
-    total_possible_answers = total_langs * total_questions
 
     completed_langs_count = Language.objects.annotate(
         valid_answers_count=Count('answers', filter=Q(
@@ -38,12 +36,9 @@ def dashboard(request):
         ))
     ).filter(valid_answers_count__gte=total_questions).count()
 
-
-    # Statistiche generali
+    # Statistiche generali (rimosse le total_answers vecchie)
     stats = {
         "languages": Language.objects.count(),
-        "answers": Answer.objects.filter(response_text__in=["yes", "no"]).count(),
-        "total_answers": total_possible_answers,
         "completed_languages": completed_langs_count,
     }
 
@@ -52,9 +47,8 @@ def dashboard(request):
 
     ctx = {"is_admin": is_admin, "stats": stats}
 
-    # --- LOGICA ADMIN: 50/50 Layout ---
+    # --- LOGICA ADMIN ---
     if is_admin:
-        # Recuperiamo le lingue che hanno risposte in attesa
         ctx["pending_languages"] = Language.objects.filter(
             answers__status="waiting_for_approval"
         ).distinct()
@@ -65,10 +59,22 @@ def dashboard(request):
             .order_by("-changed_at")[:10]
         )
 
-    # --- LOGICA USER: Solo i suoi progetti ---
+        # NUOVO: Raggruppamento e conteggio dei Parametri Flagged/Unsure ("Rossi") per lingua
+        red_langs = (
+            ParameterReviewFlag.objects.filter(flag=True)
+            .values('language__id', 'language__name_full')
+            .annotate(red_count=Count('parameter', distinct=True))
+            .filter(red_count__gt=0)
+            .order_by('-red_count')
+        )
+        
+        # Totale assoluto per il grande numero in alto
+        stats["total_red"] = sum(item['red_count'] for item in red_langs)
+        ctx["red_langs"] = red_langs
+
+    # --- LOGICA USER ---
     if role == "user":
         total_q_count = Question.objects.filter(parameter__is_active=True).count()
-        # Ottimizzazione: una sola query per tutto il progresso
         assigned_langs = user.m2m_languages.annotate(
             done_count=Count('answers', filter=Q(answers__response_text__in=['yes', 'no'])),
             has_reject=Count('answers', filter=Q(answers__status='rejected'))
