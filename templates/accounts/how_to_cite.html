@@ -14,14 +14,12 @@
     
     <div class="card citation-card">
       <div class="citation-content">
-        <div class="citation-header">
-          <h3>Parameters & Manifestations</h3>
+        <h3>Parameters & Manifestations</h3>
+        <p class="small">Per citare il framework teorico e le definizioni dei parametri:</p>
+        <div class="cite-box" id="cite-params">
           <button class="btn-copy-mini" onclick="copyCitation('cite-params', this)" title="Copia citazione">
             Copy
           </button>
-        </div>
-        <p class="small">Per citare il framework teorico e le definizioni dei parametri:</p>
-        <div class="cite-box" id="cite-params">
           Longobardi, G., & Guardiano, C. (2009). Functional grammar and language typology: An ontological analysis of the Person system. <em>Lingua</em>, 119(11), 1679-1713.
         </div>
       </div>
@@ -29,14 +27,12 @@
 
     <div class="card citation-card">
       <div class="citation-content">
-        <div class="citation-header">
-          <h3>Languages & Data</h3>
+        <h3>Languages & Data</h3>
+        <p class="small">Per citare i dataset linguistici e il contenuto del database PCM Hub:</p>
+        <div class="cite-box" id="cite-data">
           <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">
             Copy
           </button>
-        </div>
-        <p class="small">Per citare i dataset linguistici e il contenuto del database PCM Hub:</p>
-        <div class="cite-box" id="cite-data">
           PCM Hub Database. (2024). Syntactic data of the world's languages. University of York / Università di Modena e Reggio Emilia. Available at: https://pcmhub.org
         </div>
       </div>
@@ -59,48 +55,47 @@
   margin-top: 0 !important;
 }
 
-.citation-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.5rem;
-}
-
 .citation-content h3 {
-  margin: 0;
+  margin: 0 0 0.5rem 0;
   color: var(--brand);
   font-size: 1.2rem;
 }
 
 .cite-box {
   background: var(--surface-2);
-  padding: 1rem;
+  /* Aggiunto padding extra a destra e sopra per non coprire il testo con il tasto */
+  padding: 1.2rem 2.5rem 1.2rem 1rem; 
   border-radius: 8px;
   font-family: var(--mono);
   font-size: 0.85rem;
   border: 1px solid var(--border);
   margin-top: 1rem;
   line-height: 1.4;
-  position: relative;
+  position: relative; /* Necessario per il posizionamento del tasto */
 }
 
-/* TASTO MINI E DISCRETO */
+/* TASTO COPIA POSIZIONATO ALL'INTERNO */
 .btn-copy-mini {
-  background: transparent;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--surface-1);
   color: var(--text-muted);
   border: 1px solid var(--border);
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  border-radius: 5px;
   cursor: pointer;
   font-weight: 600;
   text-transform: uppercase;
   transition: all 0.2s ease;
+  z-index: 10;
 }
 
 .btn-copy-mini:hover {
   border-color: var(--brand);
   color: var(--brand);
+  background: var(--surface-2);
 }
 
 /* Stato dopo il click (Successo) */
@@ -117,9 +112,18 @@
 
 <script>
 function copyCitation(elementId, btn) {
-  const text = document.getElementById(elementId).innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const originalText = btn.innerText;
+  // Estraiamo il testo escludendo il testo del bottone stesso
+  const box = document.getElementById(elementId);
+  
+  // Cloniamo il nodo per manipolare il testo senza toccare il DOM reale
+  const tempBox = box.cloneNode(true);
+  const btnInTemp = tempBox.querySelector('button');
+  if (btnInTemp) btnInTemp.remove(); // Rimuoviamo il tasto "Copy" dal testo da copiare
+  
+  const textToCopy = tempBox.innerText.trim();
+
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    const originalText = "Copy";
     btn.innerText = "✓ Copied";
     btn.classList.add('copied');
     
