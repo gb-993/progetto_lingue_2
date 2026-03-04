@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}How to Cite{% endblock %}
+
+{% block content %}
+<div class="container dashboard" role="main">
+  <header class="dashboard-hero">
+    <h1>Citation Guidelines</h1>
+    <p class="muted">Utilizza i seguenti riferimenti per citare i dati o la metodologia del PCM Hub.</p>
+  </header>
+
+  <div class="citation-grid">
+    
+    <div class="card citation-card">
+      <div class="citation-content">
+        <div class="citation-header">
+          <h3>Parameters & Manifestations</h3>
+          <button class="btn-copy-mini" onclick="copyCitation('cite-params', this)" title="Copia citazione">
+            Copy
+          </button>
+        </div>
+        <p class="small">Per citare il framework teorico e le definizioni dei parametri:</p>
+        <div class="cite-box" id="cite-params">
+          Longobardi, G., & Guardiano, C. (2009). Functional grammar and language typology: An ontological analysis of the Person system. <em>Lingua</em>, 119(11), 1679-1713.
+        </div>
+      </div>
+    </div>
+
+    <div class="card citation-card">
+      <div class="citation-content">
+        <div class="citation-header">
+          <h3>Languages & Data</h3>
+          <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">
+            Copy
+          </button>
+        </div>
+        <p class="small">Per citare i dataset linguistici e il contenuto del database PCM Hub:</p>
+        <div class="cite-box" id="cite-data">
+          PCM Hub Database. (2024). Syntactic data of the world's languages. University of York / Università di Modena e Reggio Emilia. Available at: https://pcmhub.org
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.citation-grid {
+  display: flex !important;
+  align-items: stretch !important;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.citation-card {
+  flex: 1;
+  padding: 1.5rem !important;
+  margin-top: 0 !important;
+}
+
+.citation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.citation-content h3 {
+  margin: 0;
+  color: var(--brand);
+  font-size: 1.2rem;
+}
+
+.cite-box {
+  background: var(--surface-2);
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  margin-top: 1rem;
+  line-height: 1.4;
+  position: relative;
+}
+
+/* TASTO MINI E DISCRETO */
+.btn-copy-mini {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.btn-copy-mini:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+/* Stato dopo il click (Successo) */
+.btn-copy-mini.copied {
+  background: var(--ok);
+  color: white;
+  border-color: var(--ok);
+}
+
+@media (max-width: 800px) {
+  .citation-grid { flex-direction: column; }
+}
+</style>
+
+<script>
+function copyCitation(elementId, btn) {
+  const text = document.getElementById(elementId).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const originalText = btn.innerText;
+    btn.innerText = "✓ Copied";
+    btn.classList.add('copied');
+    
+    setTimeout(() => {
+      btn.innerText = originalText;
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
+{% endblock %}

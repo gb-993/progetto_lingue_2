@@ -20,6 +20,9 @@ except Exception:
 def _is_admin(user: User) -> bool:
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
+def how_to_cite(request):
+    return render(request, 'accounts/how_to_cite.html')
+
 
 @login_required
 def dashboard(request):

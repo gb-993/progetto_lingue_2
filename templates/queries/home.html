@@ -11,44 +11,62 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
 <style>
-  /* Container generale */
+  /* --- REGOLE PER LINK E ELEMENTI CLICCABILI --- */
+  
+  /* 1. Regola Globale: sottolineatura e transizione per tutti i link */
+  a {
+    text-decoration: underline !important;
+    transition: color 0.2s ease-in-out;
+  }
+
+  /* Hover globale: cambio colore in rosso brand */
+  a:hover {
+    color: var(--brand) !important;
+  }
+
+  /* 2. ESENZIONE: Navigazione laterale (Elenco Generale) */
+  /* Ripristiniamo lo stile originale: niente sottolineatura e colore ereditato */
+  .queries-nav a {
+    text-decoration: none !important;
+  }
+
+  .queries-nav a:hover {
+    color: inherit !important; /* Torna al comportamento base del tema */
+  }
+
+  /* Manteniamo la coerenza per i bottoni */
+  .btn:hover {
+    filter: brightness(1.1);
+  }
+
+  /* --- STILI ORIGINALI CONTAINER E TOMSELECT --- */
   .ts-wrapper {
     width: 100%;
   }
 
-  /* LA CASELLA DI TESTO (INPUT) */
   .ts-control {
-    /* Colore testo */
     color: var(--text) !important;
     background-color: var(--surface) !important;
-
-    /* BORDO MOLTO VISIBILE: 2px e colore grigio solido (#888) per contrasto su tutto */
     border: 2px solid #888 !important;
     border-radius: 12px !important;
-
-    /* Spaziatura e ombra */
     padding: 0.75rem 1rem !important;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-    min-height: 50px; /* Più alta per essere cliccata meglio */
+    min-height: 50px;
     display: flex;
     align-items: center;
     font-size: 1rem !important;
   }
 
-  /* QUANDO CLICCHI (FOCUS) */
   .ts-wrapper.focus .ts-control {
-    /* Diventa color brand e ancora più spesso */
     border-color: var(--brand) !important;
-    box-shadow: 0 0 0 4px rgba(209, 65, 36, 0.2) !important; /* Alone colorato */
+    box-shadow: 0 0 0 4px rgba(209, 65, 36, 0.2) !important;
   }
 
-  /* Testo digitato */
   .ts-control input {
     color: var(--text) !important;
     font-size: 1rem !important;
   }
 
-  /* IL MENU A TENDINA */
   .ts-dropdown {
     background-color: var(--surface) !important;
     border: 2px solid var(--border) !important;
@@ -61,31 +79,27 @@
     overflow: hidden !important;
   }
 
-  /* Voci della lista */
   .ts-dropdown .option {
     color: var(--text) !important;
     padding: 12px 15px;
-    border-bottom: 1px solid var(--border); /* Separatore tra le voci */
+    border-bottom: 1px solid var(--border);
   }
 
-  /* Voce attiva/hover */
   .ts-dropdown .option.active,
   .ts-dropdown .option:hover {
     background-color: var(--brand) !important;
     color: #fff !important;
   }
 
-  /* Freccina a destra */
   .ts-wrapper.single .ts-control::after {
-    border-color: #888 transparent transparent transparent !important; /* Freccia visibile */
+    border-color: #888 transparent transparent transparent !important;
     border-width: 6px 6px 0 6px !important;
     right: 15px !important;
   }
 
-  /* OVERRIDE SPECIFICO PER DARK MODE (Se necessario per contrasto extra) */
   :root[data-theme="dark"] .ts-control {
-    background-color: #1b1e23 !important; /* Sfondo leggermente diverso dal nero totale */
-    border-color: #666 !important; /* Bordo grigio chiaro su scuro */
+    background-color: #1b1e23 !important;
+    border-color: #666 !important;
   }
 </style>
 
@@ -284,8 +298,9 @@
                     <tbody>
                     {% for lang in q2.plus %}
                         <tr>
-                        <td class="muted">{{ q2.parameter.id }}</td> <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}" style="font-weight:bold">{{ lang.id }}</a></td>
-                        <td>{{ lang.name_full }}</td>
+                        <td class="muted">{{ q2.parameter.id }}</td> 
+                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}" style="font-weight:bold">{{ lang.id }}</a></td>
+                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}">{{ lang.name_full }}</a></td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -303,7 +318,7 @@
                         <tr>
                         <td class="muted">{{ q2.parameter.id }}</td>
                         <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}" style="font-weight:bold">{{ lang.id }}</a></td>
-                        <td>{{ lang.name_full }}</td>
+                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}">{{ lang.name_full }}</a></td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -321,7 +336,7 @@
                         <tr>
                         <td class="muted">{{ q2.parameter.id }}</td>
                         <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}" style="font-weight:bold">{{ lang.id }}</a></td>
-                        <td>{{ lang.name_full }}</td>
+                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}">{{ lang.name_full }}</a></td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -332,7 +347,7 @@
 
       {% if tab == "q3" and q3 %}
         <h3 class="mt-2 mb-2">
-            Analysis for: <strong>{{ q3.parameter.id }}</strong> in <em>{{ q3.language.name_full }}</em>
+            Analysis for: <strong><a href="{% url 'language_debug' q3.language.id %}#{{ q3.parameter.id }}">{{ q3.parameter.id }}</a></strong> in <em><a href="{% url 'language_data' q3.language.id %}">{{ q3.language.name_full }}</a></em>
         </h3>
 
         {% if q3.no_condition %}
@@ -356,7 +371,7 @@
       {% endif %}
 
       {% if tab == "q4" and q4 %}
-        <h3 class="mb-1">{{ q4.language.id }} — {{ q4.language.name_full }}</h3>
+        <h3 class="mb-1"><a href="{% url 'language_data' q4.language.id %}">{{ q4.language.id }} — {{ q4.language.name_full }}</a></h3>
         <div class="table-container">
             <table class="table table-hover">
             <thead>
@@ -375,7 +390,7 @@
       {% endif %}
 
       {% if tab == "q5" and q5 %}
-        <h3 class="mb-1">{{ q5.language.id }} — {{ q5.language.name_full }}</h3>
+        <h3 class="mb-1"><a href="{% url 'language_data' q5.language.id %}">{{ q5.language.id }} — {{ q5.language.name_full }}</a></h3>
         <div class="table-container">
             <table class="table table-hover">
             <thead>
@@ -394,7 +409,7 @@
       {% endif %}
 
       {% if tab == "q6" and q6 %}
-        <h3 class="mb-1">{{ q6.language.id }} — {{ q6.language.name_full }}</h3>
+        <h3 class="mb-1"><a href="{% url 'language_data' q6.language.id %}">{{ q6.language.id }} — {{ q6.language.name_full }}</a></h3>
         <div class="table-container">
             <table class="table table-hover">
             <thead>
@@ -413,7 +428,7 @@
       {% endif %}
 
       {% if tab == "q7" and q7 %}
-        <h3 class="mb-1">{{ q7.a.id }} — {{ q7.a.name_full }} ⇄ {{ q7.b.id }} — {{ q7.b.name_full }}</h3>
+        <h3 class="mb-1"><a href="{% url 'language_data' q7.a.id %}">{{ q7.a.id }} — {{ q7.a.name_full }}</a> ⇄ <a href="{% url 'language_data' q7.b.id %}">{{ q7.b.id }} — {{ q7.b.name_full }}</a></h3>
         <div class="table-container">
             <table class="table">
             <thead><tr><th>Parameter</th><th>{{ q7.a.id }}</th><th>{{ q7.b.id }}</th></tr></thead>
@@ -434,7 +449,7 @@
         {% if q8 or q9 %}
           {% with result=q8|default:q9 %}
             <h3 class="mb-1">
-                {{ result.language.id }} — {{ result.language.name_full }}
+                <a href="{% url 'language_data' result.language.id %}">{{ result.language.id }} — {{ result.language.name_full }}</a>
             </h3>
             <div class="table-container">
               <table class="table table-hover">

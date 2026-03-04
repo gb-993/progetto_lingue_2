@@ -300,6 +300,7 @@
         {% if request.user.role == 'public' %}
           <li class="nav-divider-label">Information</li>
           <li><a class="btn {% if urln == 'about' %}is-current{% endif %}" href="{% url 'about' %}">About</a></li>
+          <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">Citation Guidelines</a></li>
           <li><a class="btn {% if urln == 'methodology' %}is-current{% endif %}" href="{% url 'methodology' %}">Methodology</a></li>
           <li><a class="btn {% if urln == 'team' %}is-current{% endif %}" href="{% url 'team' %}">Team</a></li>
           <li><a class="btn {% if urln == 'contacts' %}is-current{% endif %}" href="{% url 'contacts' %}">Contacts</a></li>
@@ -417,7 +418,7 @@
           <li><a href="{% static 'docs/Terms_of_use_CG.pdf' %}" target="_blank" style="color: var(--text-color);">Disclaimer</a></li>
           <li style="margin-top: 0.5rem;">
             <span class="muted" style="font-size: 0.85rem; display: block; margin-bottom: 0.2rem;">Get in touch:</span>
-            <a href="mailto:gbmatteazzi93@gmail.com" style="color: var(--text-color); font-weight: 500;">gbmatteazzi93@gmail.com</a>
+            <a href="mailto:lab@unimore.it" style="color: var(--text-color); font-weight: 500;">lab@unimore.it</a>
           </li>
         </ul>
       </div>
