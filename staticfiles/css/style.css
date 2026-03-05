@@ -1,0 +1,1150 @@
+
+/* 1) Design  (tema chiaro) */
+:root{
+  --brand:#d14124; --brand-700:#b53a20;
+  --text:#1b1d20; --text-muted:#61656b;
+  --bg:#f7f8fa; --surface:#ffffff; --surface-2:#f1f2f4;
+  --border:#dadde2; --focus:#2266ff;
+  --ok:#1e824c; --bad:#b00020; --warn:#b58100;
+  --pill-ok-bg:#e9f7ef; --pill-bad-bg:#fff0f0; --pill-warn-bg:#fff7e5;
+  --ff: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+  --fs-1: clamp(.95rem, .92rem + .2vw, 1rem);
+  --fs-2: 1.125rem; --fs-3: 1.25rem; --fs-4: 1.5rem; --fs-5: 1.875rem;
+  --radius: 12px; --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.06);
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.25rem; --sp-6:1.5rem; --sp-8:2rem;
+  --w-col-label: 9.5rem;  
+  --w-col-name:  22rem;   
+}
+/* =========================================================
+   THEME: Dark overrides (attivo quando [data-theme="dark"])
+   ========================================================= */
+:root[data-theme="dark"] {
+  /* Neutri principali */
+  --text: #f3f5f7;            /* testo principale */
+  --text-muted: #c0c6cf;      /* testo attenuato */
+  --bg: #0e0f12;              /* background pagina */
+  --surface: #15171b;         /* card / superfici principali */
+  --surface-2: #1b1e23;       /* superfici secondarie */
+  --border: #2a2f37;          /* bordi e separatori */
+
+  /* Stato/semantica: manteniamo contrasto adeguato su dark */
+  --ok: #32d27a;
+  --bad: #d14124;      
+  --warn: #f0c35a;
+
+  /* Pill/Badge background in dark (con testo leggibile) */
+  --pill-ok-bg: rgba(50, 210, 122, 0.15);
+  --pill-bad-bg: rgba(255, 93, 110, 0.15);
+  --pill-warn-bg: rgba(240, 195, 90, 0.18);
+
+  /* Focus rimane ben visibile sul dark */
+  --focus: #5b8cff;
+
+}
+
+:root[data-theme="dark"], 
+:root[data-theme="dark"] body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+
+
+/* Accessibilità:  */
+:root[data-theme="dark"] a {
+  color: var(--brand);
+}
+:root[data-theme="dark"] a:hover {
+  color: var(--brand-700);
+}
+
+/* ============================
+   Dark theme – contrast fixes
+   ============================ */
+
+:root[data-theme="dark"] .btn {
+  color: var(--text);
+}
+
+/* 2) Bottoni nella navbar */
+:root[data-theme="dark"] .nav-list .btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* 3) Stato "attivo" nella navbar (bg brand): testo sempre bianco */
+.nav-list [aria-current="page"] {
+  background: var(--brand);
+  border-color: color-mix(in oklab, var(--brand) 75%, black);
+  color: #fff;
+}
+/* Navbar: tasto disattivato (pagina corrente) con sfondo rosso */
+.nav-list .btn.is-current[aria-disabled="true"] {
+  background: var(--brand);
+  border-color: color-mix(in oklab, var(--brand) 75%, black);
+  color: #fff;
+  opacity: 1;                
+}
+
+/* 4) Link generici in dark: */
+:root[data-theme="dark"] a {
+  color: var(--brand);
+}
+:root[data-theme="dark"] a:hover {
+  color: var(--brand-700);
+  text-decoration: underline;
+}
+
+/* 5) Sottotitoli/testi attenuati */
+:root[data-theme="dark"] .muted,
+:root[data-theme="dark"] .site-title .site-subtitle,
+:root[data-theme="dark"] .breadcrumb {
+  color: var(--text-muted);
+}
+
+/* 6) Badge/Pill generiche  */
+:root[data-theme="dark"] .badge {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* 7) Tabelle: header e sticky columns con bg coerente e testo leggibile */
+:root[data-theme="dark"] .table thead th,
+:root[data-theme="dark"] .table.table--freeze thead th,
+:root[data-theme="dark"] .table.table--freeze th[scope="row"],
+:root[data-theme="dark"] .table.table--freeze .col-sticky-left,
+:root[data-theme="dark"] .table.table--freeze .col-sticky-left-2 {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+/* 8) Alert/Message con testo di stato su dark */
+:root[data-theme="dark"] .alert {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] .alert-error {
+  color: var(--bad);
+  background: var(--pill-bad-bg);
+  border-color: color-mix(in oklab, var(--bad) 25%, var(--border));
+}
+
+/* 9) Bottoni primari/negativi */
+.btn--primary,
+.btn--bad {
+  color: #fff;
+}
+
+/* 10) Tiles della dashboard */
+.nav-tiles .tile,
+.nav-tiles .tile strong,
+.nav-tiles .tile .tile-sub {
+  color: #fff;
+}
+
+/* 11) Input e label: contrasto pieno in dark */
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] label {
+  color: var(--text);
+}
+
+/* 2) Reset minimale */
+*{box-sizing:border-box}
+html,body{height:100%}
+html{scroll-behavior:smooth}
+body{
+  margin:0; font-family:var(--ff); font-size:var(--fs-1); line-height:1.5;
+  color:var(--text); background:var(--bg);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+img,svg,video{max-width:100%; height:auto}
+a{color:inherit; text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+
+/* 3) Header / Navbar / Breadcrumb */
+/* .site-header{ border-bottom:1px solid var(--border); } */
+.site-header .container{
+  max-width: 80%;
+  margin:0 auto;
+  padding:.75rem var(--sp-4) .75rem; }
+
+.site-title{ font-size:clamp(1.6rem,1.1rem + 2vw,2.4rem); margin:0; }
+.site-title .site-subtitle{
+  display: block;
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: .25rem;
+  margin-bottom: 1rem; 
+}
+
+
+
+
+
+
+.nav {
+  margin-top: .5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* barra di navigazione */
+.nav-list {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  justify-content: flex-start;
+}
+
+/* crea vuoto espandibile tra i tab "normali" e il gruppo sessione */
+.nav-list .nav-spacer {
+  flex: 1 1 auto;                 
+  min-width: 2rem;                
+  height: 1.5rem;
+  margin-left: .75rem;
+  padding-left: .75rem;
+  border-left: 1px solid var(--border);  
+}
+
+/* gruppo Logout + Theme  */
+.nav-list .nav-session {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+/* larghezza minima coerente dei due bottoni finali */
+.nav-list .nav-session .btn {
+  min-width: 5rem;
+  text-align: center;
+}
+
+/* stile generale bottoni nella nav */
+.nav-list > li { margin: 0; padding: 0; }
+.nav-list form { display: inline; margin: 0; }
+.nav-list .btn {
+  padding: .45rem .7rem;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  text-decoration: none;
+}
+.nav-list .btn:hover {
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+/* --- NUOVO BLOCCO UNIVERSALE: TASTO ATTIVO ROSSO SEMPRE --- */
+.nav-list .btn.is-current,
+.nav-list .btn[aria-current="page"] {
+  background-color: var(--brand) !important;
+  color: #ffffff !important;
+  border-color: color-mix(in oklab, var(--brand) 75%, black) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  text-decoration: none !important;
+}
+
+.nav-list .btn.is-current:hover,
+.nav-list .btn[aria-current="page"]:hover {
+  background-color: var(--brand-700) !important;
+  color: #ffffff !important;
+}
+
+
+/* Sostituisci le righe 223-224 con questo blocco */
+
+.breadcrumb {
+  margin-top: .5rem;
+  color: var(--text-muted);
+}
+
+.breadcrumb ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb li:not(:last-child)::after {
+  content: "/";
+  margin-left: 0.5rem;
+  opacity: 0.5;
+}
+
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none; /* Meglio togliere la sottolineatura di default */
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* L'ultimo elemento (pagina corrente) */
+.breadcrumb li:last-child {
+  font-weight: 600; /* Opzionale: lo rende un po' più evidente */
+  pointer-events: none;
+}
+
+/* 4) Layout & utility */
+.container {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+body.page-graph .card {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+.main-title{ font-size:var(--fs-5); margin:0 0 var(--sp-4); }
+.muted{ color:var(--text-muted) }
+.nowrap{ white-space:nowrap }
+.w-1ch{width:1ch} .w-3ch{width:3ch} .w-5ch{width:5ch} .w-10ch{width:10ch}
+.mt-1{margin-top:var(--sp-4)} .mb-1{margin-bottom:var(--sp-4)}
+.mt-2{margin-top:var(--sp-6)} .mb-2{margin-bottom:var(--sp-6)}
+.fit{ width:100% }
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* Grid */
+.grid{display:grid; gap:var(--sp-4)}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:repeat(3, 1fr)}
+
+/* Split + Sidebar */
+.split{display:grid; grid-template-columns:280px 1fr; gap:var(--sp-6)}
+aside.card.sidebar{ position:sticky; top:var(--sp-6); max-height:calc(100dvh - 2*var(--sp-6)); overflow:auto }
+aside.card.sidebar h3{ margin-top:0 }
+aside.card.sidebar ul{ list-style:none; margin:0; padding:0 }
+aside.card.sidebar li{ display:flex; align-items:center; gap:.5rem; padding:.25rem 0 }
+aside.card.sidebar a{ color:var(--text); text-decoration:none }
+aside.card.sidebar a:hover{ text-decoration:underline }
+
+/* 5) Card */
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:var(--sp-5); box-shadow:var(--shadow);
+}
+.card + .card{ margin-top:var(--sp-4) }
+.card h2{ font-size:var(--fs-4); margin:.25rem 0 var(--sp-3) }
+.card h3{ font-size:var(--fs-3); margin:.25rem 0 var(--sp-3) }
+
+/* 6) Buttons */
+.btn{
+  --btn-bg:var(--surface-2); --btn-fg:var(--text); --btn-bd:var(--border);
+  appearance:none; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  padding:.55rem .9rem; border-radius:10px; border:1px solid var(--btn-bd);
+  background:var(--btn-bg); color:var(--btn-fg); cursor:pointer; font-weight:600;
+  transition:transform .04s ease, background .15s ease, border-color .15s ease;
+  line-height:1.1; text-decoration:none;
+}
+
+/* Uniforma <button> e <a class="btn"> */
+button.btn {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.1;         
+  padding: .55rem .9rem;  
+  border: 1px solid var(--btn-bd);
+  border-radius: 10px;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  cursor: pointer;
+  appearance: none;        
+}
+
+
+.btn:hover{ transform:translateY(-1px) }
+.btn:active{ transform:translateY(0) }
+.btn[disabled], .btn[aria-disabled="true"]{ opacity:.6; pointer-events:none }
+.btn--primary{ --btn-bg:var(--brand); --btn-fg:#fff; --btn-bd:color-mix(in oklab, var(--brand) 75%, black) }
+.btn--bad{
+  --btn-bg:var(--brand);           
+  --btn-fg:#fff;
+  --btn-bd:color-mix(in oklab, var(--brand) 75%, black);
+}
+.btn.btn-link{ background:transparent; border-color:transparent; padding:0 }
+
+/* 7) Dashboard tiles */
+.dashboard-hero{ margin:0 0 1rem; text-align:center }
+.dashboard-hero h1{ font-size:var(--fs-5); margin:0 0 .25rem }
+.dashboard-hero .muted{ font-size:1rem }
+
+.nav-tiles{ display:grid; gap:.9rem; justify-content:center; margin-top:1rem }
+.nav-tiles .tile{
+  background:var(--brand); color:#fff; border-color:color-mix(in oklab, var(--brand) 75%, black);
+  min-width:min(90vw,520px); max-width:520px; width:100%; border-radius:16px;
+  padding:.95rem 1.25rem; box-shadow:0 6px 18px rgba(209,65,36,.18);
+  display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+}
+.nav-tiles .tile:hover{ text-decoration:none; transform:translateY(-1px); background:var(--brand-700); border-color:color-mix(in oklab, var(--brand-700) 75%, black) }
+.nav-tiles .tile strong{ font-weight:700; letter-spacing:.2px }
+.nav-tiles .tile .tile-sub{ opacity:.9; font-weight:500; font-size:.95rem }
+
+.mt-2{ margin-top:var(--sp-6) }
+
+/* 8) Form */
+form{margin:0}
+.form-row{display:flex; flex-direction:column; gap:.35rem; margin-bottom:var(--sp-4)}
+label{font-weight:600}
+input,select,textarea{
+  width:100%; padding:.6rem .7rem; border-radius:10px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); box-shadow:0 1px 0 rgba(0,0,0,.02) inset;
+}
+textarea{min-height:5.5rem; resize:vertical}
+input[type="checkbox"], input[type="radio"]{width:auto}
+input:focus-visible,select:focus-visible,textarea:focus-visible{ outline:2px solid var(--focus); outline-offset:2px }
+.field-error,.error{
+  background:var(--pill-bad-bg);
+  border:1px solid color-mix(in oklab, var(--bad) 25%, var(--border));
+  color:var(--bad); padding:.5rem .75rem; border-radius:10px;
+}
+
+/* 9) Tabelle */
+.table{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:var(--surface);
+}
+
+/* Solo per le tabelle normali (non sticky): bordo unico continuo */
+.table:not(.table--freeze){
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+
+.table thead th{ text-align:left; font-weight:700; padding:.7rem .8rem; border-bottom:1px solid var(--border); background:var(--surface-2) }
+.table tbody td{ padding:.65rem .8rem; border-bottom:1px solid var(--border); vertical-align:top }
+.table tbody tr:nth-child(odd){ background:color-mix(in oklab, var(--surface) 80%, var(--surface-2)) }
+.table tbody tr:last-child td{ border-bottom:0 }
+
+/* ===== Table A: wrapper scrollabile e intestazioni fisse ===== */
+
+/* Wrapper centrato che fa scroll orizzontale interno */
+.table-container { padding: 0; }
+.table-scroll{
+  overflow: auto;               
+  max-height: 70vh;              
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+}
+
+
+/* Congela l'header (thead)  */
+.table.table--freeze thead th{
+  position: sticky;
+  top: 0;
+  z-index: 5; /* sopra le celle */
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Congela la prima colonna (intestazioni riga) */
+.table.table--freeze th[scope="row"]{
+  position: sticky;
+  left: 0;
+  z-index: 4; 
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+/* Prima colonna sticky (Label) */
+.table.table--freeze .col-sticky-left{
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--border);
+  min-width: var(--w-col-label);
+  width: var(--w-col-label);
+}
+
+/* Seconda colonna sticky */
+.table.table--freeze .col-sticky-left-2{
+  position: sticky;
+  left: var(--w-col-label);
+  z-index: 3;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--border);
+  min-width: var(--w-col-name);
+  width: var(--w-col-name);
+}
+
+
+.table.table--freeze thead .col-sticky-left,
+.table.table--freeze thead .col-sticky-left-2{
+  z-index: 7; 
+}
+.table.table--freeze col.w-label { 
+  width: var(--w-col-label); 
+}
+.table.table--freeze col.w-name  { 
+  width: var(--w-col-name);  
+}
+
+
+/* Allinea la prima colonna sticky nei th dell'header */
+.table.table--freeze thead .col-sticky-left{
+  left: 0;
+  z-index: 6;
+}
+
+
+.table-scroll .table{
+  width: max(100%, 900px); 
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-radius: 0; 
+}
+
+/* Migliora la leggibilità quando c'è molto scroll */
+.table-scroll{ background: linear-gradient(to right, transparent 30%, rgba(0,0,0,0.03) 100%) }
+
+
+
+/* 10) Alert */
+.alert{ padding:.6rem .8rem; border-radius:10px; background:var(--surface-2); border:1px solid var(--border) }
+.alert-error{
+  background:var(--pill-bad-bg);
+  border-color:color-mix(in oklab, var(--bad) 25%, var(--border));
+  color:var(--bad);
+}
+
+/* 11) Stati/indicatori */
+.status{
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding:.15rem .5rem; border-radius:999px; font-weight:600; font-size:.875rem;
+  border:1px solid var(--border); background:var(--surface-2);
+}
+.status .dot{ width:.55rem; height:.55rem; border-radius:50%; display:inline-block }
+.status.ok{ color:var(--ok); background:var(--pill-ok-bg); border-color:color-mix(in oklab, var(--ok) 25%, var(--border)) }
+.status.bad{ color:var(--bad); background:var(--pill-bad-bg); border-color:color-mix(in oklab, var(--bad) 25%, var(--border)) }
+.status.warn{ color:var(--warn); background:var(--pill-warn-bg); border-color:color-mix(in oklab, var(--warn) 25%, var(--border)) }
+
+/* 12) Paginazione */
+.pagination{
+  display:flex; gap:.25rem; flex-wrap:wrap; align-items:center; justify-content:flex-end; margin-top:var(--sp-4)
+}
+.pagination a,.pagination .current{
+  display:inline-flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; padding:0 .5rem;
+  border:1px solid var(--border); border-radius:8px; background:var(--surface-2);
+  text-decoration:none; color:var(--text); font-weight:600;
+}
+.pagination .current{ background:var(--brand); color:#fff; border-color:color-mix(in oklab, var(--brand) 75%, black) }
+.pagination a:hover{ text-decoration:none; transform:translateY(-1px) }
+
+/* 13) Azioni riga */
+.row-actions{
+  display:flex;
+  gap:.4rem;
+  flex-wrap:wrap;
+  align-items:center;          
+  justify-content:flex-end;    
+}
+.row-actions .btn{ padding:.4rem .6rem }
+.card > .toolbar{ margin-top:.35rem }
+.card .toolbar + .muted{ margin-top:.25rem }
+.grid .form-row textarea{ min-height:4.25rem }
+[disabled],[aria-disabled="true"]{ filter:saturate(.2) brightness(.96) }
+.table a.btn{ text-decoration:none }
+
+.nav-list .btn.is-current[aria-disabled="true"] {
+  background: var(--brand);
+  border-color: color-mix(in oklab, var(--brand) 75%, black);
+  color: #fff;
+  filter: none;          
+  opacity: 1;
+  cursor: default;
+  pointer-events: none;
+}
+:root[data-theme="dark"] .nav-list .btn.is-current[aria-disabled="true"] {
+  background: var(--brand);
+  border-color: color-mix(in oklab, var(--brand) 75%, black);
+  color: #fff;
+  filter: none;
+}
+
+/* Toolbar  */
+.toolbar{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap: 1rem;                
+  margin-bottom: 1.75rem;   
+  flex-wrap: wrap;
+}
+/* === Toolbar buttons – dark mode fix === */
+:root[data-theme="dark"] .toolbar .btn--search,
+:root[data-theme="dark"] .toolbar .btn--primary {
+  color: #fff !important;
+}
+
+.toolbar__form{
+  display:flex; align-items:center;
+  gap: 0.65rem;            
+  flex: 1 1 560px;         
+  max-width: 680px;
+}
+.toolbar__add{
+  flex: 1 0 100%;         
+  margin-top: 0.25rem;
+}
+.btn--wide{                
+  width: 100%;
+  justify-content: center;
+}
+
+/* opzionale: input un filo più alto per coerenza visiva */
+.toolbar input[type="search"]{
+  padding: 0.65rem 0.9rem;
+}
+
+/* Mobile: già colonna;*/
+@media (max-width: 600px){
+  .toolbar{ flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .toolbar__form{ width: 100%; max-width: none; }
+}
+.back-to-top {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 2.8rem;
+  height: 2.8rem;
+  cursor: pointer;
+  font-size: 1.4rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  transition: opacity .2s ease, transform .1s ease;
+  z-index: 2147483647; /* sopra tutto */
+}
+.back-to-top:hover { opacity: .85; }
+.back-to-top.is-hidden { display: none; }
+
+/* === Flash messages === */
+.flash-messages {
+  margin: 1rem 0;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  border-radius: .5rem;
+  margin-bottom: .5rem;
+  border: 1px solid var(--border);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Tipi standard */
+.alert-info    { background: #e7f3ff; border-color: #b3d6ff; color: #084298; }
+.alert-success { background: #e6f7e9; border-color: #b9e6c0; color: #0f5132; }
+.alert-warning { background: #fff6d9; border-color: #ffe39c; color: #664d03; }
+.alert-error   { background: #ffe8e8; border-color: #ffc1c1; color: #842029; }
+
+.alert-close {
+  background: none;
+  border: 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Dark theme override */
+:root[data-theme='dark'] .alert-info    { background:#12283b; color:#9ec5fe; }
+:root[data-theme='dark'] .alert-success { background:#10291a; color:#b1dfbb; }
+:root[data-theme='dark'] .alert-warning { background:#392f0a; color:#ffda6a; }
+:root[data-theme='dark'] .alert-error   { background:#3b1818; color:#f5b3b3; }
+
+/* ===== Dashboard layout ===== */
+.dashboard-flex {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 1.5rem;
+}
+
+/* colonna sinistra = griglia pulsanti admin/user */
+.dashboard-links-grid {
+  flex: 0 1 480px;         
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); 
+  gap: 1rem 1rem;
+  align-content: flex-start;
+}
+
+/* singolo riquadro cliccabile */
+.dash-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  min-height: 4rem;         
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+
+  background: var(--brand);
+  color: #fff;
+  border:1px solid color-mix(in oklab, var(--brand) 75%, black);
+  box-shadow: 0 6px 18px rgba(209,65,36,.18);
+  padding: .75rem 1rem;
+  text-decoration: none;
+  transition: transform .05s ease, background .15s ease;
+}
+.dash-tile:hover {
+  text-decoration: none;
+  background: var(--brand-700);
+  border-color: color-mix(in oklab, var(--brand-700) 75%, black);
+  transform: translateY(-1px);
+}
+
+/* label interna  */
+.dash-tile-label {
+  display: block;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: .02em;
+}
+/* ===== Latest changes (dashboard right column) ===== */
+
+.news-box {
+  flex: 1 1 260px;
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--sp-5);
+
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+}
+
+
+
+.news-box h3 {
+  font-size: 1rem;
+  margin-top: 0;
+  margin-bottom: .5rem;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+/* la lista delle modifiche */
+.news-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.news-item {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0;
+}
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.news-item p.small {
+  font-size: 0.85rem;
+  margin: 0.4rem 0 0;
+  color: var(--text);
+}
+.news-item .small {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Stato COMPATTO:
+   - limitiamo l'altezza visibile SOLO della lista
+   - niente scrollbar
+   - il bottone rimane comunque sotto, visibile
+*/
+.news-box.collapsed .news-list {
+  max-height: 180px;       
+  overflow-y: hidden;
+}
+
+/* Stato ESPANSO:
+   - la lista si può espandere 
+   - scrollbar interna SOLO nella lista
+*/
+.news-box.expanded .news-list {
+  max-height: 50vh;        
+  overflow-y: auto;
+}
+
+/* riga del bottone Show more / Show less */
+.news-toggle-row {
+  flex: 0 0 auto;
+  padding-top: .75rem;
+  margin-top: .5rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+}
+
+.news-toggle-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-alt, var(--surface));
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: var(--radius);
+  padding: .5rem .75rem;
+  cursor: pointer;
+  min-width: 7rem;
+  transition: background .15s ease, border-color .15s ease, transform .05s ease;
+}
+.news-toggle-btn:hover {
+  background: var(--brand-50, rgba(209,65,36,.07));
+  border-color: var(--brand);
+  transform: translateY(-1px);
+}
+.news-toggle-btn:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ===== Dashboard responsive ===== */
+
+@media (max-width: 768px) {
+  .dashboard-flex {
+    flex-direction: column;
+  }
+
+  .dashboard-links-grid {
+    width: 100%;
+    flex: 1 1 auto;
+    grid-template-columns: 1fr;  
+  }
+
+  .news-box {
+    order: 2;
+    max-width: 100%;
+  }
+
+  /* Su mobile, quando è espanso è meglio NON avere scrollbar interna nella lista,
+     ma lasciare scrollare tutta la pagina normalmente.
+     Quindi si toglie il max-height/overflow nella versione expanded mobile.
+  */
+  .news-box.expanded .news-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* Checkbox list (lingue) */
+.checkbox-list .checkbox-item input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.checkbox-list .checkbox-item {
+  line-height: 1.2;
+}
+
+/* Stato disabilitato del pulsante Save (visivo + accessibile) */
+.btn--disabled {
+  opacity: .5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Solo nella pagina Glossary edit */
+.glossary-edit textarea#id_description {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* parameter visualize question */
+.pill {
+  display: inline-block;
+  padding: .15rem .4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: .85em;
+  background: var(--surface-2, #f1f2f4);
+}
+.pill--warn { background: var(--pill-warn-bg, #fff7e5); }
+
+details > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+details > summary::-webkit-details-marker { display:none; }
+
+/* === Review flag UI === */
+.param-title {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+}
+.review-flag {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-weight: 600;
+}
+.review-flag input[type="checkbox"] {
+  width: 1.05rem; height: 1.05rem;
+}
+.param-btn {
+  position: relative;
+}
+.param-btn .badge-review {
+  position: absolute;
+  top: -6px; right: -6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--warn); color: #000; font-weight: 800; font-size: .8rem;
+  border: 2px solid #fff;
+}
+:root[data-theme="dark"] .param-btn .badge-review {
+  border-color: var(--surface);
+}
+
+/* Tooltip "More info" (usa <details>) */
+details.help-info { margin: .35rem 0 .5rem; }
+details.help-info > summary { cursor: pointer; gap: .35rem; }
+details.help-info > div { padding: .35rem .5rem; border-left: 3px solid var(--border); }
+
+/* === QUERIES NAVIGATION (vertical menu version) === */
+.queries-page .queries-nav {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.queries-page .queries-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column; 
+  gap: 0.6rem; 
+}
+
+.queries-page .queries-nav li {
+  width: 100%;
+}
+
+.queries-page .queries-nav a {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 1rem;
+  text-decoration: none;
+  color: var(--text-muted);
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  transition: all 0.15s ease-in-out;
+  line-height: 1.3;
+}
+
+.queries-page .queries-nav a:hover {
+  background-color: var(--surface);
+  border-color: var(--brand);
+  color: var(--text);
+}
+
+.queries-page .queries-nav a.active {
+  background-color: var(--brand, #d14124);
+  color: #fff;
+  border-color: var(--brand, #d14124);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.queries-page form .btn {
+  margin-top: 0.6rem;    
+}
+
+
+.queries-page .card-header {
+  margin-bottom: 1rem;  
+}
+
+/* === Table A filters layout === */
+.filters-form {
+  display: flex;
+  flex-direction: column;      
+  align-items: flex-start;   
+  gap: .75rem;               
+}
+
+.filters-form label {
+  font-weight: 600;
+  text-align: left;
+  width: 100%;
+}
+
+/* === Table A: override larghezze colonne === */
+.table.table--freeze.tableA .col-sticky-left {
+  width: 5rem;
+  min-width: 5rem;
+}
+.table.table--freeze.tableA col.w-name {
+  width: 22rem; /* rispetto a default 22rem */
+}
+.table.table--freeze.tableA col.w-implication {
+  width: 22rem; /* nuova larghezza per Implicational condition */
+}
+
+.table.table--freeze.tableA thead th:nth-child(2),
+.table.table--freeze.tableA tbody td:nth-child(2) {
+  min-width: 10rem; /* Name */
+}
+.table.table--freeze.tableA thead th:nth-child(3),
+.table.table--freeze.tableA tbody td:nth-child(3) {
+  min-width: 20rem; /* Implicational condition(s) */
+}
+
+.table details > summary {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
+
+
+/* AREA RISPOSTE: domanda + more info: testo a capo, trigger fisso a destra */
+.q-head {
+  display: grid;                       
+  grid-template-columns: 1fr auto;      
+  column-gap: .6rem;                    
+  align-items: start;                   
+}
+.q-head__text {
+  margin: 0;                            
+  min-width: 0;                         
+  word-wrap: break-word;                
+}
+
+/* details inline */
+.help-info--inline {
+  display: contents;                    
+}
+.help-info__summary {
+  white-space: nowrap;                  
+  cursor: pointer;
+  font-size: .95rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.help-info__summary:focus {
+  outline: 2px solid var(--focus, #2266ff);
+  outline-offset: 2px;
+}
+
+/* pannello: va sotto a tutta larghezza (riga nuova) */
+.help-info__panel {
+  grid-column: 1 / -1;                 
+  margin-top: .35rem;
+}
+
+/* --- GRIGLIA ESEMPI A 2 COLONNE --- */
+.examples-list {
+  display: grid;
+  /* Forza esattamente 2 colonne di uguale larghezza */
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  align-items: stretch;
+}
+
+/* Rimuove i margini che interferiscono con la griglia */
+.examples-list .example-row {
+  margin-bottom: 0 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ottimizza la disposizione interna dei campi nella card esempio */
+.examples-list .example-row .grid {
+  grid-template-columns: 1fr; /* Incolonna i campi (es. Text, Gloss) per leggibilità */
+  gap: 0.6rem;
+}
+
+/* Responsive: se lo schermo è molto stretto (mobile), torna a 1 colonna */
+@media (max-width: 768px) {
+  .examples-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Graphs */
+.graph-layout { display:grid; grid-template-columns: 1fr minmax(260px,320px); gap:1rem; align-items:start; }
+@media (max-width: 900px){ .graph-layout { grid-template-columns:1fr; } }
+.param-card { border:1px solid var(--border,#ddd); border-radius:8px; padding:.5rem .75rem; background:var(--surface,#fff); }
+.card-plus { background:#e8f7ec; }
+.card-minus { background:#fde8e7; }
+.card-zero { background:#eef1f5; }
+.card-unset { background:#f8f8f8; }
+.card-inactive { background:repeating-linear-gradient(45deg,#f8f8f8,#f8f8f8 6px,#eee 6px,#eee 12px); }
+.legend .badge { display:inline-block; padding:.125rem .375rem; border-radius:4px; border:1px solid var(--border,#ddd); }
+.legend .sep { display:inline-block; width:.75rem; }
+.b-plus { background:#e8f7ec; } .b-minus { background:#fde8e7; } .b-zero { background:#eef1f5; } .b-unset { background:#f8f8f8; }
+.b-focus { background:#fff6da; border-color:#eed68a; }
+.b-up { background:#e5efff; } .b-down { background:#fff0e5; }
+
+                              /* Allineamento del nuovo logo */
+.pcm-logo-img {
+  height: 1.4em;           /* Si adatta automaticamente all'altezza del testo */
+  vertical-align: middle;  /* Centra l'immagine rispetto al testo "PCM" */
+  margin-left: -8px;       /* Avvicina l'immagine al testo per l'effetto "abbraccio" */
+  margin-top: -4px;        /* Piccolo aggiustamento verticale */
+  display: inline-block;
+}
+
+/* Ottimizzazione per mobile */
+@media (max-width: 768px) {
+  .pcm-logo-img {
+    height: 1.2em;
+  }
+}
