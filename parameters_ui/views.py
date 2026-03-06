@@ -998,8 +998,8 @@ def parameter_download_pdf(request, param_id: str):
 
     # 3. LOGICA
     add_section_title("Logic & Conditions")
-    add_line("Implicational Condition:", param.implicational_condition or "-")
-    add_long_text("Condition Description:", param.description_of_the_implicational_condition)
+    add_line("Implicational Condition(s):", param.implicational_condition or "-")
+    add_long_text("Explication of the Implicational Condition(s):", param.description_of_the_implicational_condition)
 
     # 4. DOMANDE
     add_section_title("Questions")
@@ -1011,7 +1011,7 @@ def parameter_download_pdf(request, param_id: str):
         pdf.cell(0, 8, "No questions linked to this parameter.", ln=True)
     else:
         for q in questions:
-            q_type = "Stop Question" if q.is_stop_question else "Normal Question"
+            q_type = "Stop Question" if q.is_stop_question else ""
 
             # Box ID Domanda (Sfondo var(--surface-2), Bordo var(--border))
             pdf.set_font("helvetica", style="B", size=11)
