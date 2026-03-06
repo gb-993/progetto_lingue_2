@@ -4,7 +4,7 @@
 - [ ] Servizi informatici per casella noreply
 
 ## GENERALI
-- [ ] Instruction yes e no al plurale in edit question 
+- [ ] Forse è il caso che FLAGGED / UNSURE PARAMETERS mostri i parametri rossi, quindi anche quelli per cui manca anche una sola risposta (es. CEX per Trieste)
 - [x] Rendere cliccabili i link nel menù (link circolari)
 - [x] Aggiornare i nomi delle pagine (Graph -> Parameter networks, Submissions -> Saved languages, Queries -> Filters)
 - [x] Aggiornare ordine nel menù User: Dashboard > Languages > Instructions > Glossary > My account
@@ -58,6 +58,7 @@
 - [ ] Mettere i pulsanti a destra in un'unica riga
 
 ## PARAMETERS EDIT
+- [ ] Instruction yes e no al plurale in edit question 
 - [x] Inserire un nuovo attributo Level of comparison con i due valori mutualmente esclusivi Canonico e Deuterocanonico
 - [x] Inserire due altre celle di testo libero una sotto l'altra intitolate "Long description" e "Explication of the implicational condition"
 - [x] Inserire un bottone di download alla fine della pagina di edit del parametro per scaricare un pdf con tutte le informazioni di un parametro e delle sue questions
