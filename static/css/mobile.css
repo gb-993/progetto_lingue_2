@@ -1,109 +1,374 @@
+/* =========================================================
+   MOBILE CSS - Si attiva fino a 768px (definito nell'HTML)
+   ========================================================= */
+
+/* --- 1. Layout generale e Spazi --- */
+body {
+  font-size: 0.95rem; /* Riduciamo leggermente il font base per far stare più testo */
+}
+
+.main-container {
+  /* Riduciamo drasticamente i padding laterali (prima erano 3rem) */
+  padding: 1rem 1rem !important; 
+}
+
+#main {
+  padding-top: 1.5rem;
+}
+
+/* --- 2. Top Bar e Navigazione --- */
+
+/* Nascondiamo completamente il breadcrumb su mobile */
+.breadcrumb {
+  display: none !important;
+}
+
+/* Teniamo tutto sulla stessa riga */
+.top-bar {
+  padding: 0.6rem 1rem;
+  flex-wrap: nowrap !important; /* Evita che vadano a capo */
+  justify-content: space-between;
+}
+
+.top-bar-left {
+  flex: 0 0 auto;
+}
+
+/* Raggruppiamo i tasti a destra */
+.top-bar-right {
+  flex: 1 1 auto;
+  width: auto;
+  justify-content: flex-end;
+  gap: 0.4rem; /* Spazio ridotto tra i tastini per farli stare tutti */
+}
+
+/* Rimpiccioliamo leggermente i pulsanti in alto per non farli sbordare sugli schermi più stretti */
+.top-bar-right .btn {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  white-space: nowrap; /* Evita che il testo dei bottoni vada a capo a metà parola */
+}
+
+/* --- 3. Toolbar e Ricerca (_toolbar_search.html) --- */
+.toolbar {
+  /* Sovrascriviamo l'inline style flex-wrap:nowrap dell'HTML */
+  flex-direction: column !important; 
+  align-items: stretch !important;
+  gap: 1rem !important;
+}
+
+.toolbar__form, 
+.toolbar__add {
+  /* Facciamo occupare il 100% della larghezza ai blocchi della toolbar */
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.toolbar__form {
+  flex-direction: column;
+}
+
+.btn--search,
+.btn--primary {
+  width: 100%;
+  justify-content: center;
+}
+
+/* --- 4. Form e Input --- */
+.form-row {
+  margin-bottom: 1rem;
+}
+
+input, select, textarea {
+  font-size: 16px; /* Evita lo zoom automatico su iOS Safari quando si clicca un input */
+}
+
+/* --- 5. Dashboard e Griglie --- */
+.grid-2, 
+.grid-3 {
+  grid-template-columns: 1fr; /* Trasforma tutte le griglie in singola colonna */
+}
+
+.dashboard-links-grid {
+  grid-template-columns: 1fr; /* I bottoni della dashboard si impilano */
+}
+
+/* --- 6. Tabelle (Cruciale per i dati) --- */
+/* Forza tutte le tabelle a scrollare orizzontalmente invece di comprimersi o sbordare */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+  border-right: 1px solid var(--border);
+}
+
+.table td, .table th {
+  padding: 0.75rem 0.5rem !important; /* Riduciamo i padding interni delle celle */
+  font-size: 0.9rem;
+}
+
+/* Riduciamo le larghezze fisse enormi della Table A su mobile */
+.table.table--freeze.tableA col.w-name,
+.table.table--freeze.tableA col.w-implication {
+  width: 12rem; 
+}
+
+/* --- 7. Footer --- */
+.footer-container {
+  padding: 0 1rem;
+}
+
+.footer-grid {
+  gap: 2rem;
+}
+
+.footer-bottom {
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+/* --- 8. Lista Lingue (Card Layout Ultra-Compatto) --- */
+
+/* 1. Rimuoviamo il "doppio contenitore" della tabella genitore */
+.languages-list .table {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Nascondiamo l'intestazione della tabella */
+.languages-list .table thead {
+  display: none;
+}
+
+/* 2. Trasformiamo le righe in "Card" ultra-compatte */
+.languages-list .table tbody tr {
+  display: grid;
+  grid-template-columns: 1fr auto; 
+  align-items: center; /* Allinea i tasti perfettamente al centro verticale del nome */
+  row-gap: 0.15rem; /* Spazio microscopico tra le righe */
+  column-gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px); /* Angoli leggermente più netti */
+  margin-bottom: 0.5rem; /* Distanza minima tra una card e l'altra */
+  padding: 0.5rem; /* Padding interno ridotto al minimo indispensabile */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Ombra leggerissima */
+}
+
+.languages-list .table tbody td {
+  display: block;
+  padding: 0;
+  border: none;
+  width: auto !important;
+}
+
+/* Nome */
+.languages-list .table tbody td[data-label="Name"] {
+  grid-column: 1 / 2;
+  font-size: 1.1rem; /* Leggermente più piccolo */
+  font-weight: 800;
+  color: var(--brand);
+  margin: 0;
+  line-height: 1.1;
+}
+
+/* Azioni */
+.languages-list .table tbody td[data-label="Actions"] {
+  grid-column: 2 / 3;
+  margin: 0;
+  padding: 0;
+}
+
+.languages-list .table tbody td[data-label="Actions"] .row-actions-buttons {
+  display: flex;
+  gap: 0.25rem; /* Spazio millimetrico tra i tastini */
+  justify-content: flex-end;
+}
+
+/* Tasti ultra compatti */
+.languages-list .table tbody td[data-label="Actions"] .btn {
+  flex: 0 0 auto;
+  padding: 0.7rem 0.7rem;  
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+/* Info secondarie sotto il nome */
+.languages-list .table tbody td[data-label="Family"],
+.languages-list .table tbody td[data-label="Last modified"] {
+  grid-column: 1 / -1; 
+  font-size: 0.75rem; /* Micro-testo */
+  color: var(--text-muted);
+  margin: 0;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.languages-list .table tbody td[data-label="Family"]::before {
+  content: "Family:";
+  font-weight: 600;
+  color: var(--text);
+}
+.languages-list .table tbody td[data-label="Last modified"]::before {
+  content: "Updated:";
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Pulsantiera di export in alto */
+.languages-list .toolbar-actions {
+  flex-direction: column !important;
+}
+.languages-list .toolbar-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Nascondiamo i campi superflui su mobile, e quelli opzionali se sono vuoti (.muted) */
+.languages-list .table tbody td[data-label="Family"]:has(.muted),
+.languages-list .table tbody td[data-label="Last modified"]:has(.muted),
+.languages-list .table tbody td[data-label="Id"],
+.languages-list .table tbody td[data-label="Top-level"],
+.languages-list .table tbody td[data-label="Group"] {
+  display: none !important;
+}
 
 
-@media (max-width: 768px) {
 
-  /* --- Layout / container --- */
-  .container {
-    padding: 1.25rem 1rem; /* più compatto su mobile */
-  }
+/* 1. Nascondiamo la pulsantiera orizzontale del desktop */
+.desktop-actions {
+  display: none !important;
+} 
 
-  /* --- Toolbar impilata --- */
-  .toolbar {
-    display: grid;
-    gap: 12px;
-    align-items: start;
-  }
-  .toolbar form { display: grid; gap: 8px; }
-  .toolbar .actions,
-  .toolbar a.btn,
-  .toolbar button.btn {
-    width: 100%;
-  }
+/* 2. Mostriamo il menu a tendina del mobile */
+.hide-on-desktop {
+  display: block !important;
+}
 
-  /* --- Griglie --- */
-  .grid-2, .grid-3 {
-    grid-template-columns: 1fr !important; /* una colonna su mobile */
-  }
+/* 3. Cancelliamo le righe vuote e quelle inutili */
+.languages-list .table tbody td.is-empty,
+.languages-list .table tbody td[data-label="Id"],
+.languages-list .table tbody td[data-label="Top-level"],
+.languages-list .table tbody td[data-label="Group"] {
+  display: none !important;
+}
 
-  /* --- Split + Sidebar --- */
-  .split {
-    grid-template-columns: 1fr !important; /* niente sidebar affiancata */
-    gap: 1rem;
-  }
-  aside.card.sidebar {
-    position: static; /* niente sticky su mobile */
-    max-height: none;
-    overflow: visible;
-  }
 
-  /* --- Bottoni (target touch/accessibilità) --- */
-  a.btn, button.btn {
-    min-height: 44px;
-  }
-  a:focus, button:focus {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
+/* =========================================================
+   9. LANGUAGE DATA PAGE (Dettagli Lingua)
+   ========================================================= */
 
-  /* --- Tabelle in formato “schede” accessibili (no scroll orizzontale) --- */
-  .table { 
-    width: 100%;
-    border-collapse: separate; 
-    border-spacing: 0; 
-  }
+/* 1. Nascondiamo la griglia meta fissa su mobile (lasciando la tendina) */
+.desktop-meta {
+  display: none !important;
+}
 
-  /* Nascondi thead visivamente ma lascialo ai lettori di schermo se hai caption/aria */
-  .table thead { 
-    position: absolute; 
-    left: -9999px; 
-    top: -9999px;
-  }
+/* 2. Sistemiamo l'intestazione per impilare Nome e Status */
+.lang-title-block {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 0.5rem !important;
+}
 
-  .table tbody tr {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 12px;
-    background: var(--surface);
-  }
+/* Sistemiamo le dimensioni del Badge di Stato per non far andare a capo il testo */
+.title-status .status {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.95rem;
+  white-space: nowrap; /* Impedisce al testo di stritolarsi su due righe */
+}
 
-  .table tbody td,
-  .table tbody th[scope="row"] {
-    display: grid;
-    grid-template-columns: 120px 1fr; /* etichetta + valore */
-    gap: 6px;
-    padding: 0;
-    border: 0;
-  }
+/* --- AZIONI WORKFLOW ULTRA COMPATTE (Download, Reject, ecc.) --- */
 
-  /* Etichetta colonna prima del valore */
-  .table tbody td::before,
-  .table tbody th[scope="row"]::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: var(--text-muted);
-  }
+/* 1. Rimuoviamo il "doppio contenitore" (Sfondo e bordi della Card grande) */
+.workflow-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-top: 1rem !important;
+}
 
-  /* Badge e azioni a tutta larghezza */
-  .badge { 
-    display: inline-block; 
-    text-align: center; 
-    padding: 6px 8px; 
-    border-radius: 8px; 
-  }
-  .row-actions .btn { width: 100%; }
+/* Rimuoviamo il contenitore dei singoli blocchi (niente sfondi grigi o bordi tratteggiati) */
+.workflow-form-block {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
 
-  .table-scroll {
-    max-height: none;     /* libera lo spazio verticale su device piccoli */
-    overflow: visible;    /* niente scrollbar dentro contenitori piccoli */
-    background: transparent;
-  }
+/* 2. Nascondiamo i testi descrittivi e il tasto "Add note" (solo su mobile) */
+.workflow-info-text,
+.reject-details {
+  display: none !important;
+}
 
-  /* --- Paginazione e piccoli spazi --- */
-  .pagination {
-    justify-content: center;
-  }
+/* 3. Mettiamo i 3 tastini in fila orizzontale (Flexbox) sulla stessa riga */
+.workflow-action-grid {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important; /* Impedisce di andare a capo */
+  gap: 0.4rem !important; /* Spazio millimetrico tra i tasti */
+  justify-content: space-between !important;
+}
+
+/* Assicuriamo che i 3 blocchi (Reject, Download, Approve) si dividano lo spazio equamente in 3 */
+.workflow-action-grid form,
+.workflow-action-grid .workflow-form-block {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+
+/* 4. Rendiamo i tasti ultra-piccoli per farli entrare comodamente */
+.workflow-action-grid .btn {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0.5rem 0.25rem !important;
+  font-size: 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: normal !important; /* Se "Debug & Approve" è troppo lungo, andrà a capo su 2 righe dentro il tasto */
+  line-height: 1.1 !important;
+}
+
+/* =========================================================
+   10. STICKY TOOLBAR (Barra in basso Save / Next)
+   ========================================================= */
+
+/* Riduciamo lo spazio interno e cambiamo l'orientamento da verticale a orizzontale */
+.sticky-parameter-toolbar {
+  flex-direction: row !important; /* Affianca gli elementi */
+  padding: 0.6rem 0.8rem !important; /* Padding ridotto al minimo */
+  gap: 0.5rem !important; /* Spazio ridotto tra i tasti */
+  margin-bottom: 0.5rem !important;
+}
+
+/* Nascondiamo le frasi esplicative "Click Save if you are confident..." */
+.sticky-parameter-toolbar p.muted {
+  display: none !important;
+}
+
+/* Modifichiamo i contenitori invisibili dei bottoni (i <div> interni) */
+.sticky-parameter-toolbar > div {
+  flex: 1 1 50% !important; /* Ogni blocco si prende esattamente il 50% dello spazio */
+  width: auto !important;
+  margin: 0 !important;
+  justify-content: center !important;
+}
+
+/* Rimpiccioliamo i bottoni e facciamogli occupare tutto il loro spazio */
+.sticky-parameter-toolbar .btn {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0.5rem 0.25rem !important; /* Tasti più bassi */
+  font-size: 0.85rem !important; /* Testo leggermente rimpicciolito */
+  white-space: normal !important; /* Permette al testo lungo di andare a capo su due righine compatte */
+  line-height: 1.1 !important;
 }

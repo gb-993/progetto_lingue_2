@@ -226,7 +226,20 @@
 /* Responsività Admin */
 @media (max-width: 900px) {
   .dashboard-grid-admin {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .admin-activity {
+    order: -1; 
+    /* Opzionale: fissa un'altezza massima su mobile per evitare 
+       che una tabella troppo lunga nasconda i contatori sotto */
+    max-height: 500px; 
+    margin-bottom: 1rem;
+  }
+  
+  .dashboard-hero {
+    margin-bottom: 2rem; /* Riduce lo spazio vuoto sotto il titolo "Welcome" su mobile */
   }
 }
 

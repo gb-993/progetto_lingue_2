@@ -8,7 +8,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.utils.translation import gettext as _
 from core.models import User, ParameterChangeLog, Submission, ParameterReviewFlag
 from .forms import AccountForm, MyAccountForm, MyPasswordChangeForm
-from core.models import Language, ParameterDef, Answer, Glossary, User, Question
+from core.models import Language, ParameterDef, Answer, Glossary, User, Question, SiteContent
 try:
     from core.models import Language
     HAS_LANGUAGE = True
@@ -19,9 +19,6 @@ except Exception:
 
 def _is_admin(user: User) -> bool:
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
-
-def how_to_cite(request):
-    return render(request, 'accounts/how_to_cite.html')
 
 
 @login_required
@@ -372,3 +369,41 @@ def accept_terms(request):
             messages.error(request, "Devi spuntare la casella per poter continuare.")
 
     return render(request, "accounts/accept_terms.html")
+
+
+
+def how_to_cite(request):
+    is_admin = _is_admin(request.user)
+    contents = SiteContent.objects.filter(page='how_to_cite')
+    site_contents = {item.key: item.content for item in contents}
+    
+    ctx = {
+        'site_contents': site_contents,
+        'is_admin': is_admin
+    }
+    return render(request, 'accounts/how_to_cite.html', ctx)
+
+
+@login_required
+@user_passes_test(_is_admin)
+def edit_site_content(request, key):
+    # Cerca il contenuto o lo crea se non esiste ancora
+    content_obj, created = SiteContent.objects.get_or_create(
+        key=key,
+        defaults={'page': 'how_to_cite', 'content': ''}
+    )
+    
+    if request.method == "POST":
+        # Salva il nuovo testo puro
+        content_obj.content = request.POST.get('content', '')
+        content_obj.updated_by = request.user
+        content_obj.save()
+        
+        messages.success(request, f"Contenuto '{key}' aggiornato con successo!")
+        return redirect('how_to_cite')
+        
+    ctx = {
+        'obj': content_obj,
+        'page_title': f"Modifica {key}"
+    }
+    return render(request, 'accounts/edit_site_content.html', ctx)

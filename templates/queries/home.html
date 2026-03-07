@@ -11,30 +11,21 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
 <style>
-  /* --- REGOLE PER LINK E ELEMENTI CLICCABILI --- */
-  
-  /* 1. Regola Globale: sottolineatura e transizione per tutti i link */
-  a {
+  /* --- REGOLE PER LINK E ELEMENTI CLICCABILI (ISOLATE) --- */
+
+  /* 1. Applica sottolineatura e hover SOLO dentro .queries-page,
+        ESCLUDENDO il menu delle query (.queries-nav) e i bottoni (.btn) */
+  .queries-page a:not(.queries-nav a):not(.btn) {
     text-decoration: underline !important;
     transition: color 0.2s ease-in-out;
   }
 
-  /* Hover globale: cambio colore in rosso brand */
-  a:hover {
+  /* Hover specifico (sempre escludendo nav e bottoni) */
+  .queries-page a:not(.queries-nav a):not(.btn):hover {
     color: var(--brand) !important;
   }
 
-  /* 2. ESENZIONE: Navigazione laterale (Elenco Generale) */
-  /* Ripristiniamo lo stile originale: niente sottolineatura e colore ereditato */
-  .queries-nav a {
-    text-decoration: none !important;
-  }
-
-  .queries-nav a:hover {
-    color: inherit !important; /* Torna al comportamento base del tema */
-  }
-
-  /* Manteniamo la coerenza per i bottoni */
+  /* Manteniamo la coerenza per i bottoni all'hover */
   .btn:hover {
     filter: brightness(1.1);
   }

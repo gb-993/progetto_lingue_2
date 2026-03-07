@@ -24,7 +24,6 @@
   <link rel="stylesheet" href="{% static 'css/mobile.css' %}" media="(max-width: 768px)">
 
   <style>
-
     :root {
       --sidebar-width: 260px;
       --topbar-height: 80px;
@@ -32,7 +31,6 @@
 
     body {
       margin: 0;
-      /* Flex column per gestire il footer in fondo se la pagina è corta */
       display: flex;
       flex-direction: column;
       min-height: 100vh;
@@ -40,35 +38,50 @@
       background-color: var(--surface-1);
     }
 
-    /* Wrapper che contiene SOLO Sidebar e Main Content (No Footer) */
+    /* --- LAYOUT PRINCIPALE --- */
     .app-wrapper {
       display: flex;
       width: 100%;
-      flex: 1; /* Occupa tutto lo spazio disponibile spingendo il footer giù */
+      flex: 1;
       position: relative;
     }
 
-    /* 1. SIDEBAR STICKY */
+    .main-layout {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .main-container {
+      padding: 1rem 3rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    #main {
+      padding-top: 3rem;
+      flex: 1;
+    }
+
+    /* --- SIDEBAR --- */
     .sidebar {
       width: var(--sidebar-width);
       background-color: var(--surface-2);
       border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
-
-      /* STICKY CONFIGURATION */
       position: sticky;
       top: 0;
-      height: 100vh;    /* Altezza viewport completa */
-      overflow-y: auto; /* Scroll interno se il menu è lungo */
-
+      height: 100vh;
+      overflow-y: auto;
       z-index: 100;
       flex-shrink: 0;
       padding-bottom: 1rem;
     }
 
     .sidebar-header {
-      padding: 2rem 1.5rem;
+      padding: 1rem 1.5rem;
       border-bottom: 1px solid var(--border-color);
     }
 
@@ -92,7 +105,6 @@
       padding: 1rem 0;
     }
 
-    /* --- SIDEBAR OVERRIDES --- */
     .sidebar .nav-list {
       display: flex;
       flex-direction: column;
@@ -141,44 +153,8 @@
       opacity: 0.8;
       pointer-events: none;
     }
-    /* --- STILE DEL BOTTONE HAMBURGER (Default nascosto su desktop) --- */
-      .hamburger-btn {
-        display: none; /* Nascosto su desktop */
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 0.5rem;
-        margin-right: 1rem;
-        color: var(--text);
-        flex-direction: column;
-        gap: 5px;
-      }
-      .hamburger-line {
-        width: 24px;
-        height: 2px;
-        background-color: var(--text-color, #333);
-        transition: all 0.3s ease;
-      }
 
-      /* OVERLAY Sfondo scuro quando il menu è aperto */
-      .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 99; /* Sotto la sidebar (100) ma sopra il contenuto */
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-    /* 2. MAIN LAYOUT */
-    .main-layout {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0; /* Previene overflow orizzontale */
-    }
-
-    /* 3. TOP BAR */
+    /* --- TOP BAR --- */
     .top-bar {
       padding: 0.8rem 3rem;
       min-height: var(--topbar-height);
@@ -188,9 +164,13 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-
-      position: relative; /* Scorre via con la pagina */
+      position: relative;
       z-index: 90;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
     }
 
     .top-bar-right {
@@ -205,23 +185,159 @@
       margin: 0;
     }
 
-    #main {
-      padding-top: 3rem;
-      flex: 1;
+    .breadcrumb {
+      margin: 0;
     }
 
-    /* 4. FOOTER (Fuori dal flusso principale, full width) */
+    .breadcrumb ol {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* --- MESSAGGI DI NOTIFICA (ALERTS) --- */
+    .django-messages-wrapper {
+      position: sticky;
+      top: 1rem;
+      z-index: 1050;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .custom-alert {
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 1.05rem;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .alert-error {
+      background-color: rgba(255, 232, 232, 0.95);
+      color: #842029;
+      border: 1px solid #f5c2c7;
+    }
+
+    .alert-success {
+      background-color: rgba(230, 247, 233, 0.95);
+      color: #0f5132;
+      border: 1px solid #badbcc;
+    }
+
+    .alert-warning {
+      background-color: rgba(255, 243, 205, 0.95);
+      color: #664d03;
+      border: 1px solid #ffecb5;
+    }
+
+    .alert-info, .alert-debug {
+      background-color: rgba(226, 227, 229, 0.95);
+      color: #41464b;
+      border: 1px solid #d3d6d8;
+    }
+
+    /* --- FOOTER --- */
     .site-footer {
       width: 100%;
       background-color: var(--surface-1);
       border-top: 1px solid var(--border-color);
-      padding-top: 4rem;
+      padding-top: 3rem;
+      padding-bottom: 2rem;
       margin-top: 5rem;
       position: relative;
-      z-index: 200; /* Sta sopra a tutto se necessario */
+      z-index: 200;
     }
 
-    /* Override Tabelle */
+    .footer-container {
+      padding: 0 2rem;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+
+    .footer-col h4 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    .footer-col .muted-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-license {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .footer-links {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .footer-parent-project {
+      padding: 1.5rem;
+      background: var(--surface-2);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .footer-parent-project h4 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.8rem;
+    }
+
+    .footer-btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: var(--primary-color, #2c3e50);
+      color: white;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .footer-bottom {
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .role-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      background: var(--border-color);
+      color: var(--text-color);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* --- OVERRIDE TABELLE --- */
     .table td, .table th {
       padding: 1.2rem 1rem !important;
     }
@@ -229,43 +345,89 @@
       border-bottom: 1px solid var(--border-color);
     }
 
- @media (max-width: 900px) {
-
-    /* 1. Mostriamo il bottone hamburger */
+    /* --- HAMBURGER & MOBILE --- */
     .hamburger-btn {
-      display: flex;
+      display: none;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      margin-right: 1rem;
+      color: var(--text);
+      flex-direction: column;
+      gap: 5px;
     }
 
-    /* 2. La Sidebar non è più display:none, ma nascosta lateralmente */
-    .sidebar {
-      display: flex; /* La riattiviamo */
+    .hamburger-line {
+      width: 24px;
+      height: 2px;
+      background-color: var(--text-color, #333);
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-overlay {
+      display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      width: 280px; /* Un po' più larga su mobile per comodità */
-      transform: translateX(-100%); /* Spostata fuori schermo a sinistra */
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: none;
-      z-index: 1000; /* Sopra tutto */
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    /* Stato APERTO della sidebar */
-    .sidebar.is-open {
-      transform: translateX(0); /* Torna visibile */
-      box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-    }
+@media (max-width: 900px) {
+      .hamburger-btn {
+        display: flex;
+      }
+      .sidebar {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: none;
+        z-index: 1000;
+      }
+      .sidebar.is-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+      }
+      .sidebar-overlay.is-visible {
+        display: block;
+        opacity: 1;
+      }
+      .app-wrapper { display: block; }
+      
+      /* MODIFICA 1: Top bar più stretta e tasti più vicini */
+      .top-bar { 
+        padding: 0.5rem 1rem; /* Riduce la distanza dal top */
+        min-height: auto;     /* Rimuove l'altezza fissa di 80px */
+      }
+      .top-bar-right {
+        gap: 0.4rem; /* Avvicina i tasti tra loro */
+      }
+      .top-bar-right .btn {
+        padding: 0.4rem 0.6rem; /* Rimpicciolisce leggermente i tasti */
+        font-size: 0.8rem;
+      }
 
-    /* Overlay visibile quando sidebar è aperta */
-    .sidebar-overlay.is-visible {
-      display: block;
-      opacity: 1;
+      /* MODIFICA 3: Footer ottimizzato per mobile */
+      .footer-grid {
+        gap: 2rem;
+        text-align: center; /* Centra tutto il testo */
+      }
+      .footer-license {
+        justify-content: center; /* Centra il logo della licenza e il testo */
+      }
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+      }
     }
-
-    /* Layout generale mobile */
-    .app-wrapper { display: block; }
-    .top-bar { padding: 0.8rem 1rem; }
-  }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -296,6 +458,10 @@
           </a>
         </li>
 
+        {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
+          <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">Edit Public Citations</a></li>
+        {% endif %}
+
         {# --- PUBLIC MENU --- #}
         {% if request.user.role == 'public' %}
           <li class="nav-divider-label">Information</li>
@@ -322,7 +488,7 @@
             <li><a class="btn {% if urln == 'questions_list' %}is-current{% endif %}" href="{% url 'questions_list' %}">Questions</a></li>
             <li><a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}" href="{% url 'parameters_graph' %}">Network</a></li>
             <li><a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}" href="{% url 'tablea_index' %}">Table A</a></li>
-            <li><a class="btn {% if urln|slice:':7' == 'queries' %}is-current{% endif %}" href="{% url 'queries:home' %}">Filters</a></li>
+            <li><a class="btn {% if urln == 'home' %}is-current{% endif %}" href="{% url 'queries:home' %}">Filters</a></li>
             <li><a class="btn {% if urln == 'submissions_list' %}is-current{% endif %}" href="{% url 'submissions_list' %}">Backup</a></li>
             <li><a class="btn {% if urln == 'accounts_list' %}is-current{% endif %}" href="{% url 'accounts_list' %}">Accounts</a></li>
           {% endif %}
@@ -340,16 +506,15 @@
   <div class="main-layout">
 
     <header class="top-bar">
-      <div class="top-bar-left" style="display: flex; align-items: center;">
-
+      <div class="top-bar-left">
         <button id="sidebar-toggle" class="hamburger-btn" aria-label="Toggle Navigation">
           <span class="hamburger-line"></span>
           <span class="hamburger-line"></span>
           <span class="hamburger-line"></span>
         </button>
 
-        <nav class="breadcrumb" aria-label="Breadcrumb" style="margin:0;">
-          <ol style="margin:0; padding:0; list-style:none; display:flex; gap:0.5rem;">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <ol>
             <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
             {% block breadcrumb %}{% endblock %}
           </ol>
@@ -370,37 +535,38 @@
       </div>
     </header>
 
-<main id="main" role="main" tabindex="-1">
-    <div class="container-fluid" style="padding: 1rem 3rem; max-width: 1600px; margin: 0 auto;">
-      {% if messages %}
-        <div class="django-messages-wrapper" style="position: sticky; top: 1rem; z-index: 1050; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.5rem;">
-          {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}" style="padding: 1rem 1.5rem; border-radius: 8px; font-weight: 500; font-size: 1.05rem; box-shadow: 0 6px 16px rgba(0,0,0,0.15); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-              {% if message.tags == 'error' %}background-color: rgba(255, 232, 232, 0.95); color: #842029; border: 1px solid #f5c2c7;
-              {% elif message.tags == 'success' %}background-color: rgba(230, 247, 233, 0.95); color: #0f5132; border: 1px solid #badbcc;
-              {% elif message.tags == 'warning' %}background-color: rgba(255, 243, 205, 0.95); color: #664d03; border: 1px solid #ffecb5;
-              {% else %}background-color: rgba(226, 227, 229, 0.95); color: #41464b; border: 1px solid #d3d6d8;{% endif %}">
-              {{ message }}
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-      {% block content %}{% endblock %}
+    <main id="main" role="main" tabindex="-1">
+      <div class="main-container">
+
+        {% if messages %}
+          <div class="django-messages-wrapper">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} custom-alert">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+
       </div>
     </main>
 
-    </div>
-</div> <footer class="site-footer" role="contentinfo" style="padding-top: 3rem; padding-bottom: 2rem;">
-  <div class="container" style="padding: 0 2rem;">
+  </div>
+</div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 3rem; margin-bottom: 3rem;">
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-container">
+
+    <div class="footer-grid">
 
       <div class="footer-col">
-        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-color);">The PCM Hub</h4>
-        <p class="muted" style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+        <h4>The PCM Hub</h4>
+        <p class="muted muted-text">
           The Hub of the <strong>Parametric Comparison Method</strong> aims to collect syntactic data of the world's languages.
         </p>
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="footer-license">
           <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">
             <img src="https://licensebuttons.net/l/by/4.0/88x31.png" alt="CC BY 4.0" style="height: 31px; border-radius: 3px; opacity: 0.8;">
           </a>
@@ -412,8 +578,8 @@
       </div>
 
       <div class="footer-col">
-        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-color);">Resources</h4>
-        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.7rem;">
+        <h4>Resources</h4>
+        <ul class="footer-links">
           <li><a href="{% static 'docs/Informativa WebAPP_revDPO.pdf' %}" target="_blank" style="color: var(--text-color);">Privacy Policy</a></li>
           <li><a href="{% static 'docs/Terms_of_use_CG.pdf' %}" target="_blank" style="color: var(--text-color);">Disclaimer</a></li>
           <li style="margin-top: 0.5rem;">
@@ -423,36 +589,35 @@
         </ul>
       </div>
 
-      <div class="footer-col" style="padding: 1.5rem; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border-color);">
-        <h4 style="margin-top: 0; margin-bottom: 0.8rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-color);">Parent Project</h4>
+      <div class="footer-col footer-parent-project">
+        <h4>Parent Project</h4>
         <p style="font-size: 0.9rem; margin-bottom: 1rem;">The PCM – Università degli Studi di Modena e Reggio Emilia (UNIMORE)</p>
-        <a href="http://www.parametricomparison.unimore.it/site/home.html" target="_blank" rel="noopener"
-           style="display: inline-block; padding: 0.5rem 1rem; background: var(--primary-color, #2c3e50); color: white; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+        <a href="http://www.parametricomparison.unimore.it/site/home.html" target="_blank" rel="noopener" class="footer-btn">
            Visit Website ↗
         </a>
       </div>
 
     </div>
 
-    <div style="padding-top: 2rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div class="footer-bottom">
       <p class="muted" style="margin: 0; font-size: 0.85rem;">
         © {% now "Y" %} — The PCM Hub Database. All rights reserved.
       </p>
 
       <div style="display: flex; align-items: center; gap: 1rem;">
-        <span style="font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 20px; background: var(--border-color); color: var(--text-color); font-weight: 600; text-transform: uppercase;">
+        <span class="role-badge">
           {% if request.user.role == 'admin' or request.user.is_staff %}Admin Access
           {% elif request.user.role == 'public' %}Public View
           {% else %}User Access{% endif %}
         </span>
       </div>
-
     </div>
 
   </div>
 </footer>
 
   {% block extra_js %}{% endblock %}
+
   <script>
     (function () {
       var root = document.documentElement;
@@ -483,13 +648,14 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+
+      // 1. Logica Sidebar e Overlay
       const toggleBtn = document.getElementById('sidebar-toggle');
       const sidebar = document.getElementById('main-sidebar');
       const overlay = document.getElementById('sidebar-overlay');
 
       function toggleMenu() {
         if (!sidebar || !overlay) return;
-
         if (sidebar.classList.contains('is-open')) {
           sidebar.classList.remove('is-open');
           overlay.classList.remove('is-visible');
@@ -509,33 +675,26 @@
       if (overlay) {
         overlay.addEventListener('click', toggleMenu);
       }
+
+      // 2. Logica Dissolvenza Automatica degli Avvisi (Success)
+      const successAlerts = document.querySelectorAll('.alert-success');
+      successAlerts.forEach(function(alert) {
+        setTimeout(function() {
+          alert.style.transition = "opacity 0.5s ease, margin 0.5s ease, padding 0.5s ease, height 0.5s ease";
+          alert.style.opacity = "0";
+          alert.style.margin = "0";
+          alert.style.padding = "0";
+          alert.style.height = "0";
+          alert.style.overflow = "hidden";
+
+          setTimeout(function() {
+            alert.remove();
+          }, 500);
+        }, 2000);
+      });
+
     });
   </script>
-
-<script>
-        document.addEventListener("DOMContentLoaded", function() {
-          // Cerca tutti i messaggi che hanno la classe 'alert-success' (quelli verdi)
-          const successAlerts = document.querySelectorAll('.alert-success');
-
-          successAlerts.forEach(function(alert) {
-            // Imposta il timer: 3000 = 3 secondi. Cambia questo numero come preferisci!
-            setTimeout(function() {
-              // Effetto dissolvenza
-              alert.style.transition = "opacity 0.5s ease, margin 0.5s ease, padding 0.5s ease, height 0.5s ease";
-              alert.style.opacity = "0";
-              alert.style.margin = "0";
-              alert.style.padding = "0";
-              alert.style.height = "0";
-              alert.style.overflow = "hidden";
-
-              // Rimuove l'elemento dal codice dopo la dissolvenza
-              setTimeout(function() {
-                alert.remove();
-              }, 500);
-            }, 2000); //per modificare la durata degli avvisi di conferma
-          });
-        });
-      </script>
 
 </body>
 </html>

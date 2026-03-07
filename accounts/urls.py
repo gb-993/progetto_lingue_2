@@ -22,4 +22,6 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(next_page="/accounts/login/"), name="logout"),
     path("me/", views.my_account, name="my_account"),
     path("<int:user_id>/delete/", views.accounts_delete, name="accounts_delete"),
-    path("how-to-cite/", TemplateView.as_view(template_name="accounts/how_to_cite.html"), name="how_to_cite"),]
+    path('how-to-cite/', views.how_to_cite, name='how_to_cite'),
+    path('edit-content/<str:key>/', views.edit_site_content, name='edit_site_content'),
+]
