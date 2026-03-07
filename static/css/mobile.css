@@ -372,3 +372,234 @@ input, select, textarea {
   white-space: normal !important; /* Permette al testo lungo di andare a capo su due righine compatte */
   line-height: 1.1 !important;
 }
+/* =========================================================
+   11. DEBUG PARAMETERS PAGE (Ottimizzata & Senza Container)
+   ========================================================= */
+
+@media (max-width: 768px) {
+  /* 1. Rimozione del contenitore della tabella */
+  .page-debug .table {
+    background: transparent !important; /* Rimuove lo sfondo bianco/grigio di fondo */
+    border: none !important;            /* Elimina il bordo esterno della tabella */
+    box-shadow: none !important;        /* Elimina eventuali ombre del contenitore */
+    display: block;                     /* Permette alle card di fluire liberamente */
+  }
+
+  .page-debug .table tbody {
+    display: block;
+    background: transparent !important; /* Assicura che il corpo tabella sia invisibile */
+  }
+
+  /* 2. Header Sticky: fix z-index per non coprire il menu hamburger */
+  .page-debug .sticky-debug-header {
+    top: 0 !important;
+    z-index: 90 !important; /* Valore più basso per stare sotto la navigazione */
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .page-debug .main-title {
+    font-size: 1rem !important;
+    margin-bottom: 0.6rem !important;
+  }
+
+  /* 3. Le Card (le righe <tr> della tabella) */
+  .page-debug .table tbody tr {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    grid-template-areas: 
+      "label init final"
+      "logic logic logic";
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--surface); /* Solo la singola card ha lo sfondo */
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.75rem; /* Spazio tra una card e l'altra */
+    padding: 0.8rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: relative;
+  }
+
+  /* Nascondiamo le colonne non essenziali su mobile */
+  .page-debug .table thead,
+  .page-debug .table tbody td:nth-child(1), /* # */
+  .page-debug .table tbody td:nth-child(3), /* Questions */
+  .page-debug .table tbody td:nth-child(4), /* Answers */
+  .page-debug .table tbody td:nth-child(6), /* Warn init */
+  .page-debug .table tbody td:nth-child(10) /* Warn final */ {
+    display: none !important;
+  }
+
+  /* Label (ID Parametro) */
+  .page-debug .table tbody td:nth-child(2) {
+    grid-area: label;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--brand);
+  }
+
+  /* Valore Iniziale */
+  .page-debug .table tbody td:nth-child(5) {
+    grid-area: init;
+    background: var(--surface-2);
+    border-radius: 4px;
+    padding: 0.4rem !important;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  .page-debug .table tbody td:nth-child(5)::before {
+    content: "ORIG";
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-weight: normal;
+  }
+
+  /* Valore Finale */
+  .page-debug .table tbody td:nth-child(9) {
+    grid-area: final;
+    background: rgba(var(--brand-rgb), 0.1);
+    border: 2px solid var(--brand);
+    border-radius: 4px;
+    padding: 0.4rem !important;
+    text-align: center;
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--brand);
+  }
+  .page-debug .table tbody td:nth-child(9)::before {
+    content: "FINAL";
+    display: block;
+    font-size: 0.6rem;
+    font-weight: normal;
+  }
+
+  /* Logica Condizionale */
+  .page-debug .table tbody td:nth-child(7) {
+    grid-area: logic;
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    background: #1e1e24;
+    color: #a8b3cf;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.2rem;
+  }
+
+  /* Badge TRUE/FALSE */
+  .page-debug .table tbody td:nth-child(8) {
+    position: absolute;
+    right: 1.2rem;
+    margin-top: 2.2rem;
+    background: transparent !important;
+  }
+}
+
+/* =========================================================
+   12. PARAMETERS LIST 
+   ========================================================= */
+
+@media (max-width: 768px) {
+    /* 1. Reset contenitore come in Sezione 8 */
+    .parameters-list .table {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    .parameters-list .table thead {
+        display: none !important;
+    }
+
+    /* 2. Trasformazione in Card - Layout a due colonne */
+    .parameters-list .table tbody tr {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important; /* Testi a sinistra, bottoni a destra */
+        align-items: center !important; 
+        row-gap: 0.1rem !important;
+        column-gap: 0.5rem !important;
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        margin-bottom: 0.5rem !important;
+        padding: 0.6rem 0.8rem !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    }
+
+    .parameters-list .table tbody td {
+        display: block !important;
+        padding: 0 !important;
+        border: none !important;
+        width: auto !important;
+        background: transparent !important;
+    }
+
+    /* NOME: Occupa la colonna sinistra */
+    .parameters-list .table tbody td[data-label="Name"] {
+        grid-column: 1 / 2 !important;
+        font-size: 1.05rem !important;
+        font-weight: 800 !important;
+        color: var(--brand) !important;
+        line-height: 1.2 !important;
+    }
+
+    /* AZIONI: Occupa la colonna destra e si espande verticalmente */
+    .parameters-list .table tbody td[data-label="Actions"] {
+        grid-column: 2 / 3 !important;
+        grid-row: 1 / 4 !important; /* Impedisce sovrapposizioni con i testi */
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+    }
+
+    /* Spostiamo lo Status un po' più a destra dell'ID per non sovrapporli */
+    .parameters-list .table tbody td[data-label="Status"] {
+        margin-left: 2rem !important; 
+    }
+
+    .parameters-list .table tbody td[data-label="Actions"] .row-actions-buttons {
+        display: flex !important;
+        gap: 0.3rem !important;
+    }
+
+    .parameters-list .table tbody td[data-label="Actions"] .btn {
+        padding: 0.6rem 0.7rem !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* INFO SECONDARIE (Label e Status): Sotto il nome, colonna sinistra */
+    .parameters-list .table tbody td[data-label="Label"],
+    .parameters-list .table tbody td[data-label="Status"] {
+        grid-column: 1 / 2 !important; 
+        font-size: 0.75rem !important;
+        color: var(--text-muted) !important;
+        display: flex !important;
+        gap: 0.25rem !important;
+    }
+
+    /* Prefissi (Label diventa ID per brevità) */
+    .parameters-list .table tbody td[data-label="Label"]::before { 
+        content: "ID:"; 
+        font-weight: 600; 
+        color: var(--text); 
+    }
+    .parameters-list .table tbody td[data-label="Status"]::before { 
+        content: "Status:"; 
+        font-weight: 600; 
+        color: var(--text); 
+    }
+
+    /* 3. RIMOZIONE CAMPI (Incluso Schema/Sch e statistiche) */
+    .parameters-list .table tbody td[data-label="Schema"],
+    .parameters-list .table tbody td[data-label="Type"],
+    .parameters-list .table tbody td[data-label="Lvl comparison"],
+    .parameters-list .table tbody td[data-label="#Q"],
+    .parameters-list .table tbody td[data-label="#Stop"] {
+        display: none !important;
+    }
+}

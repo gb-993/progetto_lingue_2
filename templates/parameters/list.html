@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Parameters{% endblock %}
+{% block body_class %}parameters-list{% endblock %}
 {% block breadcrumb %}
   <li aria-current="page">Parameters</li>
 {% endblock %}
@@ -44,19 +45,17 @@
         <td data-label="#Stop">{{ p.stop_count }}</td>
         <td data-label="Status">
           {% if p.is_active %}
-            <span  aria-label="Status: Active">Active</span>
+            <span class="status-indicator active" aria-label="Active">Active</span>
           {% else %}
-            <span  aria-label="Status: Disabled">Disabled</span>
+            <span class="status-indicator disabled" aria-label="Disabled">Disabled</span>
           {% endif %}
         </td>
-        <td data-label="Actions" class="row-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-          <a class="btn" href="{% url 'parameter_download_pdf' p.id %}" style="background-color: var(--surface-2); border: 1px solid var(--border);" title="Download PDF" aria-label="Download PDF for parameter {{ p.id }}">
-            Download PDF
-          </a>
-          <a class="btn" href="{% url 'parameter_edit' p.id %}" aria-label="Modify parameter {{ p.id }}">
-            Edit<span class="sr-only"> parameter {{ p.id }}</span>
-          </a>
-        </td>
+<td data-label="Actions" class="row-actions">
+  <div class="row-actions-buttons">
+    <a class="btn" href="{% url 'parameter_download_pdf' p.id %}">PDF</a>
+    <a class="btn" href="{% url 'parameter_edit' p.id %}">Edit</a>
+  </div>
+</td>
       </tr>
       {% empty %}
       <tr>
