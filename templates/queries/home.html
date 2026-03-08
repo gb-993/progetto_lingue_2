@@ -13,6 +13,8 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
 <style>
+    .text-ok { color: var(--ok); }
+    .text-bad { color: var(--bad); }
   /* --- REGOLE PER LINK E ELEMENTI CLICCABILI (ISOLATE) --- */
 
   /* 1. Applica sottolineatura e hover SOLO dentro .queries-page,
@@ -234,7 +236,7 @@
 
   <hr style="border: 0; border-top: 1px solid var(--border); margin: var(--sp-6) 0;">
 
-  <div class="query-results" id="results-anchor">
+  <div class="query-results" id="results-anchor"data-has-results="{% if q1 or q2 or q3 or q4 or q5 or q6 or q7 or q8 or q9 %}true{% else %}false{% endif %}"></div>
       {% if tab == "q1" and q1 %}
         <div class="alert alert-info">
             <strong>Implicational Condition:</strong>
@@ -455,8 +457,8 @@
                 <tbody>
                 {% for ans in result.answers %}
                   <tr>
-                    <td style="text-align:center; font-weight:bold; color: {% if result.type == 'YES' %}var(--ok){% else %}var(--bad){% endif %}">
-                        {{ result.type }}
+                    <td class="{% if result.type == 'YES' %}text-ok{% else %}text-bad{% endif %}" style="text-align:center; font-weight:bold;">
+                        {{ result.type }}             
                     </td>
                     <td>
                         <a href="{% url 'language_data' result.language.id %}#p-{{ ans.question.parameter.id }}">
@@ -493,15 +495,14 @@
     });
 
     // 2. Scroll automatico ai risultati
-    {% if q1 or q2 or q3 or q4 or q5 or q6 or q7 or q8 or q9 %}
-        var resultsElement = document.getElementById("results-anchor");
-        if(resultsElement) {
-            setTimeout(function(){
-                resultsElement.scrollIntoView({ behavior: "smooth", block: "start" });
-            }, 300);
-        }
-    {% endif %}
+    var resultsElement = document.getElementById("results-anchor");
+
+    // Javascript legge il data-attribute generato da Django
+    if (resultsElement && resultsElement.dataset.hasResults === "true") {
+        setTimeout(function(){
+            resultsElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 300);
+    }
   });
 </script>
 
-{% endblock %}
