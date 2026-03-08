@@ -45,10 +45,11 @@
 - [x] Ristrutturazione dei pulsanti  
 
 ## DEBUG PARAMETRI
-- [!!] Poter modificare manualmente il valore di un parametro nel final value, segnalando che è stata fatta una modifica 
+- [x] Poter modificare manualmente il valore di un parametro nel final value, segnalando che è stata fatta una modifica 
+-> risolto mettendo "?" e propagato per i parametri
 
 ## GLOSSARIO
-- [ ] Controllare corrispondenza tra versione online e locale
+- [x] Controllare corrispondenza tra versione online e locale
 - [x] Caricare voci
 
 ## DEBUG
@@ -64,7 +65,7 @@
 - [x] Inserire un bottone di download alla fine della pagina di edit del parametro per scaricare un pdf con tutte le informazioni di un parametro e delle sue questions
 
 ## TABLE A
-- [ ] Scaricare mappa Lorenzo e Federico
+- [?] Scaricare mappa Lorenzo e Federico
 - [x] Poter cliccare sul valore di un parametro o su YES/NO di una question e visualizzare le questions e gli esempi che hanno permesso di fissare quel parametro/risposta
 - [x] Poter selezionare le lingue anche per Family e per Group, oltre che per Top-level family, e i parametri per Level of Comparison
 - [x] Poter selezionare singole lingue (oltre che con i filtri) e singoli parametri, tipo con checkbox vicino a ogni lingua/parametro per il download delle distanze e dei dendrogrammi

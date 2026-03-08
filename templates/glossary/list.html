@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Glossary{% endblock %}
+{% block body_class %}glossary-list{% endblock %}
 {% block breadcrumb %}
   <li aria-current="page">Glossary</li>
 {% endblock %}
@@ -36,7 +37,9 @@
         <td>
           <a href="{% url 'glossary_view' obj.word %}">{{ obj.word }}</a>
         </td>
-        <td>{{ obj.description|default:"" }}</td>
+        <td>
+          <a href="{% url 'glossary_view' obj.word %}">{{ obj.description|default:"" }}</a>
+        </td>
         <td class="fit" style="text-align: right;">
           {% if is_admin %}
             <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
