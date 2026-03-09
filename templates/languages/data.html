@@ -39,6 +39,7 @@
       <div class="header-meta-row"><span class="meta-label">Glottocode</span><span class="meta-value">{% if language.glottocode %}{{ language.glottocode }}{% else %}<span class="muted">—</span>{% endif %}</span></div>
       <div class="header-meta-row"><span class="meta-label">ISO code</span><span class="meta-value">{% if language.isocode %}{{ language.isocode }}{% else %}<span class="muted">—</span>{% endif %}</span></div>
       <div class="header-meta-row"><span class="meta-label">Lat / Long</span><span class="meta-value">{% if language.latitude %}{{ language.latitude }}{% else %}-{% endif %} / {% if language.longitude %}{{ language.longitude }}{% else %}-{% endif %}</span></div>
+      <div class="header-meta-row"><span class="meta-label">Location</span><span class="meta-value">{% if language.location %}{{ language.location }}{% else %}<span class="muted">—</span>{% endif %}</span></div>
       <div class="header-meta-row"><span class="meta-label">Historical</span><span class="meta-value">{% if language.historical_language %}Yes{% else %}No{% endif %}</span></div>
       {% if language.source %}<div class="header-meta-row" style="grid-column: 1 / -1;"><span class="meta-label">Source</span><span class="meta-value">{{ language.source }}</span></div>{% endif %}
       <div class="header-meta-row"><span class="meta-label">Supervisor</span><span class="meta-value">{% if language.supervisor %}{{ language.supervisor }}{% else %}<span class="muted">—</span>{% endif %}</span></div>
@@ -56,6 +57,7 @@
         <div class="header-meta-row"><span class="meta-label">Glottocode</span><span class="meta-value">{% if language.glottocode %}{{ language.glottocode }}{% else %}<span class="muted">—</span>{% endif %}</span></div>
         <div class="header-meta-row"><span class="meta-label">ISO code</span><span class="meta-value">{% if language.isocode %}{{ language.isocode }}{% else %}<span class="muted">—</span>{% endif %}</span></div>
         <div class="header-meta-row"><span class="meta-label">Lat / Long</span><span class="meta-value">{% if language.latitude %}{{ language.latitude }}{% else %}-{% endif %} / {% if language.longitude %}{{ language.longitude }}{% else %}-{% endif %}</span></div>
+        <div class="header-meta-row"><span class="meta-label">Location</span><span class="meta-value">{% if language.location %}{{ language.location }}{% else %}<span class="muted">—</span>{% endif %}</span></div>
         <div class="header-meta-row"><span class="meta-label">Historical</span><span class="meta-value">{% if language.historical_language %}Yes{% else %}No{% endif %}</span></div>
         {% if language.source %}<div class="header-meta-row"><span class="meta-label">Source</span><span class="meta-value">{{ language.source }}</span></div>{% endif %}
         <div class="header-meta-row"><span class="meta-label">Supervisor</span><span class="meta-value">{% if language.supervisor %}{{ language.supervisor }}{% else %}<span class="muted">—</span>{% endif %}</span></div>

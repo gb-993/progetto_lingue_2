@@ -21,6 +21,7 @@ class LanguageForm(forms.ModelForm):
             "historical_language",
             "latitude",
             "longitude",
+            "location",
         ]
 
         
@@ -38,6 +39,7 @@ class LanguageForm(forms.ModelForm):
             "historical_language": "Historical language",
             "latitude": "Latitude",
             "longitude": "Longitude",
+            "location": "Location",
         }
 
         
@@ -104,6 +106,10 @@ class LanguageForm(forms.ModelForm):
                 "min": "-180",
                 "max": "180",
                 "title": "Longitude must be between -180 and 180",
+            }),
+            "location": forms.TextInput(attrs={ 
+                "class": "form-control",
+                "placeholder": "Location",
             }),
         }
 

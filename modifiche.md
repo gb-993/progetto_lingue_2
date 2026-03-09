@@ -27,8 +27,8 @@
 - [x] Lista delle questions con lo stesso ordine dei parametri
 
 ## LISTA LINGUE
-- [ ] Mettere i pulsanti a destra in un'unica riga
-- [ ] Inserire l'attributo location in Add, Edit, visualizzabile in Lingue Data e come colonna nel file excel che si scarica con le info di tutte le lingue
+- [??] Mettere i pulsanti a destra in un'unica riga
+- [x] Inserire l'attributo location in Add, Edit, visualizzabile in Lingue Data e come colonna nel file excel che si scarica con le info di tutte le lingue
 - [x] Togliere l'attributo position
 - [x] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua)
 - [x] Errori "parlanti" al caricamento di un file

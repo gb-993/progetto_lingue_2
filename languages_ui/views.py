@@ -1149,7 +1149,8 @@ def language_list_export_xlsx(request):
             Q(grp__icontains=q) |
             Q(isocode__icontains=q) |
             Q(glottocode__icontains=q) |
-            Q(source__icontains=q)
+            Q(source__icontains=q) |
+            Q(location__icontains=q)
         )
 
     if not is_admin:
@@ -1196,6 +1197,7 @@ def language_list_export_xlsx(request):
         "ISO code",
         "Latitude",
         "Longitude",
+        "Location",
         "Historical",
         "Source",
         "Assigned user",
@@ -1223,6 +1225,7 @@ def language_list_export_xlsx(request):
             _xlsx_sanitize(L.isocode),
             _xlsx_sanitize(L.latitude),
             _xlsx_sanitize(L.longitude),
+            _xlsx_sanitize(L.location),
             _xlsx_sanitize(L.historical_language),
             _xlsx_sanitize(L.source),
             _xlsx_sanitize(_get_assigned_names(L)),
