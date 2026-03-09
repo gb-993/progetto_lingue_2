@@ -655,7 +655,15 @@ def parameter_save(request, lang_id, param_id):
     except Exception:
         pass
 
-    messages.success(request, _t(f"Saved {saved_count} answers for parameter {param.id}."))
+
+    missing_count = len(questions) - saved_count
+    
+    if missing_count > 0:
+        # Se mancano risposte, mostra l'avviso di warning (che diventerà rosso/giallo in base al tuo CSS)
+        messages.warning(request, _t(f"Warning: {missing_count} missing answers for parameter {param.id}."))
+    else:
+        # Se tutto è completo, mostra il messaggio di successo verde
+        messages.success(request, _t(f"Saved {saved_count} answers for parameter {param.id}."))
     next_param = (
         ParameterDef.objects.filter(is_active=True, position__gt=param.position).order_by("position").first()
     )

@@ -53,10 +53,10 @@
 - [x] Caricare voci
 
 ## DEBUG
-- [ ] Warning in caso di risposte non date
+- [x] Warning in caso di risposte non date
 
 ## LISTA PARAMETRI
-- [ ] Mettere i pulsanti a destra in un'unica riga
+- [x] Mettere i pulsanti a destra in un'unica riga
 
 ## PARAMETERS EDIT
 - [ ] Instruction yes e no al plurale in edit question 
