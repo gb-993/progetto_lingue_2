@@ -4,7 +4,7 @@
 - [ ] Servizi informatici per casella noreply
 
 ## GENERALI
-- [ ] Forse è il caso che FLAGGED / UNSURE PARAMETERS mostri i parametri rossi, quindi anche quelli per cui manca anche una sola risposta (es. CEX per Trieste)
+- [x] Forse è il caso che FLAGGED / UNSURE PARAMETERS mostri i parametri rossi, quindi anche quelli per cui manca anche una sola risposta (es. CEX per Trieste)
 - [x] Rendere cliccabili i link nel menù (link circolari)
 - [x] Aggiornare i nomi delle pagine (Graph -> Parameter networks, Submissions -> Saved languages, Queries -> Filters)
 - [x] Aggiornare ordine nel menù User: Dashboard > Languages > Instructions > Glossary > My account
@@ -12,7 +12,7 @@
 - [x] Rendere cliccabile il breadcrumb
 
 ## PUBLIC
-- [ ] Valori aggiornati per lingue, famiglie, ...
+- [x] Valori aggiornati per lingue, famiglie, ...
 - [x] Creare la homepage sul modello di [ASJP](https://asjp.clld.org)
 - [x] Pulsante di Login e poi messaggio di benvenuto personalizzato
 - [x] Predisporre qualche riga per spiegare a cosa serve il sito

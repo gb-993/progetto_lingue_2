@@ -40,6 +40,10 @@ def dashboard(request):
     stats = {
         "languages": Language.objects.count(),
         "completed_languages": completed_langs_count,
+        "families": Language.objects.exclude(family="").values("family").distinct().count(),
+        "parameters": ParameterDef.objects.filter(is_active=True).count(),
+        "answers": Answer.objects.count(),
+        "glossary": Glossary.objects.count(),
     }
 
     if role == "public":
