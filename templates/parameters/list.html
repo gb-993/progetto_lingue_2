@@ -29,7 +29,7 @@
         <th scope="col">#Q</th>
         <th scope="col">#QS</th>
         <th scope="col">Status</th>
-        <th scope="col"></th>
+        <th scope="col">Actions</th>
       </tr>
     </thead>
 
@@ -40,7 +40,7 @@
         <td data-label="Name">{{ p.name }}</td>
         <td data-label="Schema">{{ p.schema|default:"—" }}</td>
         <td data-label="Type">{{ p.param_type|default:"—" }}</td>
-      <td data-label="Lvl comparison">{{ p.level_of_comparison|default:"—" }}</td>
+        <td data-label="Lvl comparison">{{ p.level_of_comparison|default:"—" }}</td>
         <td data-label="#Q">{{ p.questions_count  }}</td>
         <td data-label="#Stop">{{ p.stop_count }}</td>
         <td data-label="Status">
@@ -50,12 +50,12 @@
             <span class="status-indicator disabled" aria-label="Disabled">Disabled</span>
           {% endif %}
         </td>
-<td data-label="Actions" class="row-actions">
-  <div class="row-actions-buttons">
-    <a class="btn" href="{% url 'parameter_download_pdf' p.id %}">PDF</a>
-    <a class="btn" href="{% url 'parameter_edit' p.id %}">Edit</a>
-  </div>
-</td>
+        <td data-label="Actions" class="row-actions">
+          <div class="row-actions-buttons">
+            <a class="btn" href="{% url 'parameter_download_pdf' p.id %}">PDF</a>
+            <a class="btn" href="{% url 'parameter_edit' p.id %}">Edit</a>
+          </div>
+        </td>
       </tr>
       {% empty %}
       <tr>
@@ -68,9 +68,32 @@
   </table>
 
     <style>
+      
       .dashboard-hero {
     margin-bottom: 4rem;
-  }
+    }
+
+
+      /* Colpisce l'intestazione della colonna "Name" (la seconda colonna) */
+      .table th:nth-child(2),
+      .table td:nth-child(2) {
+        width: 250px; /* Imposta la larghezza massima desiderata */
+        max-width: 250px;
+        word-wrap: break-word; /* Manda a capo il testo se sfora */
+      }
+
+      .row-actions-buttons {
+        display: flex;
+        gap: 0.5rem; /* Regola questa misura per cambiare lo spazio esatto tra i due bottoni */
+        width: 100%; /* Assicura che il contenitore prenda tutta la larghezza della cella */
+      }
+
+      .row-actions-buttons .btn {
+        flex: 1; /* Costringe ogni bottone a espandersi occupando metà dello spazio */
+        text-align: center; /* Mantiene il testo centrato nel bottone allargato */
+        justify-content: center; /* Utile se le classi .btn base usano a loro volta display: flex */
+      }
+
   /* Modifiche specifiche per la lista parametri su mobile (< 900px) */
   @media (max-width: 900px) {
 
@@ -126,14 +149,14 @@
 
     /* C. NAME - Grande, riga successiva */
     .table tbody td[data-label="Name"] {
-      grid-column: 1 / -1;
+      grid-column: 1 ;
       grid-row: 2;
       font-size: 1.15rem;
       font-weight: 700;
       line-height: 1.3;
       margin-bottom: 0.5rem;
       color: var(--text);
-    }
+      }
 
     /* D. METADATI (Schema, Type, Level) - Piccoli e raggruppati */
     .table tbody td[data-label="Schema"],
@@ -189,6 +212,7 @@
       width: auto; /* Non full width */
       padding: 0.4rem 1.5rem;
     }
+
   }
 </style>
 {% endblock %}
