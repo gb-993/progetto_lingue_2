@@ -189,6 +189,8 @@ class QuestionForm(forms.ModelForm):
 
         labels = {
             "instruction": "Instructions",
+            "instruction_yes": "Instructions yes",
+            "instruction_no": "Instructions no",
         }
 
 

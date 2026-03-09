@@ -59,7 +59,7 @@
 - [x] Mettere i pulsanti a destra in un'unica riga
 
 ## PARAMETERS EDIT
-- [ ] Instruction yes e no al plurale in edit question 
+- [x] Instruction yes e no al plurale in edit question 
 - [x] Inserire un nuovo attributo Level of comparison con i due valori mutualmente esclusivi Canonico e Deuterocanonico
 - [x] Inserire due altre celle di testo libero una sotto l'altra intitolate "Long description" e "Explication of the implicational condition"
 - [x] Inserire un bottone di download alla fine della pagina di edit del parametro per scaricare un pdf con tutte le informazioni di un parametro e delle sue questions
