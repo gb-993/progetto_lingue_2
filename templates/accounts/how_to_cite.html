@@ -8,10 +8,10 @@
   <header class="dashboard-hero">
     <h1>Citation Guidelines</h1>
     <div class="muted">
-      {{ site_contents.intro_text|default:"Utilizza i seguenti riferimenti per citare i dati o la metodologia del PCM Hub." }}
+      {{ site_contents.intro_text|default:"Use the following references to cite the data or methodology of the PCM Hub." }}
 
       {% if is_admin %}
-        <a href="{% url 'edit_site_content' 'intro_text' %}" style="margin-left: 10px; font-size: 0.85rem; text-decoration: underline; color: var(--brand);">✏️ Modifica</a>
+        <a href="{% url 'edit_site_content' 'intro_text' %}" style="margin-left: 10px; font-size: 0.85rem; text-decoration: underline; color: var(--brand);">✏️ Edit</a>
       {% endif %}
     </div>
   </header>
@@ -22,21 +22,22 @@
       <div class="citation-content">
         <h3>Parameters & Manifestations</h3>
         <p class="small">
-          {{ site_contents.params_desc|default:"Per citare il framework teorico e le definizioni dei parametri:" }}
+          {{ site_contents.params_desc|default:"To cite the theoretical framework.:" }}
           {% if is_admin %}
-            <a href="{% url 'edit_site_content' 'params_desc' %}" style="margin-left: 5px; font-size: 0.8rem; color: var(--brand);">✏️ Modifica</a>
+            <a href="{% url 'edit_site_content' 'params_desc' %}" style="margin-left: 5px; font-size: 0.8rem; color: var(--brand);">✏️ Edit</a>
           {% endif %}
         </p>
 
         <div class="cite-box" id="cite-params">
           <button class="btn-copy-mini" onclick="copyCitation('cite-params', this)" title="Copia citazione">Copy</button>
 
-          {{ site_contents.params_cite|default:"Longobardi, G., & Guardiano, C. (2009). Functional grammar and language typology: An ontological analysis of the Person system. <em>Lingua</em>, 119(11), 1679-1713."|safe }}
+          {{ site_contents.params_cite|default:"Longobardi, Giuseppe & Cristina Guardiano. 2009. Evidence for syntax as a signal of historical
+            relatedness. <em>Lingua</em> 119. 1679-1706."|safe }}
         </div>
 
         {% if is_admin %}
           <div style="margin-top: 10px; text-align: right;">
-            <a href="{% url 'edit_site_content' 'params_cite' %}" style="font-size: 0.85rem; text-decoration: none; font-weight: 600; color: var(--brand);">✏️ Modifica Citazione</a>
+            <a href="{% url 'edit_site_content' 'params_cite' %}" style="font-size: 0.85rem; text-decoration: none; font-weight: 600; color: var(--brand);">✏️ Edit reference</a>
           </div>
         {% endif %}
       </div>
@@ -46,21 +47,21 @@
       <div class="citation-content">
         <h3>Languages & Data</h3>
         <p class="small">
-          {{ site_contents.data_desc|default:"Per citare i dataset linguistici e il contenuto del database PCM Hub:" }}
+          {{ site_contents.data_desc|default:"To cite the linguistic data:" }}
           {% if is_admin %}
-            <a href="{% url 'edit_site_content' 'data_desc' %}" style="margin-left: 5px; font-size: 0.8rem; color: var(--brand);">✏️ Modifica</a>
+            <a href="{% url 'edit_site_content' 'data_desc' %}" style="margin-left: 5px; font-size: 0.8rem; color: var(--brand);">✏️ Edit</a>
           {% endif %}
         </p>
 
         <div class="cite-box" id="cite-data">
           <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">Copy</button>
 
-          {{ site_contents.data_cite|default:"PCM Hub Database. (2024). Syntactic data of the world's languages. University of York / Università di Modena e Reggio Emilia. Available at: https://pcmhub.org"|safe }}
+          {{ site_contents.data_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1)"|safe }}
         </div>
 
         {% if is_admin %}
           <div style="margin-top: 10px; text-align: right;">
-            <a href="{% url 'edit_site_content' 'data_cite' %}" style="font-size: 0.85rem; text-decoration: none; font-weight: 600; color: var(--brand);">✏️ Modifica Citazione</a>
+            <a href="{% url 'edit_site_content' 'data_cite' %}" style="font-size: 0.85rem; text-decoration: none; font-weight: 600; color: var(--brand);">✏️ Edit reference</a>
           </div>
         {% endif %}
       </div>

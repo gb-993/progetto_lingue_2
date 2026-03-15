@@ -10,7 +10,7 @@
     <h1>Instructions</h1>
     {% if is_admin %}
       <button class="btn btn--small btn-edit" data-key="instr_body" style="background: var(--surface-2); border: 1px solid var(--border);">
-        ✏️ Modifica Pagina (HTML)
+        ✏️ Edit (HTML)
       </button>
     {% endif %}
   </header>
@@ -50,12 +50,12 @@
 
 {% if is_admin %}
 <dialog id="editModal" style="padding: 20px; border: 1px solid #ccc; border-radius: 8px; width: 95%; max-width: 800px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-  <h3 style="margin-top: 0;">Editor HTML Istruzioni</h3>
-  <p style="font-size: 0.8rem; color: #666;">Attenzione: Stai modificando il codice HTML puro della pagina.</p>
+  <h3 style="margin-top: 0;">HTML Editor</h3>
+  <p style="font-size: 0.8rem; color: #666;">Warning: You are editing the raw HTML code of the page..</p>
   <textarea id="editContent" rows="20" style="width: 100%; padding: 10px; font-family: monospace; font-size: 0.9rem; border: 1px solid #ddd;"></textarea>
   <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
-    <button id="cancelBtn" class="btn">Annulla</button>
-    <button id="saveBtn" class="btn btn--primary">Salva Cambiamenti</button>
+    <button id="cancelBtn" class="btn">Cancel</button>
+    <button id="saveBtn" class="btn btn--primary">Save</button>
   </div>
 </dialog>
 

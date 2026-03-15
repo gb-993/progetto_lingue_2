@@ -4,19 +4,19 @@
 
 {% block content %}
 <div class="container section">
-    <h2>Modifica Blocco Testo</h2>
-    <p class="muted">Stai modificando: <strong>{{ obj.key }}</strong></p>
+    <h2>Edit visible text</h2>
+    <p class="muted">You are editing.: <strong>{{ obj.key }}</strong></p>
     
     <div class="card" style="max-width: 800px;">
         <form method="POST">
             {% csrf_token %}
             <div style="margin-bottom: 1rem;">
-                <label for="content" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Contenuto (Usa il tasto Invio per andare a capo):</label>
+                <label for="content" style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Content (Press the Enter key to start a new line):</label>
                 <textarea id="content" name="content" rows="8" style="width: 100%; padding: 0.8rem; font-family: inherit; font-size: 1rem; border: 1px solid var(--border); border-radius: 4px;">{{ obj.content }}</textarea>
             </div>
             <div style="display: flex; gap: 1rem;">
-                <button type="submit" class="btn btn-primary">Salva Modifiche</button>
-                <a href="{% url 'how_to_cite' %}" class="btn">Annulla</a>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'how_to_cite' %}" class="btn">Cancel</a>
             </div>
         </form>
     </div>
