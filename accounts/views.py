@@ -378,7 +378,8 @@ def accept_terms(request):
 
 def how_to_cite(request):
     is_admin = _is_admin(request.user)
-    contents = SiteContent.objects.filter(page='how_to_cite')
+    
+    contents = SiteContent.objects.all()
     site_contents = {item.key: item.content for item in contents}
     
     ctx = {
@@ -391,15 +392,15 @@ def how_to_cite(request):
 @login_required
 @user_passes_test(_is_admin)
 def edit_site_content(request, key):
-    # Cerca il contenuto o lo crea se non esiste ancora
     content_obj, created = SiteContent.objects.get_or_create(
         key=key,
         defaults={'page': 'how_to_cite', 'content': ''}
     )
     
     if request.method == "POST":
-        # Salva il nuovo testo puro
+        # Salvataggio
         content_obj.content = request.POST.get('content', '')
+        content_obj.page = 'how_to_cite'  
         content_obj.updated_by = request.user
         content_obj.save()
         

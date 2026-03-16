@@ -11,7 +11,7 @@
       {{ site_contents.intro_text|default:"Use the following references to cite the data or methodology of the PCM Hub." }}
 
       {% if is_admin %}
-        <a href="{% url 'edit_site_content' 'intro_text' %}" style="margin-left: 10px; font-size: 0.85rem; text-decoration: underline; color: var(--brand);">✏️ Edit</a>
+        <a href="{% url 'edit_site_content' 'intro_text' %}" style="margin-left: 10px; font-size: 0.85rem; text-decoration: underline; color: var(--brand);">✏️ Edit subtitle</a>
       {% endif %}
     </div>
   </header>
@@ -30,9 +30,7 @@
 
         <div class="cite-box" id="cite-params">
           <button class="btn-copy-mini" onclick="copyCitation('cite-params', this)" title="Copia citazione">Copy</button>
-
-          {{ site_contents.params_cite|default:"Longobardi, Giuseppe & Cristina Guardiano. 2009. Evidence for syntax as a signal of historical
-            relatedness. <em>Lingua</em> 119. 1679-1706."|safe }}
+          {{ site_contents.params_cite|default:"Longobardi, Giuseppe & Cristina Guardiano. 2009. Evidence for syntax as a signal of historical relatedness. <em>Lingua</em> 119. 1679-1706."|safe }}
         </div>
 
         {% if is_admin %}
@@ -56,7 +54,7 @@
         <div class="cite-box" id="cite-data">
           <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">Copy</button>
 
-          {{ site_contents.data_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1)"|safe }}
+          Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1)
         </div>
 
         {% if is_admin %}
@@ -93,15 +91,14 @@
 
 .cite-box {
   background: var(--surface-2);
-  /* Aggiunto padding extra a destra e sopra per non coprire il testo con il tasto */
-  padding: 1.2rem 2.5rem 1.2rem 1rem; 
+  padding: 1.2rem 6rem 1.2rem 1.2rem; 
   border-radius: 8px;
   font-family: var(--mono);
   font-size: 0.85rem;
   border: 1px solid var(--border);
   margin-top: 1rem;
   line-height: 1.4;
-  position: relative; /* Necessario per il posizionamento del tasto */
+  position: relative;
 }
 
 /* TASTO COPIA POSIZIONATO ALL'INTERNO */
@@ -142,13 +139,11 @@
 
 <script>
 function copyCitation(elementId, btn) {
-  // Estraiamo il testo escludendo il testo del bottone stesso
   const box = document.getElementById(elementId);
   
-  // Cloniamo il nodo per manipolare il testo senza toccare il DOM reale
   const tempBox = box.cloneNode(true);
   const btnInTemp = tempBox.querySelector('button');
-  if (btnInTemp) btnInTemp.remove(); // Rimuoviamo il tasto "Copy" dal testo da copiare
+  if (btnInTemp) btnInTemp.remove(); 
   
   const textToCopy = tempBox.innerText.trim();
 
