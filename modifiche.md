@@ -2,6 +2,7 @@
 
 - [ ] Roberto Romano per indirizzo tecnico per macchina virtuale
 - [ ] Servizi informatici per casella noreply
+- [ ] Richiedere di accettare di nuovo le condizioni sull'utilizzo se modifichiamo il file
 
 ## GENERALI
 - [x] Forse è il caso che FLAGGED / UNSURE PARAMETERS mostri i parametri rossi, quindi anche quelli per cui manca anche una sola risposta (es. CEX per Trieste)
