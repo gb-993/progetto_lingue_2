@@ -35,10 +35,12 @@
     {% for obj in page_obj.object_list %}
       <tr>
         <td>
-          <a href="{% url 'glossary_view' obj.word %}">{{ obj.word }}</a>
+          <a href="{% url 'glossary_view' obj.word %}" style="text-decoration: underline;">{{ obj.word }}</a>
         </td>
         <td>
-          <a href="{% url 'glossary_view' obj.word %}">{{ obj.description|default:"" }}</a>
+          <a href="{% url 'glossary_view' obj.word %}" style="text-decoration: none; color: inherit;">
+            {{ obj.description|default:"" }}
+          </a>
         </td>
         <td class="fit" style="text-align: right;">
           {% if is_admin %}
@@ -66,7 +68,7 @@
 
     <style>
   .dashboard-hero {
-    margin-bottom: 4rem;
+    margin-bottom: 5rem;
   }
 </style>
 {% endblock %}

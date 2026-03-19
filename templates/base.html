@@ -35,7 +35,8 @@
       flex-direction: column;
       min-height: 100vh;
       overflow-x: hidden;
-      background-color: var(--surface-1);
+      /* background-color: var(--surface-1); */
+      background-color: var(--bg); /* <--- MODIFICATO */
     }
 
     /* --- LAYOUT PRINCIPALE --- */
@@ -108,7 +109,7 @@
     .sidebar .nav-list {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.1rem;
       padding: 0;
       margin: 0;
       list-style: none;
@@ -144,7 +145,7 @@
     }
 
     .sidebar .nav-list .nav-divider-label {
-      padding: 2rem 0 0.5rem 2rem;
+      padding: 1rem 0 0.3rem 2rem;
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -159,7 +160,8 @@
       padding: 0.8rem 3rem;
       min-height: var(--topbar-height);
       height: auto;
-      background-color: var(--surface-1);
+      /* background-color: var(--surface-1); */
+      background-color: var(--bg); /* <--- MODIFICATO */
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
@@ -245,7 +247,8 @@
     /* --- FOOTER --- */
     .site-footer {
       width: 100%;
-      background-color: var(--surface-1);
+      /* background-color: var(--surface-1); */
+      background-color: var(--bg); /* <--- MODIFICATO */
       border-top: 1px solid var(--border-color);
       padding-top: 3rem;
       padding-bottom: 2rem;
@@ -474,8 +477,6 @@
 
         {# --- DATA MENU --- #}
         {% if request.user.role != 'public' %}
-          <li class="nav-divider-label">Data Management</li>
-
           <li>
             <a class="btn {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}is-current{% endif %}"
                href="{% url 'language_list' %}">
@@ -493,7 +494,6 @@
             <li><a class="btn {% if urln == 'accounts_list' %}is-current{% endif %}" href="{% url 'accounts_list' %}">Accounts</a></li>
           {% endif %}
 
-          <li class="nav-divider-label">Resources</li>
           <li><a class="btn {% if urln == 'instruction' %}is-current{% endif %}" href="{% url 'instruction' %}">Instructions</a></li>
           <li><a class="btn {% if urln == 'glossary_list' %}is-current{% endif %}" href="{% url 'glossary_list' %}">Glossary</a></li>
         {% endif %}

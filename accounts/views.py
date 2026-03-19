@@ -370,7 +370,7 @@ def accept_terms(request):
             request.user.save(update_fields=["terms_accepted", "terms_accepted_at"])
             return redirect(request.GET.get('next', 'dashboard'))
         else:
-            messages.error(request, "Devi spuntare la casella per poter continuare.")
+            messages.error(request, "Please check the box to continue.")
 
     return render(request, "accounts/accept_terms.html")
 
