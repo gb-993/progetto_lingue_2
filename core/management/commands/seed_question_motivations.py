@@ -22,24 +22,19 @@ def _norm(s: str) -> str:
 
 def _split_mot_list(cell) -> list[str]:
     """
-    Accetta: multilinea Excel, oppure stringa con separatori ; o ,
+    Accetta: multilinea Excel (una motivazione per riga).
+    Non divide più per virgole o punti e virgole.
     """
     if cell is None:
         return []
     raw = str(cell).replace("\r\n", "\n").replace("\r", "\n")
-    # prima split per newline
+    # split SOLO per newline
     parts = []
     for line in raw.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        # poi split anche per ; o ,
-        chunk = re.split(r"[;,]", line)
-        for c in chunk:
-            c = _norm(c)
-            if c:
-                parts.append(c)
-    # de-dup preservando ordine
+        c = _norm(line)
+        if c:
+            parts.append(c)
+            
     seen = set()
     out = []
     for p in parts:
