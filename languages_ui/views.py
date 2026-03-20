@@ -1196,22 +1196,24 @@ def language_list_export_xlsx(request):
         return ""
 
     HEADERS = [
-        "ID",
-        "Name",
-        "Top-level family",
-        "Family",
-        "Group",
-        "Glottocode",
-        "ISO code",
-        "Latitude",
-        "Longitude",
-        "Location",
-        "Historical",
-        "Source",
-        "Assigned user",
-        "Email",
-        "Date last change",
-    ]
+            "Name",
+            "ID",
+            "Top-level family",
+            "Family",
+            "Group",
+            "ISO code",
+            "Glottocode",
+            "Location",
+            "Latitude",
+            "Longitude",
+            "Supervisor",
+            "Informant",
+            "Historical",
+            "Source",
+            "Assigned user",
+            "Email",
+            "Date last change",
+        ]
 
     wb = Workbook()
     ws = wb.active
@@ -1224,16 +1226,18 @@ def language_list_export_xlsx(request):
     # rows
     for L in qs.iterator(chunk_size=1000):
         row = [
-            _xlsx_sanitize(L.id),
             _xlsx_sanitize(L.name_full),
+            _xlsx_sanitize(L.id),
             _xlsx_sanitize(L.top_level_family),
             _xlsx_sanitize(L.family),
             _xlsx_sanitize(L.grp),
-            _xlsx_sanitize(L.glottocode),
             _xlsx_sanitize(L.isocode),
+            _xlsx_sanitize(L.glottocode),
+            _xlsx_sanitize(L.location),
             _xlsx_sanitize(L.latitude),
             _xlsx_sanitize(L.longitude),
-            _xlsx_sanitize(L.location),
+            _xlsx_sanitize(L.supervisor),
+            _xlsx_sanitize(L.informant),
             _xlsx_sanitize(L.historical_language),
             _xlsx_sanitize(L.source),
             _xlsx_sanitize(_get_assigned_names(L)),

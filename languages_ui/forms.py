@@ -8,21 +8,21 @@ class LanguageForm(forms.ModelForm):
     class Meta:
         model = Language
         fields = [
-            "id",
-            "name_full",
-            "top_level_family",
-            "family",
-            "grp",
-            "isocode",
-            "glottocode",
-            "supervisor",
-            "informant",
-            "source",
-            "historical_language",
-            "latitude",
-            "longitude",
-            "location",
-        ]
+                    "name_full",
+                    "id",
+                    "top_level_family",
+                    "family",
+                    "grp",
+                    "isocode",
+                    "glottocode",
+                    "location",
+                    "latitude",
+                    "longitude",
+                    "supervisor",
+                    "informant",
+                    "historical_language",
+                    "source",
+                ]
 
         
         labels = {

@@ -165,31 +165,29 @@
   wrapper.setAttribute("data-uid", uid);
   wrapper.style.marginBottom = "1rem";
 
-  // Nota: ho messo rows="1" agli altri campi per farli partire compatti come input,
-  // ma col vantaggio che si espandono se l'utente scrive molto.
   wrapper.innerHTML = `
     <input type="hidden" name="newex_${qid}_${uid}_number" value="${numberValue}">
     
-    <div class="grid">
+    <div class="grid example-grid">
       <div>
         <label>Example text</label>
-        <textarea name="newex_${qid}_${uid}_textarea" rows="3" style="width:100%; resize:vertical;"></textarea>
+        <textarea name="newex_${qid}_${uid}_textarea" class="auto-grow" data-autosize="1" rows="2" style="width:100%;"></textarea>
       </div>
       <div>
         <label>Transliteration</label>
-        <textarea name="newex_${qid}_${uid}_transliteration" rows="1" style="width:100%; resize:vertical;"></textarea>
+        <textarea name="newex_${qid}_${uid}_transliteration" class="auto-grow" data-autosize="1" rows="2" style="width:100%;"></textarea>
       </div>
       <div>
         <label>Gloss</label>
-        <textarea name="newex_${qid}_${uid}_gloss" rows="1" style="width:100%; resize:vertical;"></textarea>
+        <textarea name="newex_${qid}_${uid}_gloss" class="auto-grow" data-autosize="1" rows="2" style="width:100%;"></textarea>
       </div>
       <div>
         <label>English translation</label>
-        <textarea name="newex_${qid}_${uid}_translation" rows="1" style="width:100%; resize:vertical;"></textarea>
+        <textarea name="newex_${qid}_${uid}_translation" class="auto-grow" data-autosize="1" rows="2" style="width:100%;"></textarea>
       </div>
       <div>
         <label>Reference</label>
-        <textarea name="newex_${qid}_${uid}_reference" rows="1" style="width:100%; resize:vertical;"></textarea>
+        <textarea name="newex_${qid}_${uid}_reference" class="auto-grow" data-autosize="1" rows="2" style="width:100%;"></textarea>
       </div>
     </div>
     <div class="toolbar" style="margin-top: .5rem; display: flex; justify-content: flex-end;">
