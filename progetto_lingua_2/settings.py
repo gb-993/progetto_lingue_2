@@ -73,8 +73,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.postgres",
     'django.contrib.staticfiles',  
-    'tailwind',
-    'theme',
 
     # Project apps
     "core.apps.CoreConfig",
@@ -196,12 +194,6 @@ EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 # Token timeout reset password
 PASSWORD_RESET_TIMEOUT = int(env("DJANGO_PASSWORD_RESET_TIMEOUT", 60 * 60 * 3))  
 
-# per tailwind
-TAILWIND_APP_NAME = 'theme'
-# Necessario per far ricaricare automaticamente il CSS nel browser
-INTERNAL_IPS = [
-    "127.0.0.1",
-]
 
 if ENV == "prod":
     
