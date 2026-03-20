@@ -55,7 +55,7 @@
           </div>
           
           {% if red_langs %}
-            <div class="mt-2" style="max-height: 110px; overflow-y: auto; padding-right: 0.5rem;">
+            <div class="mt-2" style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">              
               {% for lang in red_langs %}
                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem;">
                   <a href="{% url 'language_data' lang.language__id %}" style="text-decoration: none; color: inherit;">
