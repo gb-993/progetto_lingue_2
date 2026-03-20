@@ -130,7 +130,7 @@ def tablea_export_questions_xlsx(request):
     wb = Workbook()
     ws = wb.active
 
-    ws.append(["Label", "Question_text"] + [l.id for l in languages])
+    ws.append(["Label", "Parameter name"] + [l.id for l in languages])
 
     for r in rows:
         # Recuperiamo il testo della domanda
