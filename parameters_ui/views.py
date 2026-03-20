@@ -34,6 +34,7 @@ from .forms import (
     ParameterForm,
     QuestionForm,
     DeactivateParameterForm,
+    MotivationForm,
 )
 
 
@@ -906,6 +907,29 @@ def motivations_manage(request):
     motivations = Motivation.objects.order_by("code")
     return render(request, "parameters/motivations.html", {"motivations": motivations})
 
+
+# modifiche alla motivazione
+@login_required
+@user_passes_test(_is_admin)
+@require_http_methods(["GET", "POST"])
+def motivation_edit(request, mot_id: int):
+    motivation = get_object_or_404(Motivation, pk=mot_id)
+
+    if request.method == "POST":
+        form = MotivationForm(request.POST, instance=motivation)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Motivation {motivation.code} updated successfully.")
+            return redirect("motivations_manage")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = MotivationForm(instance=motivation)
+
+    return render(request, "parameters/motivation_edit.html", {
+        "form": form,
+        "motivation": motivation
+    })
 
 # --- Classe per Intestazione e Piè di pagina ---
 class PDFParamReport(FPDF):

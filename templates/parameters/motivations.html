@@ -39,18 +39,24 @@
     </thead>
     <tbody>
       {% for m in motivations %}
+
       <tr>
         <td>{{ m.code }}</td>
         <td>{{ m.label }}</td>
         <td style="text-align:right;">
-          <form method="post" style="display:inline" onsubmit="return confirm('Delete this motivation?');">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="del_motivation">
-            <input type="hidden" name="id" value="{{ m.id }}">
-            <button class="btn btn--danger" type="submit">Delete</button>
-          </form>
+          <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+            <a class="btn" href="{% url 'motivation_edit' m.id %}">Edit</a>
+            <form method="post" style="display:inline" onsubmit="return confirm('Delete this motivation?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="del_motivation">
+              <input type="hidden" name="id" value="{{ m.id }}">
+              <button class="btn btn--danger" type="submit">Delete</button>
+            </form>
+          </div>
         </td>
       </tr>
+
+
       {% empty %}
       <tr>
         <td colspan="3">
