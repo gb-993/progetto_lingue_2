@@ -34,6 +34,7 @@
       <tr>
         <th>Label</th>
         <th>Description</th>
+        <th>Linked Questions</th>
         <th></th>
       </tr>
     </thead>
@@ -43,6 +44,19 @@
       <tr>
         <td>{{ m.code }}</td>
         <td>{{ m.label }}</td>
+        <td>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+            {% for q in m.questions_allowed.all %}
+              <a href="{% url 'question_edit' q.parameter_id q.id %}" style="text-decoration: none;" title="Go to question {{ q.id }}">
+                <code style="background: var(--surface-2, #f1f5f9); padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid var(--border, #e2e8f0); color: var(--text, #0f172a); font-size: 0.85rem;">
+                  {{ q.id }}
+                </code>
+              </a>
+            {% empty %}
+              <span class="muted" style="font-size: 0.85rem;">None</span>
+            {% endfor %}
+          </div>
+        </td>
         <td style="text-align:right;">
           <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
             <a class="btn" href="{% url 'motivation_edit' m.id %}">Edit</a>
@@ -59,7 +73,7 @@
 
       {% empty %}
       <tr>
-        <td colspan="3">
+        <td colspan="4">
           <p class="muted">No motivations yet.</p>
         </td>
       </tr>

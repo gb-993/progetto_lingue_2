@@ -903,8 +903,8 @@ def motivations_manage(request):
             messages.error(request, "Unknown action.")
         except Exception as e:
             messages.error(request, f"Operation failed: {e}")
-
-    motivations = Motivation.objects.order_by("code")
+    # Aggiungiamo prefetch_related per caricare le domande in un colpo solo
+    motivations = Motivation.objects.prefetch_related("questions_allowed").order_by("code")
     return render(request, "parameters/motivations.html", {"motivations": motivations})
 
 
