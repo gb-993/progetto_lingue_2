@@ -311,3 +311,19 @@ class DeactivateParameterForm(forms.Form):
         if not user.check_password(pwd):
             raise forms.ValidationError("Incorrect password.")
         return cleaned
+
+# =========================
+# MOTIVATION 
+# =========================
+class MotivationForm(forms.ModelForm):
+    class Meta:
+        model = Motivation
+        fields = ["code", "label"]
+        labels = {
+            "code": "Code",
+            "label": "Description",
+        }
+        widgets = {
+            "code": forms.TextInput(attrs={"class": "form-control"}),
+            "label": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+        }

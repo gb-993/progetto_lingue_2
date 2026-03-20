@@ -12,6 +12,7 @@ urlpatterns = [
     path("languages/<str:lang_id>/parameters/<str:param_id>/review-flag/", views.toggle_review_flag, name="toggle_review_flag"),
     path("lookups/", views.lookups_manage, name="param_lookups_manage"),
     path("parameters/motivations/", views.motivations_manage, name="motivations_manage"),
+    path("parameters/motivations/<int:mot_id>/edit/", views.motivation_edit, name="motivation_edit"),
     path("<str:param_id>/questions/import/", views.question_clone, name="question_clone"),
     path('parameters/<str:param_id>/pdf/', views.parameter_download_pdf, name='parameter_download_pdf'),
 
