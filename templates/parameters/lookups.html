@@ -14,7 +14,11 @@
 
     <div>
       <h3>Schemas</h3>
-      <form method="post" class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
+      <form hx-post="{% url 'param_lookups_manage' %}" 
+            hx-target="#schema-tbody" 
+            hx-swap="innerHTML"
+            hx-on::after-request="this.reset()"
+            class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
         {% csrf_token %}
         <input type="hidden" name="action" value="add_schema">
         <div>
@@ -28,29 +32,19 @@
 
       <table class="table" style="margin-top:.75rem;">
         <thead><tr><th>Existing schemas</th><th></th></tr></thead>
-        <tbody>
-          {% for s in schemas %}
-          <tr>
-            <td>{{ s.label }}</td>
-            <td style="text-align: right;">
-              <form method="post" style="display:inline" onsubmit="return confirm('Delete this schema?');">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="del_schema">
-                <input type="hidden" name="id" value="{{ s.id }}">
-                <button class="btn btn--danger" type="submit">Delete</button>
-              </form>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="2"><p class="muted">No schemas yet.</p></td></tr>
-          {% endfor %}
+        <tbody id="schema-tbody">
+          {% include "parameters/schema_rows.html" %}
         </tbody>
       </table>
     </div>
 
     <div>
       <h3>Types</h3>
-      <form method="post" class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
+      <form hx-post="{% url 'param_lookups_manage' %}" 
+            hx-target="#type-tbody" 
+            hx-swap="innerHTML"
+            hx-on::after-request="this.reset()"
+            class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
         {% csrf_token %}
         <input type="hidden" name="action" value="add_type">
         <div>
@@ -64,29 +58,19 @@
 
       <table class="table" style="margin-top:.75rem;">
         <thead><tr><th>Existing types</th><th></th></tr></thead>
-        <tbody>
-          {% for t in types %}
-          <tr>
-            <td>{{ t.label }}</td>
-            <td style="text-align: right;">
-              <form method="post" style="display:inline" onsubmit="return confirm('Delete this type?');">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="del_type">
-                <input type="hidden" name="id" value="{{ t.id }}">
-                <button class="btn btn--danger" type="submit">Delete</button>
-              </form>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="2"><p class="muted">No types yet.</p></td></tr>
-          {% endfor %}
+        <tbody id="type-tbody">
+          {% include "parameters/type_rows.html" %}
         </tbody>
       </table>
     </div>
 
     <div>
       <h3>Levels of comparison</h3>
-      <form method="post" class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
+      <form hx-post="{% url 'param_lookups_manage' %}" 
+            hx-target="#level-tbody" 
+            hx-swap="innerHTML"
+            hx-on::after-request="this.reset()"
+            class="grid" style="grid-template-columns:auto max-content; gap:.75rem; align-items:end; width:100%;">
         {% csrf_token %}
         <input type="hidden" name="action" value="add_level">
         <div>
@@ -100,22 +84,8 @@
 
       <table class="table" style="margin-top:.75rem;">
         <thead><tr><th>Existing levels</th><th></th></tr></thead>
-        <tbody>
-          {% for l in levels %}
-          <tr>
-            <td>{{ l.label }}</td>
-            <td style="text-align: right;">
-              <form method="post" style="display:inline" onsubmit="return confirm('Delete this level?');">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="del_level">
-                <input type="hidden" name="id" value="{{ l.id }}">
-                <button class="btn btn--danger" type="submit">Delete</button>
-              </form>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="2"><p class="muted">No levels yet.</p></td></tr>
-          {% endfor %}
+        <tbody id="level-tbody">
+          {% include "parameters/level_rows.html" %}
         </tbody>
       </table>
     </div>

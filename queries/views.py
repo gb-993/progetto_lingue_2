@@ -483,4 +483,8 @@ def home(request):
 
             ctx[tab] = {"language": lang, "answers": answers, "type": val.upper()}
 
+    # Se la richiesta arriva da HTMX (cioè è stato premuto "Search"), restituisci solo i risultati
+    if request.headers.get("HX-Request"):
+        return render(request, "queries/partials/results.html", ctx)
+
     return render(request, "queries/home.html", ctx)

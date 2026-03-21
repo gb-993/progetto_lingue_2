@@ -90,18 +90,50 @@ def get_tablea_filtered_data(request):
 def tablea_index(request):
     languages, rows, view_mode = get_tablea_filtered_data(request)
     ctx_options = {
-        "opt_top_families": Language.objects.exclude(top_level_family="").values_list("top_level_family",flat=True).distinct().order_by("top_level_family"),
-        "opt_families": Language.objects.exclude(family="").values_list("family", flat=True).distinct().order_by("family"),
-        "opt_groups": Language.objects.exclude(grp="").values_list("grp", flat=True).distinct().order_by("grp"),
-        "opt_schemas": ParamSchema.objects.values_list("label", flat=True).order_by("label"),
-        "opt_types": ParamType.objects.values_list("label", flat=True).order_by("label"),
-        "opt_levels": ParamLevelOfComparison.objects.values_list("label", flat=True).order_by("label"),
-        "opt_templates": Question.objects.exclude(template_type="").values_list("template_type",flat=True).distinct().order_by("template_type"),
+        "opt_top_families": Language.objects.exclude(top_level_family="")
+                                            .exclude(top_level_family__isnull=True)
+                                            .exclude(top_level_family__iexact="none")
+                                            .values_list("top_level_family", flat=True).distinct().order_by("top_level_family"),
+                                            
+        "opt_families": Language.objects.exclude(family="")
+                                        .exclude(family__isnull=True)
+                                        .exclude(family__iexact="none")
+                                        .values_list("family", flat=True).distinct().order_by("family"),
+                                        
+        "opt_groups": Language.objects.exclude(grp="")
+                                      .exclude(grp__isnull=True)
+                                      .exclude(grp__iexact="none")
+                                      .values_list("grp", flat=True).distinct().order_by("grp"),
+                                      
+        "opt_schemas": ParamSchema.objects.exclude(label="")
+                                          .exclude(label__isnull=True)
+                                          .exclude(label__iexact="none")
+                                          .values_list("label", flat=True).order_by("label"),
+                                          
+        "opt_types": ParamType.objects.exclude(label="")
+                                      .exclude(label__isnull=True)
+                                      .exclude(label__iexact="none")
+                                      .values_list("label", flat=True).order_by("label"),
+                                      
+        "opt_levels": ParamLevelOfComparison.objects.exclude(label="")
+                                                    .exclude(label__isnull=True)
+                                                    .exclude(label__iexact="none")
+                                                    .values_list("label", flat=True).order_by("label"),
+                                                    
+        "opt_templates": Question.objects.exclude(template_type="")
+                                         .exclude(template_type__isnull=True)
+                                         .exclude(template_type__iexact="none")
+                                         .values_list("template_type", flat=True).distinct().order_by("template_type"),
+                                         
         "opt_all_languages": Language.objects.all().order_by("name_full"),
         "selected_specific_langs": request.GET.getlist("f_lang_specific"),
     }
-    return render(request, "tablea/index.html",
-                  {**ctx_options, "languages": languages, "rows": rows, "view": view_mode, "params": request.GET})
+    context = {**ctx_options, "languages": languages, "rows": rows, "view": view_mode, "params": request.GET}
+    # SE LA RICHIESTA È HTMX, RESTITUISCI SOLO LA TABELLA
+    if request.headers.get("HX-Request"):
+        return render(request, "tablea/partials/tablea_results.html", context)
+    # ALTRIMENTI RESTITUISCI L'INTERA PAGINA
+    return render(request, "tablea/index.html", context)
 
 @login_required
 def tablea_export_xlsx(request):

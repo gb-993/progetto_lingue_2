@@ -123,7 +123,12 @@
       </ul>
     </nav>
 
-    <div class="query-filters">
+
+
+
+
+
+<div class="query-filters">
         {% if not tab %}
             <div class="alert alert-info" role="status">
             Please select a query on the left to start.
@@ -131,7 +136,7 @@
         {% endif %}
 
         {% if tab == "q1" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="q1">
             {{ form_q1.non_field_errors }}
             <div>
@@ -143,7 +148,7 @@
         {% endif %}
 
         {% if tab == "q2" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="q2">
             <div>
                 <label for="{{ form_q2.parameter.id_for_label }}">{{ form_q2.parameter.label }}</label>
@@ -154,7 +159,7 @@
         {% endif %}
 
         {% if tab == "q3" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="q3">
             <div class="grid" style="grid-template-columns: 1fr; gap: 0.5rem;">
                 <div>
@@ -171,7 +176,7 @@
         {% endif %}
 
         {% if tab == "q4" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="q4">
             <div>
                 <label for="{{ form_q4.language.id_for_label }}">{{ form_q4.language.label }}</label>
@@ -182,7 +187,7 @@
         {% endif %}
 
         {% if tab == "q5" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="q5">
             <div>
                 <label for="{{ form_q5.language.id_for_label }}">{{ form_q5.language.label }}</label>
@@ -193,7 +198,7 @@
         {% endif %}
 
         {% if tab == "q6" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="q6">
             <div>
                 <label for="{{ form_q6.language.id_for_label }}">{{ form_q6.language.label }}</label>
@@ -204,7 +209,7 @@
         {% endif %}
 
         {% if tab == "q7" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="q7">
             <div class="grid" style="grid-template-columns: 1fr; gap: 0.5rem;">
                 <div>
@@ -221,7 +226,7 @@
         {% endif %}
 
         {% if tab == "q8" or tab == "q9" %}
-            <form method="get" class="form-row">
+            <form hx-get="" hx-target="#results-anchor" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#loading-indicator" class="form-row">
             <input type="hidden" name="tab" value="{{ tab }}">
             {% if tab == "q8" %}
                 <div><label>{{ form_q8.language.label }}</label>{{ form_q8.language }}</div>
@@ -236,244 +241,12 @@
 
   <hr style="border: 0; border-top: 1px solid var(--border); margin: var(--sp-6) 0;">
 
-  <div class="query-results" id="results-anchor"data-has-results="{% if q1 or q2 or q3 or q4 or q5 or q6 or q7 or q8 or q9 %}true{% else %}false{% endif %}"></div>
-      {% if tab == "q1" and q1 %}
-        <div class="alert alert-info">
-            <strong>Implicational Condition:</strong>
-            <code>{{ q1.raw_condition|default:"None (Always active)" }}</code>
+  <div id="loading-indicator" class="htmx-indicator" style="text-align: center; margin-bottom: 1rem; color: var(--brand); font-weight: bold; font-size: 0.9rem; letter-spacing: 0.05em;">
+      <span style="opacity: 0.7;">↻ Query elaboration...</span>
+  </div>
 
-            {% if q1.pretty_condition %}
-                <br><small>{{ q1.pretty_condition }}</small>
-            {% endif %}
-        </div>
-        <div class="grid grid-2">
-            <div>
-            <h3 class="mb-2">Implicating parameters</h3>
-            <div class="table-container">
-                <table class="table">
-                <thead><tr><th>ID</th><th>Name</th></tr></thead>
-                <tbody>
-                    {% for p in q1.implicanti %}
-                    <tr><td>{{ p.id }}</td><td>{{ p.name }}</td></tr>
-                    {% empty %}
-                    <tr><td colspan="2" class="muted">None</td></tr>
-                    {% endfor %}
-                </tbody>
-                </table>
-            </div>
-            </div>
-            <div>
-            <h3 class="mb-2">Implicated parameters</h3>
-            <div class="table-container">
-                <table class="table">
-                <thead><tr><th>ID</th><th>Name</th></tr></thead>
-                <tbody>
-                    {% for p in q1.implicati %}
-                    <tr><td>{{ p.id }}</td><td>{{ p.name }}</td></tr>
-                    {% empty %}
-                    <tr><td colspan="2" class="muted">None</td></tr>
-                    {% endfor %}
-                </tbody>
-                </table>
-            </div>
-            </div>
-        </div>
-      {% endif %}
-
-      {% if tab == "q2" and q2 %}
-        <h3 class="mt-2 mb-2">Parameter: {{ q2.parameter.id }} — {{ q2.parameter.name }}</h3>
-
-        <div class="grid">
-            <div class="card border-primary" style="padding:0; overflow:hidden;">
-                <div class="card-header" style="background:var(--pill-ok-bg); padding: .75rem; font-weight:bold; color:var(--ok);">
-                Value: + ({{ q2.plus|length }} languages)
-                </div>
-                <table class="table mb-0">
-                    <thead><tr><th>Parameter</th> <th>ID</th><th>Language</th></tr></thead>
-                    <tbody>
-                    {% for lang in q2.plus %}
-                        <tr>
-                        <td class="muted">{{ q2.parameter.id }}</td> 
-                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}" style="font-weight:bold">{{ lang.id }}</a></td>
-                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}">{{ lang.name_full }}</a></td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card border-danger" style="padding:0; overflow:hidden;">
-                <div class="card-header" style="background:var(--pill-bad-bg); padding: .75rem; font-weight:bold; color:var(--bad);">
-                Value: – ({{ q2.minus|length }} languages)
-                </div>
-                <table class="table mb-0">
-                    <thead><tr><th>Parameter</th> <th>ID</th><th>Language</th></tr></thead>
-                    <tbody>
-                    {% for lang in q2.minus %}
-                        <tr>
-                        <td class="muted">{{ q2.parameter.id }}</td>
-                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}" style="font-weight:bold">{{ lang.id }}</a></td>
-                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}">{{ lang.name_full }}</a></td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card" style="padding:0; overflow:hidden;">
-                <div class="card-header" style="background:var(--surface-2); padding: .75rem; font-weight:bold;">
-                Value: 0 (neutralized) ({{ q2.zero|length }} languages)
-                </div>
-                <table class="table mb-0">
-                    <thead><tr><th>Parameter</th> <th>ID</th><th>Language</th></tr></thead>
-                    <tbody>
-                    {% for lang in q2.zero %}
-                        <tr>
-                        <td class="muted">{{ q2.parameter.id }}</td>
-                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}" style="font-weight:bold">{{ lang.id }}</a></td>
-                        <td><a href="{% url 'language_data' lang.id %}#p-{{ q2.parameter.id }}">{{ lang.name_full }}</a></td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-      {% endif %}
-
-      {% if tab == "q3" and q3 %}
-        <h3 class="mt-2 mb-2">
-            Analysis for: <strong><a href="{% url 'language_debug' q3.language.id %}#{{ q3.parameter.id }}">{{ q3.parameter.id }}</a></strong> in <em><a href="{% url 'language_data' q3.language.id %}">{{ q3.language.name_full }}</a></em>
-        </h3>
-
-        {% if q3.no_condition %}
-            <div class="alert alert-info">This parameter has no implicational conditions.</div>
-        {% elif q3.error %}
-            <div class="alert alert-error">Parsing Error: {{ q3.error }}</div>
-        {% else %}
-            <div class="card mb-2">
-            <div class="card-header {% if q3.is_neutralized %}bad{% else %}ok{% endif %} fw-bold" style="font-weight:bold; margin-bottom:1rem;">
-                Result: {% if q3.is_neutralized %}<span style="color:var(--bad)">NEUTRALIZED (0)</span>{% else %}<span style="color:var(--ok)">ACTIVE (+/-)</span>{% endif %}
-            </div>
-            <div style="background:#1b1e23; color:#fff; padding:1rem; border-radius:8px; overflow-x:auto;">
-                <p class="muted small mb-1">Logic Signal Flow (Read from left to right):</p>
-                <pre style="font-family: var(--mono); line-height: 1.4; margin:0;">{{ q3.circuit_lines }}</pre>
-            </div>
-            <div class="muted small mt-2">
-                Condition: <code>{{ q3.condition }}</code>
-            </div>
-            </div>
-        {% endif %}
-      {% endif %}
-
-      {% if tab == "q4" and q4 %}
-        <h3 class="mb-1"><a href="{% url 'language_data' q4.language.id %}">{{ q4.language.id }} — {{ q4.language.name_full }}</a></h3>
-        <div class="table-container">
-            <table class="table table-hover">
-            <thead>
-                <tr><th>ID</th><th>Name</th><th>Value</th> </tr>
-            </thead>
-            <tbody>
-                {% for p in q4.params %}
-                <tr>
-                    <td><a href="{% url 'language_debug' q4.language.id %}#p-{{ p.id }}" style="font-weight:bold">{{ p.id }}</a></td>
-                    <td>{{ p.name }}</td>
-                    <td style="color:var(--focus); font-weight:bold;">+</td> </tr>
-                {% endfor %}
-            </tbody>
-            </table>
-        </div>
-      {% endif %}
-
-      {% if tab == "q5" and q5 %}
-        <h3 class="mb-1"><a href="{% url 'language_data' q5.language.id %}">{{ q5.language.id }} — {{ q5.language.name_full }}</a></h3>
-        <div class="table-container">
-            <table class="table table-hover">
-            <thead>
-                <tr><th>ID</th><th>Name</th><th>Value</th> </tr>
-            </thead>
-            <tbody>
-                {% for p in q5.params %}
-                <tr>
-                    <td><a href="{% url 'language_debug' q5.language.id %}#p-{{ p.id }}" style="font-weight:bold">{{ p.id }}</a></td>
-                    <td>{{ p.name }}</td>
-                    <td style="color:var(--bad); font-weight:bold;">–</td> </tr>
-                {% endfor %}
-            </tbody>
-            </table>
-        </div>
-      {% endif %}
-
-      {% if tab == "q6" and q6 %}
-        <h3 class="mb-1"><a href="{% url 'language_data' q6.language.id %}">{{ q6.language.id }} — {{ q6.language.name_full }}</a></h3>
-        <div class="table-container">
-            <table class="table table-hover">
-            <thead>
-                <tr><th>Parameter</th><th>Implicational Condition(s)</th><th>Value</th> </tr>
-            </thead>
-            <tbody>
-                {% for r in q6.rows %}
-                <tr>
-                    <td><a href="{% url 'language_debug' q6.language.id %}#p-{{ r.parameter.id }}" style="font-weight:bold">{{ r.parameter.id }} — {{ r.parameter.name }}</a></td>
-                    <td><code>{{ r.condition }}</code></td>
-                    <td class="muted font-weight-bold">0</td> </tr>
-                {% endfor %}
-            </tbody>
-            </table>
-        </div>
-      {% endif %}
-
-      {% if tab == "q7" and q7 %}
-        <h3 class="mb-1"><a href="{% url 'language_data' q7.a.id %}">{{ q7.a.id }} — {{ q7.a.name_full }}</a> ⇄ <a href="{% url 'language_data' q7.b.id %}">{{ q7.b.id }} — {{ q7.b.name_full }}</a></h3>
-        <div class="table-container">
-            <table class="table">
-            <thead><tr><th>Parameter</th><th>{{ q7.a.id }}</th><th>{{ q7.b.id }}</th></tr></thead>
-            <tbody>
-                {% for p, va, vb in q7.rows %}
-                    <tr>
-                    <td><a href="{% url 'language_data' q7.a.id %}#p-{{ p.id }}">{{ p.id }} — {{ p.name }}</a></td>
-                    <td>{{ va }}</td>
-                    <td>{{ vb }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-      {% endif %}
-
-      {% if tab == "q8" or tab == "q9" %}
-        {% if q8 or q9 %}
-          {% with result=q8|default:q9 %}
-            <h3 class="mb-1">
-                <a href="{% url 'language_data' result.language.id %}">{{ result.language.id }} — {{ result.language.name_full }}</a>
-            </h3>
-            <div class="table-container">
-              <table class="table table-hover">
-                <thead>
-                  <tr>
-                    <th style="width: 80px; text-align:center;">Answer</th>
-                    <th>Question Text</th>
-                  </tr>
-                </thead>
-                <tbody>
-                {% for ans in result.answers %}
-                  <tr>
-                    <td class="{% if result.type == 'YES' %}text-ok{% else %}text-bad{% endif %}" style="text-align:center; font-weight:bold;">
-                        {{ result.type }}             
-                    </td>
-                    <td>
-                        <a href="{% url 'language_data' result.language.id %}#p-{{ ans.question.parameter.id }}">
-                            <span class="muted small" style="margin-right:.5rem;">[{{ ans.question.id }}]</span>
-                            {{ ans.question.text }}
-                        </a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-              </table>
-            </div>
-          {% endwith %}
-        {% endif %}
-      {% endif %}
+  <div class="query-results" id="results-anchor">
+      {% include "queries/partials/results.html" %}
   </div>
 
 </div>

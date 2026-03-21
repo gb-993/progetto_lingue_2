@@ -822,12 +822,20 @@ def lookups_manage(request):
                 ParamSchema.objects.create(
                     label=(request.POST.get("label") or "").strip(),
                 )
+                if request.headers.get("HX-Request"):
+                    # 1. Recuperiamo la lista aggiornata dal database
+                    schemas = ParamSchema.objects.order_by("label")
+                    # 2. Restituiamo SOLO il frammento della tabella, senza il resto della pagina
+                    return render(request, "parameters/schema_rows.html", {"schemas": schemas})
                 messages.success(request, "Schema added.")
                 return redirect("param_lookups_manage")
 
             if action == "del_schema":
                 pk = request.POST.get("id")
                 ParamSchema.objects.filter(pk=pk).delete()
+                if request.headers.get("HX-Request"):
+                    schemas = ParamSchema.objects.order_by("label")
+                    return render(request, "parameters/schema_rows.html", {"schemas": schemas})
                 messages.success(request, "Schema deleted.")
                 return redirect("param_lookups_manage")
 
@@ -835,12 +843,18 @@ def lookups_manage(request):
                 ParamType.objects.create(
                     label=(request.POST.get("label") or "").strip(),
                 )
+                if request.headers.get("HX-Request"):
+                    types = ParamType.objects.order_by("label")
+                    return render(request, "parameters/type_rows.html", {"types": types})
                 messages.success(request, "Type added.")
                 return redirect("param_lookups_manage")
-
+            
             if action == "del_type":
                 pk = request.POST.get("id")
                 ParamType.objects.filter(pk=pk).delete()
+                if request.headers.get("HX-Request"):
+                    types = ParamType.objects.order_by("label")
+                    return render(request, "parameters/type_rows.html", {"types": types})
                 messages.success(request, "Type deleted.")
                 return redirect("param_lookups_manage")
 
@@ -848,12 +862,18 @@ def lookups_manage(request):
                 ParamLevelOfComparison.objects.create(
                     label=(request.POST.get("label") or "").strip(),
                 )
+                if request.headers.get("HX-Request"):
+                    levels = ParamLevelOfComparison.objects.order_by("label")
+                    return render(request, "parameters/level_rows.html", {"levels": levels})
                 messages.success(request, "Level added.")
                 return redirect("param_lookups_manage")
-
+            
             if action == "del_level":
                 pk = request.POST.get("id")
                 ParamLevelOfComparison.objects.filter(pk=pk).delete()
+                if request.headers.get("HX-Request"):
+                    levels = ParamLevelOfComparison.objects.order_by("label")
+                    return render(request, "parameters/level_rows.html", {"levels": levels})
                 messages.success(request, "Level deleted.")
                 return redirect("param_lookups_manage")
 

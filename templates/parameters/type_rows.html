@@ -1,0 +1,19 @@
+{% for t in types %}
+<tr>
+  <td>{{ t.label }}</td>
+  <td style="text-align: right;">
+    <form hx-post="{% url 'param_lookups_manage' %}" 
+          hx-target="#type-tbody" 
+          hx-swap="innerHTML" 
+          style="display:inline" 
+          onsubmit="return confirm('Delete this type?');">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="del_type">
+      <input type="hidden" name="id" value="{{ t.id }}">
+      <button class="btn btn--danger" type="submit">Delete</button>
+    </form>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="2"><p class="muted">No types yet.</p></td></tr>
+{% endfor %}

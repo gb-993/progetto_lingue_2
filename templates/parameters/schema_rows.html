@@ -1,0 +1,20 @@
+{% for s in schemas %}
+<tr>
+  <td>{{ s.label }}</td>
+  <td style="text-align: right;">
+    <form hx-post="{% url 'param_lookups_manage' %}" 
+          hx-target="#schema-tbody" 
+          hx-swap="innerHTML" 
+          style="display:inline" 
+          onsubmit="return confirm('Delete this schema?');">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="del_schema">
+
+      <input type="hidden" name="id" value="{{ s.id }}">
+      <button class="btn btn--danger" type="submit">Delete</button>
+    </form>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="2"><p class="muted">No schemas yet.</p></td></tr>
+{% endfor %}
