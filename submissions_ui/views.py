@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from typing import Any
+
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import OuterRef, Subquery, IntegerField, Prefetch
+from django.db.models import OuterRef, Subquery, IntegerField, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
@@ -24,18 +27,45 @@ from core.models import (
 from .services import create_language_submission
 
 
-def _is_admin(user) -> bool:
+def _is_admin(user: Any) -> bool:
+    """Return whether the provided user has administrator privileges.
+
+    Args:
+        user: User-like object attached to the current request.
+
+    Returns:
+        ``True`` when the user is authenticated and staff or role ``admin``;
+        otherwise ``False``.
+    """
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
 
-def _safe_next_url(request, fallback_name: str = "submissions_list") -> str:
+def _safe_next_url(request: HttpRequest, fallback_name: str = "submissions_list") -> str:
+    """Resolve a safe redirect target from POST/referrer with fallback.
+
+    Args:
+        request: Current HTTP request.
+        fallback_name: URL name used when candidate target is missing/unsafe.
+
+    Returns:
+        A safe local URL string.
+    """
     candidate = request.POST.get("next") or request.META.get("HTTP_REFERER") or reverse(fallback_name)
     return candidate if url_has_allowed_host_and_scheme(candidate, allowed_hosts={request.get_host()}, require_https=request.is_secure()) else reverse(fallback_name)
 
 
 @login_required
 @user_passes_test(_is_admin)
-def submission_create_for_language(request, language_id):
+def submission_create_for_language(request: HttpRequest, language_id: str) -> HttpResponse:
+    """Create a submission snapshot for one language.
+
+    Args:
+        request: Current authenticated admin request.
+        language_id: Language identifier from URL.
+
+    Returns:
+        Confirmation page on GET, or redirect response after creation on POST.
+    """
     lang = get_object_or_404(Language, pk=language_id)
     if request.method == "POST":
         note = request.POST.get("note") or ""
@@ -52,15 +82,21 @@ def submission_create_for_language(request, language_id):
         return redirect(_safe_next_url(request))
     return render(request, "submissions/confirm_create.html", {"language": lang})
 
-from django.core.paginator import Paginator
-from django.db.models import OuterRef, Subquery, IntegerField, Prefetch, Q
-
-from django.db.models import Count
-
-
 @login_required
 @user_passes_test(_is_admin)
-def submissions_list(request):
+def submissions_list(request: HttpRequest) -> HttpResponse:
+    """Render submissions grouped by backup timestamp or folder content.
+
+    When ``timestamp`` is provided, the view shows submissions inside a single
+    backup folder with sorting and pagination. Otherwise, it shows backup
+    folders grouped by submission timestamp.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Rendered submissions list page.
+    """
     selected_ts = request.GET.get("timestamp")
     q = (request.GET.get("q") or "").strip()
 
@@ -93,7 +129,15 @@ def submissions_list(request):
         qs = qs.order_by(db_sort)
 
         # Helper per generare i link mantenendo il timestamp e la ricerca
-        def make_sort_url(field):
+        def make_sort_url(field: str) -> str:
+            """Build a sort URL preserving active querystring parameters.
+
+            Args:
+                field: Logical sort field key.
+
+            Returns:
+                Querystring URL with toggled sort direction.
+            """
             params = request.GET.copy()
             params["sort"] = field
             # Inverte la direzione se sto cliccando sulla colonna già attiva
@@ -143,11 +187,18 @@ def submissions_list(request):
 
 @login_required
 @user_passes_test(_is_admin)
-def submission_detail(request, submission_id):
-    """
-    Annotazioni coerenti con i modelli:
-    - SubmissionAnswer.question_code (char) ↔ Question.id (pk char)
-    - Question.parameter_id → ParameterDef.{position,name}
+def submission_detail(request: HttpRequest, submission_id: int) -> HttpResponse:
+    """Render the details of one submission with ordered related data.
+
+    The view prefetches answers, params, motivations, and examples, and
+    computes a motivation text aggregation per answer row.
+
+    Args:
+        request: Current authenticated admin request.
+        submission_id: Submission primary key.
+
+    Returns:
+        Rendered submission detail page.
     """
 
     # ----- ANSWERS -----
@@ -240,7 +291,18 @@ def submission_detail(request, submission_id):
 
 @login_required
 @user_passes_test(_is_admin)
-def submission_create_all_languages(request):
+def submission_create_all_languages(request: HttpRequest) -> HttpResponse:
+    """Create one synchronized backup submission for every language.
+
+    On POST, submissions are generated in a single transaction and forced to
+    share the same ``submitted_at`` timestamp.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Confirmation page on GET, or redirect to list after backup creation.
+    """
     if request.method == "POST":
         note = request.POST.get("note") or "Bulk creation"
         languages = Language.objects.all()
@@ -263,7 +325,15 @@ def submission_create_all_languages(request):
 
 @login_required
 @user_passes_test(_is_admin)
-def submission_delete_backup(request):
+def submission_delete_backup(request: HttpRequest) -> HttpResponse:
+    """Delete all submissions belonging to a specific backup timestamp.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Redirect response to the submissions list.
+    """
     if request.method == "POST":
         # Recuperiamo la data dal form
         timestamp_str = request.POST.get("timestamp")

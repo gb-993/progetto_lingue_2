@@ -1,14 +1,17 @@
+from typing import Any
+
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q, Count
+from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import update_session_auth_hash
 from django.utils.translation import gettext as _
-from core.models import User, ParameterChangeLog, Submission, ParameterReviewFlag
+from core.models import ParameterChangeLog, Submission, ParameterReviewFlag
 from .forms import AccountForm, MyAccountForm, MyPasswordChangeForm
-from core.models import Language, ParameterDef, Answer, Glossary, User, Question, SiteContent
+from core.models import ParameterDef, Answer, Glossary, User, Question, SiteContent
 try:
     from core.models import Language
     HAS_LANGUAGE = True
@@ -18,11 +21,32 @@ except Exception:
 
 
 def _is_admin(user: User) -> bool:
+    """Return whether the given user should be treated as an administrator.
+
+    Args:
+        user: User instance to evaluate.
+
+    Returns:
+        ``True`` when the user is authenticated and has staff privileges or
+        role ``admin``; otherwise ``False``.
+    """
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
 
 @login_required
-def dashboard(request):
+def dashboard(request: HttpRequest) -> HttpResponse:
+    """Render the main dashboard with role-specific widgets and statistics.
+
+    The view computes global counters for the platform and enriches the
+    context with admin-only or user-only sections depending on the current
+    account role.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        Rendered dashboard response. Public users receive a dedicated template.
+    """
     user = request.user
     role = getattr(user, "role", "user")
     is_admin = _is_admin(user)
@@ -49,7 +73,7 @@ def dashboard(request):
     if role == "public":
         return render(request, "accounts/public_dashboard.html", {"stats": stats, "is_public": True})
 
-    ctx = {"is_admin": is_admin, "stats": stats}
+    ctx: dict[str, Any] = {"is_admin": is_admin, "stats": stats}
 
     # --- LOGICA ADMIN ---
     if is_admin:
@@ -99,7 +123,15 @@ def dashboard(request):
 
 @login_required
 @user_passes_test(_is_admin)
-def accounts_list(request):
+def accounts_list(request: HttpRequest) -> HttpResponse:
+    """List all accounts grouped by role, with optional text search.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Rendered account list page containing admin, user, and public groups.
+    """
     q = (request.GET.get("q") or "").strip()
 
     qs = User.objects.order_by("surname", "name", "email")
@@ -120,7 +152,19 @@ def accounts_list(request):
 
 @login_required
 @user_passes_test(_is_admin)
-def accounts_add(request):
+def accounts_add(request: HttpRequest) -> HttpResponse:
+    """Create a new account and optionally assign languages.
+
+    On POST, validates form data, checks assignment conflicts for selected
+    languages, and persists the user plus language bindings atomically.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Account creation page on GET/validation error, or redirect to
+        ``accounts_list`` on success.
+    """
     if request.method == "POST":
         form = AccountForm(request.POST)
         if not request.POST.get("password"):
@@ -177,7 +221,21 @@ def accounts_add(request):
 
 @login_required
 @user_passes_test(_is_admin)
-def accounts_edit(request, user_id):
+def accounts_edit(request: HttpRequest, user_id: int) -> HttpResponse:
+    """Update an existing account and its language assignments.
+
+    On POST, validates the account form, checks that requested languages are
+    not already bound to another user, then saves all updates in one
+    transaction.
+
+    Args:
+        request: Current authenticated admin request.
+        user_id: Primary key of the account being edited.
+
+    Returns:
+        Account edit page on GET/validation error, or redirect to
+        ``accounts_list`` on success.
+    """
     user = get_object_or_404(User, pk=user_id)
 
     if request.method == "POST":
@@ -231,7 +289,19 @@ def accounts_edit(request, user_id):
 
 
 @login_required
-def my_account(request):
+def my_account(request: HttpRequest) -> HttpResponse:
+    """Handle profile and password updates for the current user.
+
+    The action is selected via the ``action`` POST field and processed with
+    the appropriate form pair.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        Rendered self-service account page, or redirect back to the same page
+        after successful profile/password update.
+    """
     user = request.user
 
     if request.method == "POST":
@@ -275,8 +345,22 @@ def my_account(request):
 
 @login_required
 @user_passes_test(_is_admin)
-def accounts_delete(request, user_id: int):
-  
+def accounts_delete(request: HttpRequest, user_id: int) -> HttpResponse:
+    """Delete an account after guard checks and show a deletion recap.
+
+    The view blocks self-deletion and deletion of the last administrator.
+    Before deleting, it computes related object counters; on POST it performs
+    cleanup (language unassignment, M2M cleanup, submission anonymization)
+    inside a transaction and then deletes the user.
+
+    Args:
+        request: Current authenticated admin request.
+        user_id: Primary key of the account to delete.
+
+    Returns:
+        Confirmation page on GET, or redirect to ``accounts_list`` on POST.
+    """
+
     user = get_object_or_404(User, pk=user_id)
 
     #  no self-delete
@@ -358,7 +442,19 @@ def accounts_delete(request, user_id: int):
 
 
 @login_required
-def accept_terms(request):
+def accept_terms(request: HttpRequest) -> HttpResponse:
+    """Persist acceptance of terms of use for the current user.
+
+    If terms are already accepted, the user is redirected immediately to the
+    dashboard. On valid POST, the acceptance timestamp is stored.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        Terms acceptance page or redirect to the requested ``next`` target (or
+        dashboard fallback) after successful acceptance.
+    """
     # Se l'utente ha già accettato, lo mandiamo via
     if request.user.terms_accepted:
         return redirect('dashboard')
@@ -376,7 +472,16 @@ def accept_terms(request):
 
 
 
-def how_to_cite(request):
+def how_to_cite(request: HttpRequest) -> HttpResponse:
+    """Render the public "how to cite" page with editable site content.
+
+    Args:
+        request: Incoming HTTP request (authenticated or anonymous).
+
+    Returns:
+        Rendered citation page containing key/value content blocks and admin
+        visibility flag.
+    """
     is_admin = _is_admin(request.user)
     
     contents = SiteContent.objects.all()
@@ -391,8 +496,17 @@ def how_to_cite(request):
 
 @login_required
 @user_passes_test(_is_admin)
-def edit_site_content(request, key):
-    content_obj, created = SiteContent.objects.get_or_create(
+def edit_site_content(request: HttpRequest, key: str) -> HttpResponse:
+    """Create or update a ``SiteContent`` entry for the citation page.
+
+    Args:
+        request: Current authenticated admin request.
+        key: Content key to edit.
+
+    Returns:
+        Content edit page on GET, or redirect to ``how_to_cite`` on success.
+    """
+    content_obj, _created = SiteContent.objects.get_or_create(
         key=key,
         defaults={'page': 'how_to_cite', 'content': ''}
     )

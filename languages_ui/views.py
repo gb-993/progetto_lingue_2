@@ -3,6 +3,7 @@ from __future__ import annotations
 
 
 from types import SimpleNamespace
+from typing import Any
 import os
 import tempfile  
 
@@ -20,7 +21,7 @@ from django.db.models import Q, Prefetch, Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _t
 from django.views.decorators.http import require_http_methods, require_POST
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import HttpRequest, HttpResponse, Http404, JsonResponse
 from django.utils.timezone import now
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -71,13 +72,32 @@ from core.services.dag_debug import diagnostics_for_language
 # -----------------------
 # Helpers & guardrail
 # -----------------------
-def _is_admin(user) -> bool:
-    """Ruolo amministrativo o staff/superuser."""
+def _is_admin(user: Any) -> bool:
+    """Check whether the given user has administrative permissions.
+
+    Args:
+        user: User-like object attached to the current request.
+
+    Returns:
+        ``True`` if the user role is ``admin`` or the user is staff/superuser,
+        otherwise ``False``.
+    """
     return (getattr(user, "role", "") == "admin") or bool(user.is_staff) or bool(user.is_superuser)
 
 
-def _check_language_access(user, lang: Language) -> bool:
-    """Admin sempre sì; altrimenti la lingua deve essere assegnata via FK o M2M."""
+def _check_language_access(user: Any, lang: Language) -> bool:
+    """Validate whether a user can access a language.
+
+    Admin users are always allowed. Non-admin users can access the language
+    only when it is assigned through FK or M2M relations.
+
+    Args:
+        user: User-like object attached to the current request.
+        lang: Language object being requested.
+
+    Returns:
+        ``True`` when access is granted, otherwise ``False``.
+    """
     if _is_admin(user):
         return True
     if getattr(lang, "assigned_user_id", None) == user.id:
@@ -90,13 +110,17 @@ def _check_language_access(user, lang: Language) -> bool:
     return False
 
 
-def _language_status_summary(lang: Language):
-    """
-    Conteggi per stato e 'overall' derivato (compat):
-    - 'approved' se tutte le answers esistenti sono approved
-    - 'waiting_for_approval' se tutte le answers esistenti sono waiting
-    - 'rejected' se esiste almeno una rejected e nessuna waiting
-    - 'pending' altrimenti (misti, presenti pending o nessuna answer)
+def _language_status_summary(lang: Language) -> dict[str, Any]:
+    """Compute status counters and compatibility overall status for a language.
+
+    Args:
+        lang: Language whose answers are analyzed.
+
+    Returns:
+        A dictionary with:
+            - ``counts``: per-status totals.
+            - ``total``: total number of counted answers.
+            - ``overall``: derived status string.
     """
     # Una query: GROUP BY status
     rows = (
@@ -135,10 +159,17 @@ def _language_status_summary(lang: Language):
 
 
 
-def _language_overall_status(lang: Language) -> dict:
-    """
-    Calcola lo stato 'overall' in base agli status delle Answer.
-    Priorità: WAITING > APPROVED > REJECTED > PENDING.
+def _language_overall_status(lang: Language) -> dict[str, Any]:
+    """Compute the language overall status from answer statuses.
+
+    Priority order is: ``WAITING`` > ``APPROVED`` > ``REJECTED`` > ``PENDING``.
+
+    Args:
+        lang: Language whose answers are analyzed.
+
+    Returns:
+        A dictionary containing the computed ``overall`` status and the
+        per-status ``counts`` map.
     """
     rows = (
         Answer.objects
@@ -184,8 +215,14 @@ def _language_overall_status(lang: Language) -> dict:
 
 
 def _all_questions_answered(language: Language) -> bool:
-    """
-    True se TUTTE le domande attive hanno una Answer yes/no per questa lingua.
+    """Return whether all active questions have a yes/no answer.
+
+    Args:
+        language: Language to evaluate.
+
+    Returns:
+        ``True`` when every active question has a ``yes`` or ``no`` answer for
+        the given language; otherwise ``False``.
     """
     active_qids = set(
         Question.objects.filter(parameter__is_active=True).values_list("id", flat=True)
@@ -213,7 +250,15 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
 @login_required
-def language_list(request):
+def language_list(request: HttpRequest) -> HttpResponse:
+    """Render the language list with filtering and sortable columns.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        Rendered language list page.
+    """
 
     q = (request.GET.get("q") or "").strip()
 
@@ -329,7 +374,16 @@ def language_list(request):
 
 @login_required
 @require_http_methods(["GET", "POST"])
-def language_add(request):
+def language_add(request: HttpRequest) -> HttpResponse:
+    """Create a language entry.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        Form page on GET/validation error, or redirect to ``language_list`` on
+        successful creation.
+    """
     from .forms import LanguageForm  
     if request.method == "POST":
         form = LanguageForm(request.POST)
@@ -344,7 +398,17 @@ def language_add(request):
 
 @login_required
 @require_http_methods(["GET", "POST"])
-def language_edit(request, lang_id):
+def language_edit(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Edit an existing language entry.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the language to edit.
+
+    Returns:
+        Form page on GET/validation error, or redirect to ``language_list`` on
+        successful update.
+    """
     lang = get_object_or_404(Language, pk=lang_id)
     if request.method == "POST":
         form = LanguageForm(request.POST, instance=lang)
@@ -361,7 +425,17 @@ def language_edit(request, lang_id):
 @login_required
 @require_POST
 @transaction.atomic
-def language_delete(request, lang_id: str):
+def language_delete(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Delete a language after admin password confirmation.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the language to delete.
+
+    Returns:
+        Redirect response to the appropriate page after authorization and
+        deletion checks.
+    """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
@@ -383,7 +457,16 @@ def language_delete(request, lang_id: str):
 # Pagina data/compilazione
 # -----------------------
 @login_required
-def language_data(request, lang_id):
+def language_data(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Render the language compilation page with parameters and answers.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the language being compiled.
+
+    Returns:
+        Rendered data compilation page, or redirect when access is denied.
+    """
     user = request.user
     is_admin = _is_admin(user)
     lang = get_object_or_404(Language, pk=lang_id)
@@ -476,7 +559,18 @@ def language_data(request, lang_id):
 @login_required
 @require_http_methods(["POST"])
 @transaction.atomic
-def parameter_save(request, lang_id, param_id):
+def parameter_save(request: HttpRequest, lang_id: str, param_id: str) -> HttpResponse:
+    """Save all answers for a parameter and manage related review flags.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+        param_id: Primary key of the parameter being saved.
+
+    Returns:
+        Redirect response to the language data page (with parameter anchor) or
+        to the language list when the language no longer exists.
+    """
 
     try:
         lang = Language.objects.select_for_update().get(pk=lang_id)
@@ -676,7 +770,18 @@ def parameter_save(request, lang_id, param_id):
 @login_required
 @require_http_methods(["POST"])
 @transaction.atomic
-def answer_save(request, lang_id, question_id):
+def answer_save(request: HttpRequest, lang_id: str, question_id: str) -> HttpResponse | None:
+    """Save a single answer with motivations and examples.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+        question_id: Primary key of the question being answered.
+
+    Returns:
+        Redirect response to the language data page or language list depending
+        on validation and permission checks.
+    """
 
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -829,7 +934,16 @@ def answer_save(request, lang_id, question_id):
 
 
 @login_required
-def language_save_instructions(request, lang_id):
+def language_save_instructions(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Placeholder endpoint for saving language instructions.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the language.
+
+    Returns:
+        Redirect response with informative message.
+    """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
@@ -841,7 +955,16 @@ def language_save_instructions(request, lang_id):
 # Pagina DEBUG con diagnostica e run DAG
 # -----------------------
 @login_required
-def language_debug(request, lang_id: str):
+def language_debug(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Render the debug page with diagnostics and parameter values.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        Rendered debug page for authorized admins.
+    """
 
     user = request.user
     lang = get_object_or_404(Language, pk=lang_id)
@@ -931,7 +1054,16 @@ def language_debug(request, lang_id: str):
 # -----------------------
 @login_required
 @require_POST
-def language_run_dag(request, lang_id: str):
+def language_run_dag(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Force-approve answers for a language and execute DAG evaluation.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        Redirect response to the debug page with success/error feedback.
+    """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to run the DAG."))
         return redirect("language_debug", lang_id=lang_id)
@@ -980,7 +1112,16 @@ def language_run_dag(request, lang_id: str):
 # -----------------------
 @login_required
 @require_POST
-def language_submit(request, lang_id):
+def language_submit(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Submit language answers for admin review.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        Redirect response to the language data page.
+    """
 
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -999,9 +1140,15 @@ def language_submit(request, lang_id):
 
 @login_required
 @require_POST
-def language_approve(request, lang_id):
-    """
-    ADMIN: Approva e avvia il DAG SOLO se tutte le domande attive hanno risposta.
+def language_approve(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Approve submitted answers and run DAG when answers are complete.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        Redirect response to language data or debug page depending on outcome.
     """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
@@ -1044,7 +1191,16 @@ def language_approve(request, lang_id):
 
 @login_required
 @require_POST
-def language_reject(request, lang_id):
+def language_reject(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Reject a language submission and record the admin review.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        Redirect response to the language data page.
+    """
 
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
@@ -1069,7 +1225,16 @@ def language_reject(request, lang_id):
 
 @login_required
 @require_POST
-def language_reopen(request, lang_id):
+def language_reopen(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Reopen rejected answers by moving them back to pending.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        Redirect response to the language data page.
+    """
 
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -1092,9 +1257,15 @@ def language_reopen(request, lang_id):
 
 @login_required
 @require_http_methods(["GET"])
-def review_flags_list(request, lang_id: str):
-    """
-    Ritorna i param id marcati 'torno dopo' dall'utente corrente per la lingua data.
+def review_flags_list(request: HttpRequest, lang_id: str) -> JsonResponse:
+    """Return the current user's active review flags for a language.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        JSON payload with the list of flagged parameter IDs.
     """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -1108,9 +1279,16 @@ def review_flags_list(request, lang_id: str):
 
 @login_required
 @require_http_methods(["POST"])
-def toggle_review_flag(request, lang_id: str, param_id: str):
-    """
-    Imposta/rimuove il flag 'torno dopo' per l'utente corrente sul parametro dato.
+def toggle_review_flag(request: HttpRequest, lang_id: str, param_id: str) -> JsonResponse:
+    """Set or clear a review flag for the current user and parameter.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+        param_id: Primary key of the target parameter.
+
+    Returns:
+        JSON payload with operation result and resulting flag state.
     """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
@@ -1130,12 +1308,14 @@ from django.db.models import Max, Q
 
 @login_required
 @require_http_methods(["GET"])
-def language_list_export_xlsx(request):
-    """
-    Excel export for Languages: fixed, explicit columns in a site-coherent order.
-    - Removes 'position'
-    - Serializes assigned user (full name + email)
-    - Adds 'data last change' from answers' last update
+def language_list_export_xlsx(request: HttpRequest) -> HttpResponse:
+    """Export the filtered language list to an Excel workbook.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        XLSX file response containing language metadata and last-change info.
     """
     q = (request.GET.get("q") or "").strip()
     user = request.user
@@ -1268,10 +1448,16 @@ def language_list_export_xlsx(request):
 
 
 logger = logging.getLogger(__name__)  
-def _run_import_language_from_excel_bg(tmp_path: str, original_name: str, user_id: int | None):
-    """
-    Esegue il management command import_language_from_excel in background
-    e cancella il file temporaneo alla fine.
+def _run_import_language_from_excel_bg(tmp_path: str, original_name: str, user_id: int | None) -> None:
+    """Run language import command in background and clean up temp file.
+
+    Args:
+        tmp_path: Absolute path to the temporary Excel file.
+        original_name: Original uploaded filename used for logging.
+        user_id: Optional ID of the user who triggered the import.
+
+    Returns:
+        None.
     """
     try:
         logger.info(
@@ -1294,7 +1480,15 @@ def _run_import_language_from_excel_bg(tmp_path: str, original_name: str, user_i
 
 @login_required
 @require_http_methods(["GET", "POST"])
-def language_import_excel(request):
+def language_import_excel(request: HttpRequest) -> HttpResponse:
+    """Import languages from an uploaded Excel file.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        Import page on GET, or redirect response with status messages on POST.
+    """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
@@ -1343,13 +1537,19 @@ def language_import_excel(request):
 
 
 
-def _build_language_workbook(lang: Language, user):
-    """
-    Costruisce il Workbook Excel per UNA lingua, riusato da:
-    - export singolo (language_export_xlsx)
-    - export totale ZIP (language_export_all_zip)
-    Ritorna: (workbook, suffix)
-    suffix = "full" se admin, altrimenti "examples".
+def _build_language_workbook(lang: Language, user: Any) -> tuple[Workbook, str]:
+    """Build the Excel workbook for a single language export.
+
+    The workbook structure is reused by both single-language and full ZIP
+    exports. Admin users receive additional sheets.
+
+    Args:
+        lang: Language object to export.
+        user: User requesting the export.
+
+    Returns:
+        A tuple ``(workbook, suffix)`` where suffix is ``full`` for admins and
+        ``examples`` for non-admin users.
     """
     is_admin = _is_admin(user)
 
@@ -1626,7 +1826,19 @@ def _build_language_workbook(lang: Language, user):
 
 
 @login_required
-def language_export_xlsx(request, lang_id: str):
+def language_export_xlsx(request: HttpRequest, lang_id: str) -> HttpResponse:
+    """Export one language workbook as XLSX.
+
+    Args:
+        request: Current authenticated HTTP request.
+        lang_id: Primary key of the target language.
+
+    Returns:
+        XLSX file response for the selected language.
+
+    Raises:
+        Http404: If the language is not accessible for the current user.
+    """
     lang = get_object_or_404(Language, pk=lang_id)
     if not _check_language_access(request.user, lang):
         raise Http404("Language not found")
@@ -1645,11 +1857,14 @@ def language_export_xlsx(request, lang_id: str):
 
 
 @login_required
-def language_export_all_zip(request):
-    """
-    ADMIN: esporta TUTTE le lingue in un unico ZIP.
-    Dentro lo ZIP: un .xlsx per lingua, con la stessa struttura
-    di language_export_xlsx (Database_model + Answers + Examples per admin).
+def language_export_all_zip(request: HttpRequest) -> HttpResponse:
+    """Export all languages as a ZIP containing one XLSX per language.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        ZIP file response for admins, or redirect for unauthorized users.
     """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))

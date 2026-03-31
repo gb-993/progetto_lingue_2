@@ -1,0 +1,18 @@
+site_name: PCM-Hub
+theme:
+  name: material
+  palette:
+    primary: indigo
+
+plugins:
+  - mkdocstrings
+
+nav:
+  - API completa: api.md
+  - Database (ER): architettura.md
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid

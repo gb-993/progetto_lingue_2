@@ -3,6 +3,7 @@ import csv
 import zipfile
 from io import BytesIO
 from io import StringIO
+from typing import Any, Callable, Sequence
 from openpyxl import Workbook
 import matplotlib
 matplotlib.use('Agg')
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import squareform
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from core.models import (
     Language, ParameterDef, LanguageParameterEval, Question, Answer,
@@ -19,8 +20,18 @@ from core.models import (
 import numpy as np
 from adjustText import adjust_text
 
-def get_tablea_filtered_data(request):
-    """Estrae lingue e righe basandosi sui filtri della UI e sui checkbox selezionati."""
+def get_tablea_filtered_data(request: HttpRequest) -> tuple[list[Language], list[dict[str, Any]], str]:
+    """Build filtered languages and matrix rows for the TableA views.
+
+    Args:
+        request: Current HTTP request containing filter and selection params.
+
+    Returns:
+        A tuple with:
+            - filtered language list,
+            - matrix rows containing item metadata and per-language cells,
+            - active view mode (``params`` or ``questions``).
+    """
     view_mode = request.GET.get("view", "params").strip().lower()
 
     # 1. Filtro Lingue
@@ -87,7 +98,16 @@ def get_tablea_filtered_data(request):
 # --- VIEWS: PAGINA PRINCIPALE ED EXPORT STANDARD ---
 
 @login_required
-def tablea_index(request):
+def tablea_index(request: HttpRequest) -> HttpResponse:
+    """Render the TableA page or its HTMX partial with active filters.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        Rendered full page or partial table response depending on request
+        headers.
+    """
     languages, rows, view_mode = get_tablea_filtered_data(request)
     ctx_options = {
         "opt_top_families": Language.objects.exclude(top_level_family="")
@@ -136,8 +156,15 @@ def tablea_index(request):
     return render(request, "tablea/index.html", context)
 
 @login_required
-def tablea_export_xlsx(request):
-    from openpyxl import Workbook
+def tablea_export_xlsx(request: HttpRequest) -> HttpResponse:
+    """Export filtered TableA data to XLSX.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        XLSX attachment response containing filtered rows and languages.
+    """
     languages, rows, view_mode = get_tablea_filtered_data(request)
     wb = Workbook()
     ws = wb.active
@@ -155,8 +182,15 @@ def tablea_export_xlsx(request):
 
 # la versione del download per question (senza Implicatoinal condition)
 @login_required
-def tablea_export_questions_xlsx(request):
-    from openpyxl import Workbook
+def tablea_export_questions_xlsx(request: HttpRequest) -> HttpResponse:
+    """Export question-oriented TableA data to XLSX.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        XLSX attachment response for questions view format.
+    """
     languages, rows, view_mode = get_tablea_filtered_data(request)
 
     wb = Workbook()
@@ -179,7 +213,15 @@ def tablea_export_questions_xlsx(request):
     return response
 
 @login_required
-def tablea_export_csv(request):
+def tablea_export_csv(request: HttpRequest) -> HttpResponse:
+    """Export filtered TableA matrix transposed as CSV.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        CSV attachment response where each row is one language.
+    """
     languages, rows, view_mode = get_tablea_filtered_data(request)
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="tableA_{view_mode}_transposed.csv"'
@@ -193,7 +235,17 @@ def tablea_export_csv(request):
 # --- ANALISI COMPUTAZIONALE: DISTANZE E DENDROGRAMMA ---
 
 
-def hamming_core(P1, P2):
+def hamming_core(P1: Sequence[str], P2: Sequence[str]) -> float:
+    """Compute Hamming-like distance over ``+``/``-`` symbols.
+
+    Args:
+        P1: First symbol sequence.
+        P2: Second symbol sequence.
+
+    Returns:
+        Distance in range ``[0, 1]`` based on identities and mismatches across
+        ``+``/``-`` values only.
+    """
     id = 0.0
     dif = 0.0
     for i in range(len(P1)):
@@ -206,7 +258,18 @@ def hamming_core(P1, P2):
     return dif / (dif + id) if (dif + id) > 0 else 0.0
 
 
-def jaccard_core(P1, P2, identity="+"):
+def jaccard_core(P1: Sequence[str], P2: Sequence[str], identity: str = "+") -> float:
+    """Compute Jaccard-like distance using a selected identity symbol.
+
+    Args:
+        P1: First symbol sequence.
+        P2: Second symbol sequence.
+        identity: Symbol counted as identity (default ``+``).
+
+    Returns:
+        Distance in range ``[0, 1]`` based on identities for the selected
+        symbol and ``+``/``-`` mismatches.
+    """
     id = 0.0
     dif = 0.0
     for i in range(len(P1)):
@@ -222,7 +285,23 @@ def jaccard_core(P1, P2, identity="+"):
 
 
 # Genera il contenuto di un file.txt in memoria, replicando distance.py
-def generate_matrix_txt(languages, rows, dist_func, identity=None):
+def generate_matrix_txt(
+    languages: Sequence[Language],
+    rows: Sequence[dict[str, Any]],
+    dist_func: Callable[..., float],
+    identity: str | None = None,
+) -> str:
+    """Generate a tab-separated distance matrix as text.
+
+    Args:
+        languages: Ordered language sequence used for headers and rows.
+        rows: Matrix rows from ``get_tablea_filtered_data``.
+        dist_func: Distance function to apply between language vectors.
+        identity: Optional identity symbol forwarded to ``dist_func``.
+
+    Returns:
+        TSV content with header and all pairwise distances.
+    """
     output = StringIO()
     lang_data = [[r['cells'][i]['val'] for r in rows] for i in range(len(languages))]
     headers = ["Language"] + [l.id for l in languages]
@@ -241,7 +320,16 @@ def generate_matrix_txt(languages, rows, dist_func, identity=None):
 
 
 @login_required
-def tablea_export_distances_zip(request):
+def tablea_export_distances_zip(request: HttpRequest) -> HttpResponse:
+    """Export Hamming and Jaccard distance matrices as ZIP.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        ZIP attachment response with ``.txt`` matrices, or HTTP 400 for
+        unsupported view mode / empty data.
+    """
     view_mode = request.GET.get("view", "params").strip().lower()
     if view_mode != "params":
         return HttpResponse("Distances only for Parameters View", status=400)
@@ -262,7 +350,17 @@ def tablea_export_distances_zip(request):
     return response
 
 # Crea l'immagine del dendrogramma in memoria usando la logica esatta di dendrogram.py
-def create_dendrogram_image(matrix_data, language_labels, title):
+def create_dendrogram_image(matrix_data: Sequence[Sequence[float]], language_labels: Sequence[str], title: str) -> bytes:
+    """Create a dendrogram PNG image from a square distance matrix.
+
+    Args:
+        matrix_data: Symmetric square distance matrix.
+        language_labels: Labels used for dendrogram leaves.
+        title: Plot title.
+
+    Returns:
+        PNG image bytes.
+    """
     # squareform accetta solo matrici simmetriche perfette
     condensed_matrix = squareform(matrix_data)
 
@@ -292,7 +390,15 @@ def create_dendrogram_image(matrix_data, language_labels, title):
 
 # Ricalcola le matrici e restituisce uno zip con entrambi i dendrogrammi
 @login_required
-def tablea_export_dendrogram(request):
+def tablea_export_dendrogram(request: HttpRequest) -> HttpResponse:
+    """Export dendrogram images (Hamming and Jaccard) as ZIP.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        ZIP attachment response containing both dendrogram PNG files.
+    """
     languages, rows, _ = get_tablea_filtered_data(request)
     if not languages: return HttpResponse("No data")
 
@@ -325,7 +431,16 @@ def tablea_export_dendrogram(request):
 
 
 @login_required
-def tablea_export_pca(request):
+def tablea_export_pca(request: HttpRequest) -> HttpResponse:
+    """Compute PCA from filtered data and export the scatterplot as PNG.
+
+    Args:
+        request: Current authenticated request.
+
+    Returns:
+        PNG attachment response with PCA scatterplot, or HTTP 400 when data is
+        insufficient for a 2D projection.
+    """
     languages, rows, view_mode = get_tablea_filtered_data(request)
 
     if not languages or not rows:

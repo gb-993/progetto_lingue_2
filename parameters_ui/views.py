@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import re
-from typing import List, Tuple
+from typing import Any, List, Tuple
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.db.models import Q, Count, Sum, Case, When, IntegerField, Max
 import io
 from django.http import FileResponse
@@ -42,25 +42,41 @@ from .forms import (
 # Utilità / Policy
 # -------------------------------
 
-def _is_admin(user) -> bool:
-    
+def _is_admin(user: Any) -> bool:
+    """Return whether a user should be treated as admin.
+
+    Args:
+        user: User-like object attached to the request.
+
+    Returns:
+        ``True`` when the user is authenticated and staff or has role
+        ``admin``; otherwise ``False``.
+    """
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
 # token tipo +FGM, -SCO, 0ABC: segno e ID senza spazi
 TOKEN_RE = re.compile(r'([+\-0])([A-Z][A-Z0-9]{0,9})')
 
 def extract_tokens(expression: str) -> List[Tuple[str, str]]:
-    """
-    Estrae i token (sign, ID) da una implicational_condition.
-    Esempi: +FGM, -SCO, 0ABC -> [('+','FGM'),('-','SCO'),('0','ABC')]
+    """Extract signed parameter tokens from an implicational condition.
+
+    Args:
+        expression: Raw implicational condition string.
+
+    Returns:
+        List of ``(sign, token)`` pairs such as ``[('+', 'FGM')]``.
     """
     expr = (expression or "").strip().upper()
     return TOKEN_RE.findall(expr)
 
 def find_where_used(param_id: str) -> List[Tuple[ParameterDef, str]]:
-    """
-    Ritorna la lista dei parametri (target) che citano 'param_id' nella loro implicational_condition.
-    Ogni item: (ParameterDef target, condizione_raw)
+    """Find parameters that reference a given parameter ID in conditions.
+
+    Args:
+        param_id: Parameter ID to search for.
+
+    Returns:
+        List of tuples ``(target_parameter, raw_condition)``.
     """
     param_id = (param_id or "").upper().strip()
     results: List[Tuple[ParameterDef, str]] = []
@@ -75,12 +91,15 @@ def find_where_used(param_id: str) -> List[Tuple[ParameterDef, str]]:
                 break
     return results
 
-def _to_jsonable(value):
-    """
-    Converte valori (inclusi Model instance) in strutture JSON-safe.
-    - Model -> {"id": pk, "label": str(obj)}
-    - liste/tuple/set/dict -> ricorsivo
-    - tipi base -> come sono
+def _to_jsonable(value: Any) -> Any:
+    """Convert values to JSON-serializable structures.
+
+    Args:
+        value: Value to normalize.
+
+    Returns:
+        JSON-safe scalar, list, or dict representation. Django model instances
+        are converted to ``{"id": pk, "label": str(obj)}``.
     """
     from django.db.models import Model
 
@@ -99,7 +118,15 @@ def _to_jsonable(value):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET"])
-def parameter_list(request):
+def parameter_list(request: HttpRequest) -> HttpResponse:
+    """Render the parameter list with optional text filtering.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Rendered parameters list page.
+    """
     q = (request.GET.get("q") or "").strip()
     qs = (
         ParameterDef.objects
@@ -130,7 +157,16 @@ def parameter_list(request):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def parameter_add(request):
+def parameter_add(request: HttpRequest) -> HttpResponse:
+    """Create a new parameter and assign its position automatically.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Edit page on GET/validation error, or redirect to ``parameter_list`` on
+        successful creation.
+    """
     if request.method == "POST":
         form = ParameterForm(request.POST)
 
@@ -188,12 +224,18 @@ def parameter_add(request):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def parameter_edit(request, param_id: str):
-    """
-    Edit a parameter + compact list of its questions.
-    - Richiede change_note SE ci sono modifiche al parametro (logica in form.clean())
-      O se ci sono state modifiche esterne (domande / motivations) nel flusso corrente.
-    - Serializza i campi FK nel diff per il JSONField (id+label).
+def parameter_edit(request: HttpRequest, param_id: str) -> HttpResponse:
+    """Edit a parameter and display its related questions.
+
+    The view records parameter diffs in ``ParameterChangeLog`` and enforces
+    ``change_note`` when external question/motivation changes are marked.
+
+    Args:
+        request: Current authenticated admin request.
+        param_id: Parameter ID to edit.
+
+    Returns:
+        Rendered edit page or redirect to the same parameter after save.
     """
     param = get_object_or_404(ParameterDef, pk=param_id)
 
@@ -320,7 +362,17 @@ def parameter_edit(request, param_id: str):
 @login_required
 @user_passes_test(_is_admin)
 @require_POST
-def parameter_deactivate(request, param_id: str):
+def parameter_deactivate(request: HttpRequest, param_id: str) -> HttpResponse:
+    """Deactivate a parameter after validation and race-safe checks.
+
+    Args:
+        request: Current authenticated admin request.
+        param_id: Parameter ID to deactivate.
+
+    Returns:
+        Redirect to parameter edit page or rendered page with validation
+        errors.
+    """
 
     form = DeactivateParameterForm(request.POST, request=request)
     if not form.is_valid():
@@ -375,13 +427,14 @@ def parameter_deactivate(request, param_id: str):
 # --- Helpers per clonare domande + risposte/esempi -------------------------
 
 def _suggest_question_id_for_target(src_q: Question, target_param: ParameterDef) -> str:
-    """
-    Prova a costruire un nuovo id coerente col parametro di destinazione.
-    Esempio:
-      src_q.id = 'FGM_Qc', src_q.parameter_id = 'FGM', target_param.id = 'FGA'
-      -> 'FGA_Qc'
-    Se il pattern non è riconoscibile, usa 'FGA_<oldid>'.
-    Se l'id esiste già, aggiunge un suffisso numerico (_copy2, _copy3, ...).
+    """Build a destination question ID for cloning.
+
+    Args:
+        src_q: Source question to clone.
+        target_param: Destination parameter.
+
+    Returns:
+        A unique question ID, preserving source suffix when possible.
     """
     src_id = (src_q.id or "").strip()
     src_param_id = (src_q.parameter_id or "").strip()
@@ -406,14 +459,15 @@ def _clone_question_with_answers(
     target_param: ParameterDef,
     new_id: str,
 ) -> tuple[Question, dict]:
-    """
-    Clona:
-      - la Question (con nuovo id e nuovo parametro)
-      - i QuestionAllowedMotivation
-      - le Answer per ogni lingua (solo contenuto, NON lo status)
-      - gli AnswerMotivation
-      - gli Example
-    Ritorna (new_question, stats_dict).
+    """Clone a question and copy related content into the target parameter.
+
+    Args:
+        src_q: Source question.
+        target_param: Destination parameter.
+        new_id: New question ID.
+
+    Returns:
+        Tuple ``(new_question, stats)`` where stats contains copied counts.
     """
     stats = {"answers": 0, "examples": 0, "answer_motivations": 0, "allowed_motivations": 0}
 
@@ -511,7 +565,16 @@ def _clone_question_with_answers(
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def question_add(request, param_id: str):
+def question_add(request: HttpRequest, param_id: str) -> HttpResponse:
+    """Create a question under a specific parameter.
+
+    Args:
+        request: Current authenticated admin request.
+        param_id: Parameter ID that will own the new question.
+
+    Returns:
+        Rendered question form page or redirect to parameter edit page.
+    """
 
     param = get_object_or_404(ParameterDef, pk=param_id)
     instance = Question(parameter=param)
@@ -558,7 +621,17 @@ def question_add(request, param_id: str):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def question_edit(request, param_id: str, question_id: str):
+def question_edit(request: HttpRequest, param_id: str, question_id: str) -> HttpResponse:
+    """Edit an existing question.
+
+    Args:
+        request: Current authenticated admin request.
+        param_id: Parent parameter ID.
+        question_id: Question ID to edit.
+
+    Returns:
+        Rendered question form page or redirect to originating list/edit page.
+    """
 
     param = get_object_or_404(ParameterDef, pk=param_id)
     question = get_object_or_404(Question, pk=question_id, parameter=param)
@@ -622,7 +695,17 @@ from core.models import (
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def question_delete(request, param_id: str, question_id: str):
+def question_delete(request: HttpRequest, param_id: str, question_id: str) -> HttpResponse:
+    """Delete a question, optionally cascading related answer data.
+
+    Args:
+        request: Current authenticated admin request.
+        param_id: Parent parameter ID.
+        question_id: Question ID to delete.
+
+    Returns:
+        Confirmation page on GET, or redirect after delete/validation flow.
+    """
     param = get_object_or_404(ParameterDef, pk=param_id)
     question = get_object_or_404(Question, pk=question_id, parameter=param)
 
@@ -693,14 +776,16 @@ def question_delete(request, param_id: str, question_id: str):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def question_clone(request, param_id: str):
-    """
-    Admin: importa una question esistente (con risposte + esempi)
-    dentro il parametro di destinazione `param_id`.
+def question_clone(request: HttpRequest, param_id: str) -> HttpResponse:
+    """Clone an existing question into the target parameter.
 
-    POST fields:
-      - source_question_id: id della question sorgente (es. FGM_Qc)
-      - new_id (opzionale): nuovo id per la question clonata; se vuoto lo proponiamo noi.
+    Args:
+        request: Current authenticated admin request.
+        param_id: Destination parameter ID.
+
+    Returns:
+        Clone form page on GET, error page on invalid POST, or redirect to
+        parameter edit page after successful clone.
     """
     target_param = get_object_or_404(ParameterDef, pk=param_id)
 
@@ -786,7 +871,16 @@ def question_clone(request, param_id: str):
 
 @login_required
 @require_http_methods(["GET"])
-def review_flags_list(request, lang_id: str):
+def review_flags_list(request: HttpRequest, lang_id: str) -> JsonResponse:
+    """Return active review-flagged parameter IDs for current user/language.
+
+    Args:
+        request: Current authenticated request.
+        lang_id: Language ID.
+
+    Returns:
+        JSON payload containing ``flags`` list.
+    """
 
     lang = get_object_or_404(Language, pk=lang_id)
     qs = ParameterReviewFlag.objects.filter(language=lang, user=request.user, flag=True).values_list("parameter_id", flat=True)
@@ -795,7 +889,17 @@ def review_flags_list(request, lang_id: str):
 
 @login_required
 @require_POST
-def toggle_review_flag(request, lang_id: str, param_id: str):
+def toggle_review_flag(request: HttpRequest, lang_id: str, param_id: str) -> HttpResponse:
+    """Set or clear a review flag for one parameter.
+
+    Args:
+        request: Current authenticated request.
+        lang_id: Language ID.
+        param_id: Parameter ID.
+
+    Returns:
+        JSON response on success or bad-request response for invalid input.
+    """
 
     lang = get_object_or_404(Language, pk=lang_id)
     param = get_object_or_404(ParameterDef, pk=param_id)
@@ -813,7 +917,16 @@ def toggle_review_flag(request, lang_id: str, param_id: str):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def lookups_manage(request):
+def lookups_manage(request: HttpRequest) -> HttpResponse:
+    """Manage lookup tables for schema, type, and comparison level.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Rendered lookup management page, HTMX partial, or redirect depending
+        on action and request type.
+    """
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -897,7 +1010,15 @@ def lookups_manage(request):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def motivations_manage(request):
+def motivations_manage(request: HttpRequest) -> HttpResponse:
+    """Manage motivation catalog entries.
+
+    Args:
+        request: Current authenticated admin request.
+
+    Returns:
+        Rendered motivations page or redirect after POST actions.
+    """
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -932,7 +1053,16 @@ def motivations_manage(request):
 @login_required
 @user_passes_test(_is_admin)
 @require_http_methods(["GET", "POST"])
-def motivation_edit(request, mot_id: int):
+def motivation_edit(request: HttpRequest, mot_id: int) -> HttpResponse:
+    """Edit one motivation entry.
+
+    Args:
+        request: Current authenticated admin request.
+        mot_id: Motivation primary key.
+
+    Returns:
+        Rendered edit form or redirect to motivations list on success.
+    """
     motivation = get_object_or_404(Motivation, pk=mot_id)
 
     if request.method == "POST":
@@ -953,7 +1083,14 @@ def motivation_edit(request, mot_id: int):
 
 # --- Classe per Intestazione e Piè di pagina ---
 class PDFParamReport(FPDF):
-    def header(self):
+    """Small PDF template for parameter-report header and footer."""
+
+    def header(self) -> None:
+        """Render the report header for each page.
+
+        Returns:
+            None.
+        """
         # Text-muted: var(--text-muted)
         self.set_font("helvetica", style="B", size=9)
         self.set_text_color(97, 101, 107)
@@ -964,7 +1101,12 @@ class PDFParamReport(FPDF):
         self.line(10, 18, 200, 18)
         self.ln(5)
 
-    def footer(self):
+    def footer(self) -> None:
+        """Render the report footer with page number.
+
+        Returns:
+            None.
+        """
         self.set_y(-15)
         self.set_font("helvetica", style="I", size=8)
         self.set_text_color(97, 101, 107)  # var(--text-muted)
@@ -976,7 +1118,16 @@ class PDFParamReport(FPDF):
 # --- Vista di download ---
 @login_required
 @user_passes_test(_is_admin)
-def parameter_download_pdf(request, param_id: str):
+def parameter_download_pdf(request: HttpRequest, param_id: str) -> FileResponse:
+    """Generate and download a PDF report for a parameter.
+
+    Args:
+        request: Current authenticated admin request.
+        param_id: Parameter ID to export.
+
+    Returns:
+        File response containing the generated PDF document.
+    """
     param = get_object_or_404(ParameterDef, pk=param_id)
 
     pdf = PDFParamReport()
@@ -985,7 +1136,15 @@ def parameter_download_pdf(request, param_id: str):
 
     # --- Helpers con i colori del tuo CSS ---
 
-    def add_section_title(title):
+    def add_section_title(title: str) -> None:
+        """Add a styled section title row to the PDF.
+
+        Args:
+            title: Section title text.
+
+        Returns:
+            None.
+        """
         pdf.ln(5)
         pdf.set_font("helvetica", style="B", size=12)
         pdf.set_fill_color(241, 242, 244)  # var(--surface-2)
@@ -993,7 +1152,16 @@ def parameter_download_pdf(request, param_id: str):
         pdf.cell(0, 10, f"  {title}", ln=True, fill=True)
         pdf.ln(3)
 
-    def add_line(label, value=""):
+    def add_line(label: str, value: str = "") -> None:
+        """Add a label/value line to the PDF.
+
+        Args:
+            label: Left-hand label.
+            value: Optional value rendered on the same line.
+
+        Returns:
+            None.
+        """
         pdf.set_font("helvetica", style="B", size=10)
         pdf.set_text_color(97, 101, 107)  # var(--text-muted)
         pdf.write(6, str(label) + " ")
@@ -1004,7 +1172,16 @@ def parameter_download_pdf(request, param_id: str):
             pdf.write(6, safe_text)
         pdf.ln(7)
 
-    def add_long_text(label, value):
+    def add_long_text(label: str, value: Any) -> None:
+        """Add a label and a multiline text block to the PDF.
+
+        Args:
+            label: Block label.
+            value: Textual content rendered below the label.
+
+        Returns:
+            None.
+        """
         add_line(label)
         pdf.set_font("helvetica", size=10)
         pdf.set_text_color(27, 29, 32)  # var(--text)

@@ -1,26 +1,53 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required, user_passes_test
-from core.models import SiteContent
+from typing import Any
+
 import json
-from django.http import JsonResponse
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from core.models import SiteContent
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 
 
-def instruction_page(request):
-    """
-    Pagina Instruction, visibile a tutti (user e admin).
-    Contenuto fittizio per ora.
+def instruction_page(request: HttpRequest) -> HttpResponse:
+    """Render the public instructions page.
+
+    Args:
+        request: Incoming HTTP request.
+
+    Returns:
+        Rendered instructions page response.
     """
     return render(request, "instructions/instructions.html", {})
 
-def _is_admin(user) -> bool:
-    """Ruolo amministrativo o staff/superuser."""
+
+def _is_admin(user: Any) -> bool:
+    """Check whether a user has administrative privileges.
+
+    Args:
+        user: User-like object attached to the request.
+
+    Returns:
+        ``True`` if the user has role ``admin`` or is staff/superuser,
+        otherwise ``False``.
+    """
     return (getattr(user, "role", "") == "admin") or bool(user.is_staff) or bool(user.is_superuser)
 
 
 
 @login_required
-def instruction(request):
+def instruction(request: HttpRequest) -> HttpResponse:
+    """Render the instructions page with dynamic content from the database.
+
+    The view loads all `SiteContent` entries whose key starts with
+    ``instr_`` and exposes them as a key/content mapping for template usage.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        Rendered instructions page response enriched with dynamic content and
+        admin flag.
+    """
     # 1. Recuperiamo tutti i contenuti salvati nel DB che riguardano le istruzioni
     dynamic_contents = SiteContent.objects.filter(key__startswith="instr_")
     
@@ -44,7 +71,19 @@ def instruction(request):
 
 @login_required
 @require_POST
-def update_site_content(request):
+def update_site_content(request: HttpRequest) -> JsonResponse:
+    """Create or update a `SiteContent` entry for the instructions page.
+
+    Access is restricted to admin users and POST requests. The payload is
+    expected as JSON with at least ``key`` and optional ``content``/``page``.
+
+    Args:
+        request: Current authenticated HTTP request.
+
+    Returns:
+        JSON response with status ``success`` on write completion, or an error
+        payload with HTTP 4xx/5xx status code.
+    """
     # Controllo di sicurezza ferreo
     if not _is_admin(request.user):
         return JsonResponse({"error": "Unauthorized"}, status=403)
