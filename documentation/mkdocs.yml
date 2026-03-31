@@ -8,6 +8,7 @@ plugins:
   - mkdocstrings
 
 nav:
+  - Home: index.md            
   - API completa: api.md
   - Database (ER): architettura.md
 
