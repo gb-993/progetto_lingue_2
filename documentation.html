@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PCM-Hub - Operational guide for linguists</title>
+  <style>
+    :root{
+      --brand:#d14124; --brand-700:#b53a20;
+      --text:#1b1d20; --text-muted:#61656b;
+      --bg:#eceff1; --surface:#f8f9fa; --surface-2:#e2e6ea;
+      --border:#dadde2; --ok:#1e824c; --warn:#b58100; --bad:#b00020;
+      --ff: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      --mono: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      --radius:12px;
+      --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.06);
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:var(--ff), sans-serif; line-height:1.6; color:var(--text); background:var(--bg)}
+    .container{max-width:1200px; margin:0 auto; padding:2rem}
+    .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:2rem; margin-bottom:2rem}
+    h1,h2,h3{color:var(--brand)}
+    h1{text-align:center; border-bottom:2px solid var(--border); padding-bottom:1rem}
+    h2{color:var(--brand-700); border-bottom:1px dashed var(--border); padding-bottom:.4rem; margin-top:2rem}
+    h3{font-size:1.2rem; background:var(--surface-2); border-radius:8px; padding:.5rem .8rem; margin-top:1.5rem}
+    .muted{color:var(--text-muted)}
+    .info{background:#e8f4fd; border-left:4px solid #2266ff; padding:1rem; border-radius:4px; margin:1rem 0}
+    .warn{background:#fff7e5; border-left:4px solid var(--warn); padding:1rem; border-radius:4px; margin:1rem 0}
+    .bad{background:#fff0f0; border-left:4px solid var(--bad); padding:1rem; border-radius:4px; margin:1rem 0}
+    .ok{background:#e9f7ef; border-left:4px solid var(--ok); padding:1rem; border-radius:4px; margin:1rem 0}
+    code{font-family:var(--mono), monospace; background:rgba(0,0,0,.05); padding:.1rem .35rem; border-radius:4px; color:#8d1029}
+    .table-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:8px; margin:1rem 0}
+    table{width:100%; border-collapse:collapse; font-size:.92rem}
+    th{background:var(--surface-2); text-align:left; padding:.7rem; border-bottom:2px solid var(--border)}
+    td{padding:.7rem; border-bottom:1px solid var(--border); vertical-align:top}
+    tr:nth-child(even){background:#fff}
+    .er-diagram{background:#fff; border:1px solid var(--border); border-radius:8px; padding:1rem; overflow-x:auto; margin:1rem 0}
+    .er-diagram pre{margin:0; font-family:var(--mono), monospace; font-size:.9rem; line-height:1.35}
+    .mermaid-wrap{background:#fff; border:1px solid var(--border); border-radius:8px; padding:1rem; overflow-x:auto; margin:1rem 0}
+    .er-explain{background:#fdfdfd; border:1px solid var(--border); border-radius:8px; padding:1rem; margin:1rem 0}
+
+    .glossary-link {
+  text-decoration: underline dotted var(--brand);
+  color: inherit;
+  cursor: help;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+.glossary-link:hover {
+  color: var(--brand);
+}
+:target {
+  scroll-margin-top: 2rem;
+  background-color: #fff7e5;
+}
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>PCM-Hub: practical manual for linguist users</h1>
+    <div>
+      <strong>Purpose of this document</strong>
+      <p>This guide is written for researchers and contributors working directly with linguistic data, including data entry, review, and comparative analysis. It is intentionally not a developer manual. Each section explains the operational objective, the role permissions involved, and the expected impact on data quality, workflow timing, and auditability.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1) System overview</h2>
+    <p>The platform manages language profiles, theoretical parameters, and question-based answers. In practice, this means each language record is progressively completed, reviewed, and preserved in a traceable form. The standard lifecycle is:</p>
+    <ol>
+      <li>a user compiles data for one language profile;</li>
+      <li>the language is submitted for administrative review;</li>
+      <li>an admin either approves or rejects the submission;</li>
+      <li>if approved, the system also runs derived-value computation (DAG) and is possible to store an immutable audit snapshot (<code>Submission</code>).</li>
+    </ol>
+    <p>Design-wise, the workflow separates drafting from validation so that published analytical outputs can rely on controlled, reviewable states rather than provisional edits.</p>
+  </div>
+
+  <div class="card">
+    <h2>2) Roles, access, and security</h2>
+    <h3>2.1 Effective roles in the user database</h3>
+    <ul>
+      <li><code>admin</code>: full governance permissions, including user management, parameter administration, review decisions, snapshot creation, and full import/export operations.</li>
+      <li><code>user</code>: operational contributor permissions, mainly language compilation for assigned entries, submission for review, and access to authorised work pages.</li>
+      <li><code>public</code>: read-only public-facing access to dashboard statistics and non-administrative views.</li>
+    </ul>
+    <p>These roles are enforced in both route access and action endpoints, so interface visibility and server-side authorisation remain aligned.</p>
+
+    <h3>2.2 Mandatory terms acceptance</h3>
+    <p>After login, users who have not accepted current terms are redirected to <code>/accounts/accept-terms/</code>. If terms or privacy PDF files are updated, previous consent is invalidated and acceptance is required again. This ensures legal acknowledgement is always tied to the latest published policy version.</p>
+
+    <h3>2.3 Active Safeguards</h3>
+
+    <p>To ensure the security of the platform and the data handled by linguists and reviewers, the system implements several automated defense mechanisms. These controls operate in the background to block common methods of unauthorized access and manipulation:</p>
+
+    <ul>
+        <li>
+            <strong>CSRF Protection on POST Operations:</strong> Cross-Site Request Forgery (CSRF) is an attack where a malicious website attempts to force a user's web browser to execute unwanted actions on a different website where they are currently logged in. Our system actively prevents this during "POST operations"—which are actions that modify, submit, or delete data on the server. This safeguard verifies that any command to change data intentionally originates directly from our application's interface and not from a hidden third-party script.
+        </li>
+        <li>
+            <strong>Clickjacking Protection (<code>X_FRAME_OPTIONS = DENY</code>):</strong> Clickjacking is a deceptive technique where an attacker overlays invisible elements or buttons over a legitimate webpage. This tricks users into clicking on something different from what they perceive on the screen. To prevent this, the application is configured with a rule called <code>X_FRAME_OPTIONS = DENY</code>. This rule instructs web browsers to completely block our application from being embedded or displayed within frames on any other website, ensuring users are always interacting with the genuine platform.
+        </li>
+        <li>
+            <strong>Secure Session Cookies (<code>SameSite Lax</code>):</strong> When a user logs in, the system uses "cookies"—small text files stored in the browser—to remember their authenticated session so they do not have to log in repeatedly. We apply a setting called <code>SameSite Lax</code> to these cookies. This instructs the web browser to restrict sending these authentication cookies if a link is clicked from an external website, reducing the risk of unauthorized commands.
+        </li>
+        <li>
+            <strong>Environment-Controlled Secure Flags:</strong> Additionally, the system uses "secure flags" for these cookies. When the environment is configured for standard production use, these flags are activated to ensure that session cookies are only transmitted over encrypted network connections, protecting the login data from being intercepted.
+        </li>
+    </ul>
+
+    <p>Together, these specific controls systematically neutralize common web-based attack vectors. They establish a secure environment that protects the integrity of the data while preserving a normal, uninterrupted workflow for authenticated linguists and reviewers.</p>
+  </div>
+
+  <div class="card">
+    <h2>3) Data structure</h2>
+    <h3>3.1 Core tables for linguistic work</h3>
+    <ul>
+      <li><strong>Language</strong>: one language profile containing identity fields, classification, coordinates, and assignment metadata.</li>
+      <li><strong>ParameterDef</strong>: one theoretical parameter definition (for instance, a grammatical phenomenon under investigation).</li>
+      <li><strong>Question</strong>: one specific question linked to a parameter.</li>
+      <li><strong>Answer</strong>: one language response to one question (<code>yes</code>/<code>no</code>), including review state and editability state.</li>
+      <li><strong>Example</strong>: optional textual evidence attached to an answer.</li>
+      <li><strong>Motivation</strong>: controlled theoretical rationale codes that can be associated with questions and applied answers.</li>
+    </ul>
+    <p>This structure supports granular evidence collection while preserving normalisation: questions and motivations are reusable, answers remain language-specific, and examples remain answer-specific.</p>
+
+    <h3>3.2 Parameter values and evaluation layers</h3>
+    <ul>
+      <li><code>LanguageParameter.value_orig</code>: the original value entered for a language/parameter pair (typically + or -).</li>
+      <li><code>LanguageParameterEval.value_eval</code>: the derived value after DAG processing (+, -, 0, or ?).</li>
+      <li>Each language-parameter pair has at most one evaluation row (<code>1:0..1</code> relationship).</li>
+    </ul>
+    <p>This dual-layer model is crucial: it preserves manually curated input while clearly separating algorithmic interpretation and uncertainty markers.</p>
+
+    <h3>3.3 Historical tracking and backups</h3>
+    <ul>
+      <li><strong>LanguageReview</strong>: timeline of admin decisions (<code>approve</code>/<code>reject</code>) with optional context message.</li>
+      <li><strong>ParameterChangeLog</strong>: historical trace of parameter-definition modifications and who performed them.</li>
+      <li><strong>Submission*</strong>: immutable snapshot family used for audit reproducibility and retrospective analysis.</li>
+      <li><strong>ParameterReviewFlag</strong>: user-specific markers that indicate a language parameter should be revisited.</li>
+    </ul>
+    <p>Operationally, this means the system can distinguish current editable data from preserved historical evidence, which is essential for transparent research workflows.</p>
+
+    <h3>3.4 ER diagrams with cardinalities</h3>
+    <p>These diagrams are derived from <code>core/models.py</code> and represent actual database relationships using crow's-foot notation. They are split into two views to keep the model readable while still reflecting real implementation details.</p>
+
+    <h4>View A - Live operational data (entry and evaluation)</h4>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+        erDiagram
+          USER ||--o{ LANGUAGE : "assigned_user"
+          USER }o--o{ LANGUAGE : "m2m_languages"
+
+          LANGUAGE ||--o{ ANSWER : "1:N"
+          QUESTION ||--o{ ANSWER : "1:N"
+          PARAMETER_DEF ||--o{ QUESTION : "1:N"
+          ANSWER ||--o{ EXAMPLE : "1:N"
+
+          QUESTION ||--o{ QUESTION_ALLOWED_MOTIVATION : "1:N"
+          MOTIVATION ||--o{ QUESTION_ALLOWED_MOTIVATION : "1:N"
+
+          ANSWER ||--o{ ANSWER_MOTIVATION : "1:N"
+          MOTIVATION ||--o{ ANSWER_MOTIVATION : "1:N"
+
+          LANGUAGE ||--o{ LANGUAGE_PARAMETER : "1:N"
+          PARAMETER_DEF ||--o{ LANGUAGE_PARAMETER : "1:N"
+          LANGUAGE_PARAMETER ||--o| LANGUAGE_PARAMETER_EVAL : "1:0..1"
+      </div>
+    </div>
+
+    <h4>View B - Audit, review decisions, and snapshots</h4>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+        erDiagram
+          LANGUAGE ||--o{ LANGUAGE_REVIEW : "1:N"
+
+          LANGUAGE ||--o{ SUBMISSION : "1:N"
+          USER o|--o{ SUBMISSION : "submitted_by 0..1:N"
+          SUBMISSION ||--o{ SUBMISSION_ANSWER : "1:N"
+          SUBMISSION ||--o{ SUBMISSION_ANSWER_MOTIVATION : "1:N"
+          SUBMISSION ||--o{ SUBMISSION_EXAMPLE : "1:N"
+          SUBMISSION ||--o{ SUBMISSION_PARAM : "1:N"
+
+          PARAMETER_DEF ||--o{ PARAMETER_CHANGE_LOG : "1:N"
+          USER o|--o{ PARAMETER_CHANGE_LOG : "changed_by 0..1:N"
+
+          LANGUAGE ||--o{ PARAMETER_REVIEW_FLAG : "1:N"
+          PARAMETER_DEF ||--o{ PARAMETER_REVIEW_FLAG : "1:N"
+          USER ||--o{ PARAMETER_REVIEW_FLAG : "1:N"
+      </div>
+    </div>
+
+    <h3>3.5 How to read these ER diagrams</h3>
+    <div class="er-explain">
+      <p><strong>How to read data relationships</strong>: we use bracketed numbers to indicate how many records can be linked together between different categories.</p>
+
+      <ul>
+        <li>
+          <strong>[1..1] (Exactly one)</strong><br>
+          <em>Example from the system:</em> the relationship between an <em>Answer</em> and a <em>Language</em>.<br>
+          <em>What it means in practice:</em> Every single answer you enter must belong to exactly one specific language profile. You cannot save an answer floating on its own, and if a language is deleted, all its [1..1] attached answers are automatically deleted with it.
+        </li>
+        <li>
+          <strong>[0..1] (Zero or one / Optional)</strong><br>
+          <em>Example from the system:</em> the relationship between a user's original input (<em>Language Parameter</em>) and the algorithm's calculation (<em>Evaluation</em>).<br>
+          <em>What it means in practice:</em> When you first enter your data (like a "+"), the record exists, but it has zero evaluations. It will only get exactly one evaluation later, once the administrator approves the submission and the system runs the calculation. Another example is the <em>Changed_by</em> link: a historical log remains valid even if the user who made the change is later deleted from the system (leaving zero attached users).
+        </li>
+        <li>
+          <strong>[0..N] (Zero or many)</strong><br>
+          <em>Example from the system:</em> the relationship between a <em>Language</em> and its historical <em>Submissions</em> (snapshots).<br>
+          <em>What it means in practice:</em> A brand-new language profile will have zero historical snapshots. Over time, as you submit work and administrators approve it repeatedly, that same language will accumulate many permanent snapshots.
+        </li>
+        <li>
+          <strong>[1..N] or Many-to-Many (Complex cross-links)</strong><br>
+          <em>Example from the system:</em> the relationship between <em>Questions</em> and theoretical <em>Motivations</em>.<br>
+          <em>What it means in practice:</em> A single question can have several allowed theoretical motivations, and a specific motivation can be applied to many different questions. The platform automatically manages these complex intersections in the background so you can easily select them from a menu without duplicating data.
+        </li>
+      </ul>
+
+      <p><strong>Live data vs. Historical evidence</strong>: The database structure is strictly divided into two areas. One area manages "live" data—the drafts and pending records linguists work on daily. The other area manages historical data: it saves unalterable, frozen copies of approved records to guarantee that published research can always be verified and reproduced in the future.</p>
+
+      <p><strong>Why this matters operationally</strong>: Understanding how data is connected helps you anticipate the consequences of your actions. For example, it explains why deleting a main item (like a Language) triggers the automatic deletion of all its dependent data (like Answers and Examples).</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4) Operational flow: from compilation to approval</h2>
+    <h3>4.1 Compilation phase (user role)</h3>
+    <p>On the language page <code>/languages/&lt;lang_id&gt;/</code>, contributors enter or update responses and examples parameter by parameter. Work can be incremental, and intermediate saves support staged completion rather than one-shot submission.</p>
+    <ul>
+      <li>Save a full parameter block: <code>POST /languages/&lt;lang_id&gt;/parameters/&lt;param_id&gt;/save/</code>.</li>
+      <li>Save a single question answer: <code>POST /languages/&lt;lang_id&gt;/answers/&lt;question_id&gt;/save/</code>.</li>
+      <li>Submit for review: <code>POST /languages/&lt;lang_id&gt;/submit/</code> (answers become locked while awaiting decision).</li>
+    </ul>
+
+    <h3>4.2 Review phase (admin role)</h3>
+    <ul>
+      <li>Approve: <code>POST /languages/&lt;lang_id&gt;/approve/</code> (requires complete answers, then runs DAG evaluation).</li>
+      <li>Reject: <code>POST /languages/&lt;lang_id&gt;/reject/</code> (stores rationale in review history).</li>
+      <li>Reopen: <code>POST /languages/&lt;lang_id&gt;/reopen/</code> (moves rejected answers back to editable pending state).</li>
+      <li>Computation debug: <code>GET /languages/&lt;lang_id&gt;/debug/</code> (admin only).</li>
+      <li>Forced DAG rerun: <code>POST /languages/&lt;lang_id&gt;/run_dag/</code> (admin only).</li>
+    </ul>
+
+    <div class="bad">
+      <strong>Important behavioural clarification</strong>
+      <p>When an admin uses <code>reject</code>, answers move to the <code>rejected</code> state and remain non-editable. Contributors cannot directly edit them until <code>reopen</code> is executed. In other words, rejection is a controlled stop state, not an immediate return to draft mode.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5) Page and URL map</h2>
+
+    <h3>5.1 Core system routes</h3>
+    <div class="table-scroll"><table>
+      <tr><th>Method</th><th>Path</th><th>Who can use it</th><th>Behaviour</th></tr>
+      <tr><td>GET</td><td><code>/</code></td><td>Everyone</td><td>Redirects to dashboard (and then to login when authentication is required).</td></tr>
+      <tr><td>GET</td><td><code>/health/</code></td><td>Everyone</td><td>Technical health check endpoint returning <code>ok</code>.</td></tr>
+      <tr><td>GET</td><td><code>/test500/</code></td><td>Everyone</td><td>Intentionally raises a 500 error for error-page validation.</td></tr>
+      <tr><td>GET/POST</td><td><code>/accounts/password-reset/</code></td><td>Everyone</td><td>Starts the password reset process.</td></tr>
+    </table></div>
+
+    <h3>5.2 Accounts module</h3>
+    <div class="table-scroll"><table>
+      <tr><th>Method</th><th>Path</th><th>Permissions</th><th>Notes</th></tr>
+      <tr><td>GET</td><td><code>/accounts/dashboard/</code></td><td>Authenticated users</td><td>Role-specific dashboard entry point.</td></tr>
+      <tr><td>GET</td><td><code>/accounts/about/</code>, <code>/accounts/team/</code>, <code>/accounts/methodology/</code>, <code>/accounts/contacts/</code></td><td>Public</td><td>Public-facing informational pages.</td></tr>
+      <tr><td>GET/POST</td><td><code>/accounts/accept-terms/</code></td><td>Authenticated users</td><td>Mandatory terms acknowledgement workflow.</td></tr>
+      <tr><td>GET</td><td><code>/accounts/</code></td><td>Admin</td><td>User account list and governance view.</td></tr>
+      <tr><td>GET/POST</td><td><code>/accounts/add/</code>, <code>/accounts/&lt;user_id&gt;/edit/</code></td><td>Admin</td><td>User creation and profile editing.</td></tr>
+      <tr><td>POST</td><td><code>/accounts/&lt;user_id&gt;/delete/</code></td><td>Admin</td><td>User deletion with safety checks.</td></tr>
+      <tr><td>GET/POST</td><td><code>/accounts/me/</code></td><td>Authenticated users</td><td>Current-user profile and password management.</td></tr>
+      <tr><td>GET</td><td><code>/accounts/how-to-cite/</code></td><td>Public</td><td>Data citation instructions.</td></tr>
+      <tr><td>GET/POST</td><td><code>/accounts/edit-content/&lt;key&gt;/</code></td><td>Admin</td><td>Dynamic content editing for citation page blocks.</td></tr>
+    </table></div>
+
+    <h3>5.3 Languages module</h3>
+    <div class="table-scroll"><table>
+      <tr><th>Method</th><th>Path</th><th>Permissions</th><th>Output</th></tr>
+      <tr><td>GET</td><td><code>/languages/</code></td><td>Authenticated users</td><td>Language list view.</td></tr>
+      <tr><td>GET/POST</td><td><code>/languages/add/</code>, <code>/languages/&lt;lang_id&gt;/edit/</code></td><td>Authenticated users</td><td>HTML forms for create/update.</td></tr>
+      <tr><td>POST</td><td><code>/languages/&lt;lang_id&gt;/delete/</code></td><td>Admin + admin password confirmation</td><td>Redirect-based delete flow.</td></tr>
+      <tr><td>GET</td><td><code>/languages/&lt;lang_id&gt;/</code></td><td>Authenticated + language assignment required</td><td>Main compilation page.</td></tr>
+      <tr><td>GET/POST</td><td><code>/languages/import-excel/</code></td><td>Admin</td><td>Bulk Excel import endpoint.</td></tr>
+      <tr><td>GET</td><td><code>/languages/export.xlsx</code>, <code>/languages/&lt;lang_id&gt;/export/</code></td><td>Authenticated users</td><td>Excel exports.</td></tr>
+      <tr><td>GET</td><td><code>/languages/export-all.zip</code></td><td>Admin</td><td>Complete ZIP export.</td></tr>
+    </table></div>
+
+    <h3>5.4 Parameters module</h3>
+    <div class="table-scroll"><table>
+      <tr><th>Method</th><th>Actual path</th><th>Permissions</th><th>Notes</th></tr>
+      <tr><td>GET</td><td><code>/parameters/</code></td><td>Admin</td><td>Parameter list.</td></tr>
+      <tr><td>GET/POST</td><td><code>/parameters/add/</code>, <code>/parameters/&lt;param_id&gt;/edit/</code></td><td>Admin</td><td>Parameter creation and editing.</td></tr>
+      <tr><td>POST</td><td><code>/parameters/&lt;param_id&gt;/deactivate/</code></td><td>Admin</td><td>Deactivation with validation checks.</td></tr>
+      <tr><td>GET/POST</td><td><code>/parameters/parameters/&lt;param_id&gt;/questions/add/</code></td><td>Admin</td><td>Add a question to a parameter.</td></tr>
+      <tr><td>GET/POST</td><td><code>/parameters/parameters/&lt;param_id&gt;/questions/&lt;question_id&gt;/edit/</code></td><td>Admin</td><td>Edit an existing question.</td></tr>
+      <tr><td>GET/POST</td><td><code>/parameters/parameters/&lt;param_id&gt;/questions/&lt;question_id&gt;/delete/</code></td><td>Admin</td><td>Question deletion with confirmation.</td></tr>
+      <tr><td>GET/POST</td><td><code>/parameters/&lt;param_id&gt;/questions/import/</code></td><td>Admin</td><td>Question cloning/import utility.</td></tr>
+      <tr><td>GET/POST</td><td><code>/parameters/lookups/</code>, <code>/parameters/parameters/motivations/</code></td><td>Admin</td><td>Technical dictionaries and motivation management.</td></tr>
+      <tr><td>GET/POST</td><td><code>/parameters/parameters/motivations/&lt;mot_id&gt;/edit/</code></td><td>Admin</td><td>Edit a motivation entry.</td></tr>
+      <tr><td>GET</td><td><code>/parameters/parameters/&lt;param_id&gt;/pdf/</code></td><td>Admin</td><td>Parameter PDF report generation.</td></tr>
+    </table></div>
+
+    <h3>5.5 Table A module</h3>
+    <p>The Table A area provides comparative outputs derived from approved and evaluated parameter data. It supports on-screen exploration and multiple export formats for downstream statistical workflows.</p>
+    <div class="table-scroll"><table>
+      <tr><th>Method</th><th>Path</th><th>Permissions</th><th>Output</th></tr>
+      <tr><td>GET</td><td><code>/table-a/</code></td><td>Authenticated users</td><td>Main Table A interface for cross-language comparison.</td></tr>
+      <tr><td>GET</td><td><code>/table-a/export.xlsx</code></td><td>Authenticated users</td><td>Excel export of the current comparative matrix.</td></tr>
+      <tr><td>GET</td><td><code>/table-a/export.csv</code></td><td>Authenticated users</td><td>CSV export suitable for scripting and reproducible analysis.</td></tr>
+      <tr><td>GET</td><td><code>/table-a/distances.zip</code></td><td>Authenticated users</td><td>Distance-matrix package for external clustering workflows.</td></tr>
+      <tr><td>GET</td><td><code>/table-a/dendrograms.zip</code></td><td>Authenticated users</td><td>Archive of generated dendrogram assets.</td></tr>
+      <tr><td>GET</td><td><code>/table-a/pca.png</code></td><td>Authenticated users</td><td>Rendered PCA visualisation image.</td></tr>
+    </table></div>
+
+    <h3>5.6 Queries module</h3>
+    <p>The Queries area is a controlled interface for advanced inspection and extraction. It is intended for expert users who need filtered or structured access beyond standard browsing screens.</p>
+    <div class="table-scroll"><table>
+      <tr><th>Method</th><th>Path</th><th>Permissions</th><th>Notes</th></tr>
+      <tr><td>GET</td><td><code>/queries/</code></td><td>Admin/staff (plus any dedicated linguist role if configured)</td><td>Main query workspace with authorised data views.</td></tr>
+      <tr><td>GET/POST</td><td><code>/queries/</code> (interactive filters/actions)</td><td>Admin/staff (plus any dedicated linguist role if configured)</td><td>Used for parameterised retrieval depending on form actions enabled in deployment.</td></tr>
+    </table></div>
+
+    <h3>5.7 Submissions module</h3>
+    <p>The Submissions module manages immutable snapshots used for auditability, reproducibility, and archival verification. Unlike editable live records, snapshot rows preserve a frozen state at creation time.</p>
+    <div class="table-scroll"><table>
+      <tr><th>Method</th><th>Path</th><th>Permissions</th><th>Output</th></tr>
+      <tr><td>GET</td><td><code>/submissions/</code></td><td>Admin</td><td>Submission list and administrative overview.</td></tr>
+      <tr><td>GET</td><td><code>/submissions/&lt;submission_id&gt;/</code></td><td>Admin</td><td>Detailed snapshot view for one submission.</td></tr>
+      <tr><td>POST</td><td><code>/submissions/create/&lt;language_id&gt;/</code></td><td>Admin</td><td>Create one snapshot for a selected language.</td></tr>
+      <tr><td>POST</td><td><code>/submissions/create-all/</code></td><td>Admin</td><td>Bulk snapshot generation for all eligible languages.</td></tr>
+      <tr><td>POST</td><td><code>/submissions/delete-backup/</code></td><td>Admin</td><td>Administrative cleanup of backup/snapshot data according to configured rules.</td></tr>
+    </table></div>
+
+    <h3>5.8 Other modules</h3>
+    <div class="table-scroll"><table>
+      <tr><th>Module</th><th>Main paths</th><th>Permissions</th></tr>
+      <tr><td>Glossary</td><td><code>/glossary/</code>, <code>/glossary/add/</code>, <code>/glossary/&lt;word&gt;/</code></td><td>List/detail for authenticated users, editing for admin.</td></tr>
+      <tr><td>Graphs</td><td><code>/graphs/parameters/</code>, <code>/graphs/api/graph.json</code>, <code>/graphs/api/lang-values.json?lang=ID</code></td><td>Authenticated users.</td></tr>
+      <tr><td>Instruction</td><td><code>/instruction/instructions/</code>, <code>/instruction/api/update-content/</code></td><td>Read access for authenticated users, content updates via admin POST.</td></tr>
+      <tr><td>Questions index</td><td><code>/questions/all/</code></td><td>Admin.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2>6) Answer states and practical meaning</h2>
+    <ul>
+      <li><code>pending</code>: editable draft state used during ongoing completion.</li>
+      <li><code>waiting_for_approval</code>: submitted state; answers are locked while awaiting review.</li>
+      <li><code>approved</code>: validated state after admin approval.</li>
+      <li><code>rejected</code>: rejected state; records must be reopened with <code>reopen</code> before further editing.</li>
+    </ul>
+    <p>Final parameter values (<code>value_eval</code>) feed comparative analytics modules such as Graph views, Table A outputs, and query-based analysis pages. This makes review state management directly relevant to downstream analytical reliability.</p>
+  </div>
+
+  <div class="card">
+    <h2>7) Server response codes (HTTP)</h2>
+    <ul>
+      <li><strong>200 OK</strong>: the requested page or data payload is returned correctly.</li>
+      <li><strong>302 Redirect</strong>: the operation completed and the user is redirected to the next workflow page.</li>
+      <li><strong>400 Bad Request</strong>: submitted data is malformed, incomplete, or fails server-side validation.</li>
+      <li><strong>403 Forbidden</strong>: authenticated user lacks required permission for the requested action.</li>
+      <li><strong>404 Not Found</strong>: resource does not exist or is not accessible in the current permission context.</li>
+      <li><strong>500 Server Error</strong>: an internal server failure occurred and requires technical troubleshooting.</li>
+    </ul>
+  </div>
+
+  <div class="card" id="glossary-section">
+    <h2>8) Comprehensive glossary of technical terms used in the platform</h2>
+    <ul>
+      <li id="def-api">
+        <strong>API (Application Programming Interface) / JSON:</strong> A communication channel and data format designed for machines rather than humans. While linguists use the graphical web interface, the system uses APIs to send strictly structured text data (JSON) to background tools, such as the modules responsible for rendering comparative graphs.
+      </li>
+      <li id="def-bridge">
+        <strong>Bridge Table (Many-to-Many):</strong> A hidden structural table in the database used to manage complex data intersections. When many questions can share many theoretical motivations, the bridge table explicitly records every valid pairing in the background. This allows the application to present accurate dropdown menus without duplicating the underlying data.
+      </li>
+      <li id="def-cascade">
+        <strong>Cascade Deletion:</strong> A database maintenance rule that triggers automatically when data is removed. If a primary record (such as a Language profile) is deleted, the system automatically deletes all dependent records attached to it (such as its Answers and Examples) to prevent orphaned, meaningless data fragments from corrupting the database.
+      </li>
+      <li id="def-dag">
+        <strong>DAG (Directed Acyclic Graph):</strong> The underlying algorithmic structure and automated rule-driven procedure used to calculate derived linguistic parameters. It systematically evaluates logical dependencies across different parameters. The "acyclic" property is a mathematical constraint ensuring the system's rules only flow forward and never create contradictory circular loops.
+      </li>
+      <li id="def-endpoint">
+        <strong>Endpoint / Route:</strong> A specific web address (URL path) where the application exposes a defined function or dataset. Operationally, when you click a button or submit a form, your browser communicates with a specific endpoint (e.g., <code>/languages/&lt;lang_id&gt;/submit/</code>) to execute that exact command on the server.
+      </li>
+      <li id="def-field">
+        <strong>Field:</strong> A specific, defined attribute or column within a record. Fields are the individual structural components that hold the actual data. To maintain consistency, fields are strictly constrained to accept only specific data types—for example, a text string for a language family, or a standardized alphanumeric format for a Glottocode.
+      </li>
+      <li id="def-foreignkey">
+        <strong>Foreign Key:</strong> A database mechanism that creates a strict, logical link between two different records. For example, an <em>Answer</em> record uses a foreign key to lock itself permanently to a specific <em>Language</em> record, ensuring relational integrity.
+      </li>
+      <li id="def-getpost">
+        <strong>GET and POST Methods:</strong> Standard communication protocols used by your web browser to interact with the server. A <code>GET</code> method requests to view data (such as loading a language page or downloading an export). A <code>POST</code> method submits new data or triggers a state change (such as saving an answer, approving a review, or deleting a record).
+      </li>
+      <li id="def-flag">
+        <strong>Flag:</strong> A temporary, user-level marker utilized strictly for workflow management. It signals to administrators or collaborating linguists that a specific data point requires further attention or verification. Applying a flag modifies the administrative task queue, but it does not alter the underlying linguistic data or its evaluation state.
+      </li>
+      <li id="def-record">
+        <strong>Record:</strong> A single, cohesive entry in the database representing one concrete entity. In practice, a record structurally groups all related data about a specific item so it can be managed as a single unit (for example, one entire "Language" profile).
+      </li>
+      <li id="def-serverside">
+        <strong>Server-side:</strong> Operations, validations, and security checks that occur on the central hosting server rather than in the user's local web browser. This ensures that even if a local browser behaves unexpectedly, the central system strictly enforces role permissions and data integrity rules before saving any changes.
+      </li>
+      <li id="def-snapshot">
+        <strong>Snapshot:</strong> An immutable, frozen copy of a specific dataset captured at a precise moment in time. Unlike standard operational data which can be edited and updated, a snapshot is permanently locked upon creation. This mechanism is fundamental for academic reproducibility, allowing researchers to accurately cite the exact state of the database used for a publication.
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true,
+    securityLevel: "loose",
+    theme: "default"
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const glossaryTerms = [
+      { regex: /\b(DAG)\b/g, id: "def-dag", title: "Rule-driven procedure for parameters" },
+      { regex: /\b(Record[s]?)\b/gi, id: "def-record", title: "Single cohesive entry in the database" },
+      { regex: /\b(Field[s]?)\b/gi, id: "def-field", title: "Specific attribute/column within a record" },
+      { regex: /\b(Snapshot[s]?)\b/gi, id: "def-snapshot", title: "Immutable frozen copy of data" },
+      { regex: /\b(Cascade Deletion)\b/gi, id: "def-cascade", title: "Automatic deletion of dependent data" },
+      { regex: /\b(Endpoint[s]?|Route[s]?)\b/gi, id: "def-endpoint", title: "Specific web address for a server function" },
+      { regex: /\b(Foreign Key[s]?)\b/gi, id: "def-foreignkey", title: "Database link between records" },
+      { regex: /\b(API[s]?|JSON)\b/gi, id: "def-api", title: "Machine-readable data format" },
+      { regex: /\b(GET|POST)\b/g, id: "def-getpost", title: "Standard server communication methods" },
+      { regex: /\b(Flag[s]?)\b/gi, id: "def-flag", title: "User-level workflow marker" }
+    ];
+
+    const textElements = document.querySelectorAll('.card p, .card li, .er-explain p');
+
+    textElements.forEach(el => {
+      if (el.closest('#glossary-section')) return;
+
+      if (el.tagName.toLowerCase() === 'code') return;
+
+      let originalHTML = el.innerHTML;
+      let newHTML = originalHTML;
+
+      glossaryTerms.forEach(term => {
+        newHTML = newHTML.replace(term.regex, `<a href="#${term.id}" title="${term.title}" class="glossary-link">$1</a>`);
+      });
+
+      if (originalHTML !== newHTML) {
+        el.innerHTML = newHTML;
+      }
+    });
+  });
+</script>
+<noscript>
+  <div style="max-width:1200px;margin:0 auto 2rem;padding:0 2rem;">
+    <div style="background:#fff7e5;border-left:4px solid #b58100;padding:1rem;border-radius:4px;">
+      JavaScript is disabled: Mermaid diagrams cannot be rendered.
+    </div>
+  </div>
+</noscript>
+</body>
+</html>
+
