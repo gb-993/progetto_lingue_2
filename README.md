@@ -2,6 +2,9 @@
 
 Piattaforma web per la raccolta, gestione e analisi di dati linguistici, con workflow editoriale (submission/review), export scientifici e deployment containerizzato.
 
+# Documentazione
+https://gb-993.github.io/progetto_lingue_2/
+
 ## Getting Started
 
 Il progetto è configurato per usare **PostgreSQL** tramite variabili `POSTGRES_*` in `progetto_lingua_2/settings.py`.
