@@ -1,0 +1,1948 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../architettura/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>API completa - PCM-Hub</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-e-routing-completo-del-sito-pcm-hub" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PCM-Hub" class="md-header__button md-logo" aria-label="PCM-Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PCM-Hub
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API completa
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PCM-Hub" class="md-nav__button md-logo" aria-label="PCM-Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PCM-Hub
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API completa
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API completa
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-panoramica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) Panoramica
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-autenticazione-ruoli-e-policy-accesso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) Autenticazione, ruoli e policy accesso
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2) Autenticazione, ruoli e policy accesso">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autenticazione" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autenticazione
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ruoli-applicativi-rilevati" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ruoli applicativi rilevati
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#middleware-terms-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Middleware Terms Acceptance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convenzioni-metodi-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convenzioni metodi HTTP
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-route-root-e-sistema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) Route root e sistema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-modulo-accounts-accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4) Modulo Accounts (/accounts/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-modulo-languages-languages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5) Modulo Languages (/languages/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5) Modulo Languages (/languages/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#crud-e-navigazione-lingua" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CRUD e navigazione lingua
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#salvataggio-workflow-review-e-debug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Salvataggio, workflow review e debug
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#review-flags-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review flags (JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#importexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import/export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-modulo-parameters-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6) Modulo Parameters (/parameters/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-modulo-glossary-glossary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7) Modulo Glossary (/glossary/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-modulo-graphs-graphs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8) Modulo Graphs (/graphs/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8) Modulo Graphs (/graphs/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#esempio-risposta-api_graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esempio risposta api_graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#esempio-risposta-api_lang_values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esempio risposta api_lang_values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-modulo-table-a-table-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9) Modulo Table A (/table-a/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-modulo-submissions-submissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10) Modulo Submissions (/submissions/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-modulo-queries-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11) Modulo Queries (/queries/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-modulo-instruction-instruction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12) Modulo Instruction (/instruction/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-modulo-questions-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13) Modulo Questions (/questions/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-errori-status-code-e-sicurezza" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14) Errori, status code e sicurezza
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-note-operative-per-manutenzione-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15) Note operative per manutenzione docs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architettura/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database (ER)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-panoramica" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) Panoramica
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-autenticazione-ruoli-e-policy-accesso" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) Autenticazione, ruoli e policy accesso
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2) Autenticazione, ruoli e policy accesso">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#autenticazione" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autenticazione
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ruoli-applicativi-rilevati" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ruoli applicativi rilevati
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#middleware-terms-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Middleware Terms Acceptance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convenzioni-metodi-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convenzioni metodi HTTP
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-route-root-e-sistema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) Route root e sistema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-modulo-accounts-accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4) Modulo Accounts (/accounts/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-modulo-languages-languages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5) Modulo Languages (/languages/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5) Modulo Languages (/languages/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#crud-e-navigazione-lingua" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CRUD e navigazione lingua
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#salvataggio-workflow-review-e-debug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Salvataggio, workflow review e debug
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#review-flags-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review flags (JSON)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#importexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import/export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-modulo-parameters-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6) Modulo Parameters (/parameters/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-modulo-glossary-glossary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7) Modulo Glossary (/glossary/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-modulo-graphs-graphs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8) Modulo Graphs (/graphs/)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8) Modulo Graphs (/graphs/)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#esempio-risposta-api_graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esempio risposta api_graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#esempio-risposta-api_lang_values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Esempio risposta api_lang_values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-modulo-table-a-table-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9) Modulo Table A (/table-a/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-modulo-submissions-submissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10) Modulo Submissions (/submissions/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-modulo-queries-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11) Modulo Queries (/queries/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-modulo-instruction-instruction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12) Modulo Instruction (/instruction/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-modulo-questions-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13) Modulo Questions (/questions/)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-errori-status-code-e-sicurezza" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14) Errori, status code e sicurezza
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-note-operative-per-manutenzione-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15) Note operative per manutenzione docs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="api-e-routing-completo-del-sito-pcm-hub">API e routing completo del sito PCM-Hub</h1>
+<h2 id="1-panoramica">1) Panoramica</h2>
+<p>Questa pagina documenta tutte le route esposte dal progetto Django <code>progetto_lingua_2</code>, incluse:</p>
+<ul>
+<li>pagine HTML (UI server-rendered)</li>
+<li>endpoint JSON</li>
+<li>endpoint di export (XLSX, CSV, ZIP, PNG, PDF)</li>
+<li>route operative/tecniche (<code>health</code>, <code>admin</code>, <code>test500</code>)</li>
+</ul>
+<p>Base URL (esempi):</p>
+<ul>
+<li>locale: <code>http://127.0.0.1:8000</code></li>
+<li>container/reverse-proxy: dipende da <code>DJANGO_ALLOWED_HOSTS</code> e dal deployment</li>
+</ul>
+<h2 id="2-autenticazione-ruoli-e-policy-accesso">2) Autenticazione, ruoli e policy accesso</h2>
+<h3 id="autenticazione">Autenticazione</h3>
+<ul>
+<li>Autenticazione Django standard (<code>/accounts/login/</code>, <code>/accounts/logout/</code>)</li>
+<li><code>LOGIN_URL = /accounts/login/</code></li>
+<li>Molte route richiedono sessione autenticata (<code>@login_required</code>)</li>
+</ul>
+<h3 id="ruoli-applicativi-rilevati">Ruoli applicativi rilevati</h3>
+<ul>
+<li><code>admin</code>: gestione completa (utenti, parametri, approvazioni, backup, import/export globali)</li>
+<li><code>user</code>: compilazione dati su lingue assegnate</li>
+<li><code>public</code>: dashboard pubblica autenticata</li>
+<li><code>linguist</code>: abilitato almeno alla sezione <code>queries</code> (check specifico)</li>
+</ul>
+<h3 id="middleware-terms-acceptance">Middleware Terms Acceptance</h3>
+<p>Middleware attivo: <code>accounts.middleware.TermsAcceptanceMiddleware</code>.</p>
+<p>Comportamento:</p>
+<ul>
+<li>se utente autenticato non ha accettato i termini -&gt; redirect a <code>/accounts/accept-terms/</code></li>
+<li>eccezioni consentite: route <code>accept_terms</code>, <code>logout</code>, path statici</li>
+<li>se i PDF termini/informativa cambiano (mtime piu recente), l'accettazione precedente viene invalidata</li>
+</ul>
+<h3 id="convenzioni-metodi-http">Convenzioni metodi HTTP</h3>
+<ul>
+<li>Dove non presente <code>@require_POST</code>/<code>@require_http_methods</code>, il metodo e gestito internamente (spesso GET+POST)</li>
+<li>Endpoint JSON in genere rispondono con <code>JsonResponse</code></li>
+<li>Endpoint export rispondono con <code>Content-Disposition: attachment</code></li>
+</ul>
+<h2 id="3-route-root-e-sistema">3) Route root e sistema</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/</code></td>
+<td><code>RedirectView(pattern_name='dashboard')</code></td>
+<td>no</td>
+<td>redirect</td>
+<td>Redirect alla dashboard</td>
+</tr>
+<tr>
+<td>*</td>
+<td><code>/admin/</code></td>
+<td>Django Admin</td>
+<td>staff/admin</td>
+<td>HTML</td>
+<td>Backoffice Django</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/health/</code></td>
+<td><code>core.views_health.health</code></td>
+<td>no</td>
+<td>text/plain</td>
+<td>Ritorna <code>ok</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/test500/</code></td>
+<td><code>core.views.test_500</code></td>
+<td>no</td>
+<td>errore 500</td>
+<td>Endpoint di test errore</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/password-reset/</code></td>
+<td><code>PasswordResetView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Avvio reset password</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/password-reset/done/</code></td>
+<td><code>PasswordResetDoneView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Conferma invio reset</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/reset/&lt;uidb64&gt;/&lt;token&gt;/</code></td>
+<td><code>PasswordResetConfirmView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Nuova password</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/reset/done/</code></td>
+<td><code>PasswordResetCompleteView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Reset completato</td>
+</tr>
+</tbody>
+</table>
+<p>Include root:</p>
+<ul>
+<li><code>/accounts/</code> -&gt; <code>accounts.urls</code></li>
+<li><code>/languages/</code> -&gt; <code>languages_ui.urls</code></li>
+<li><code>/parameters/</code> -&gt; <code>parameters_ui.urls</code></li>
+<li><code>/glossary/</code> -&gt; <code>glossary_ui.urls</code></li>
+<li><code>/graphs/</code> -&gt; <code>graphs_ui.urls</code></li>
+<li><code>/table-a/</code> -&gt; <code>tablea_ui.urls</code></li>
+<li><code>/submissions/</code> -&gt; <code>submissions_ui.urls</code></li>
+<li><code>/queries/</code> -&gt; <code>queries.urls</code></li>
+<li><code>/instruction/</code> -&gt; <code>instruction_ui.urls</code></li>
+<li><code>/questions/</code> -&gt; <code>questions_ui.urls</code></li>
+</ul>
+<p>In <code>DEBUG=True</code> sono servite anche route static/media via Django (<code>/static/</code>, <code>/media/</code>).</p>
+<h2 id="4-modulo-accounts-accounts">4) Modulo Accounts (<code>/accounts/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/accounts/dashboard/</code></td>
+<td><code>dashboard</code></td>
+<td>login</td>
+<td>HTML</td>
+<td>Dashboard per ruolo</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/about/</code></td>
+<td><code>TemplateView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Pagina pubblica</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/team/</code></td>
+<td><code>TemplateView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Pagina pubblica</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/methodology/</code></td>
+<td><code>TemplateView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Pagina pubblica</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/contacts/</code></td>
+<td><code>TemplateView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Pagina pubblica</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/accept-terms/</code></td>
+<td><code>accept_terms</code></td>
+<td>login</td>
+<td>HTML/redirect</td>
+<td>Accettazione termini</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/</code></td>
+<td><code>accounts_list</code></td>
+<td>admin</td>
+<td>HTML</td>
+<td>Lista account</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/add/</code></td>
+<td><code>accounts_add</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Crea account</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/&lt;int:user_id&gt;/edit/</code></td>
+<td><code>accounts_edit</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Modifica account</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/login/</code></td>
+<td><code>LoginView</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Login con <code>EmailAuthForm</code></td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/logout/</code></td>
+<td><code>LogoutView</code></td>
+<td>login</td>
+<td>redirect</td>
+<td>Logout verso <code>/accounts/login/</code></td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/me/</code></td>
+<td><code>my_account</code></td>
+<td>login</td>
+<td>HTML/redirect</td>
+<td>Profilo/password utente</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/&lt;int:user_id&gt;/delete/</code></td>
+<td><code>accounts_delete</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Conferma+delete account</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/accounts/how-to-cite/</code></td>
+<td><code>how_to_cite</code></td>
+<td>no</td>
+<td>HTML</td>
+<td>Pagina citazione con contenuti DB</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/accounts/edit-content/&lt;str:key&gt;/</code></td>
+<td><code>edit_site_content</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Modifica contenuti pagina citazione</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-modulo-languages-languages">5) Modulo Languages (<code>/languages/</code>)</h2>
+<h3 id="crud-e-navigazione-lingua">CRUD e navigazione lingua</h3>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/languages/</code></td>
+<td><code>language_list</code></td>
+<td>login</td>
+<td>HTML</td>
+<td>Lista lingue con filtri/sort</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/languages/add/</code></td>
+<td><code>language_add</code></td>
+<td>login</td>
+<td>HTML/redirect</td>
+<td>Creazione lingua</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/edit/</code></td>
+<td><code>language_edit</code></td>
+<td>login</td>
+<td>HTML/redirect</td>
+<td>Modifica lingua</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/delete/</code></td>
+<td><code>language_delete</code></td>
+<td>login + admin check</td>
+<td>redirect</td>
+<td>Richiede password admin</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/languages/&lt;str:lang_id&gt;/</code></td>
+<td><code>language_data</code></td>
+<td>login + access policy</td>
+<td>HTML</td>
+<td>Pagina compilazione parametri/domande</td>
+</tr>
+</tbody>
+</table>
+<h3 id="salvataggio-workflow-review-e-debug">Salvataggio, workflow review e debug</h3>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/parameters/&lt;str:param_id&gt;/save/</code></td>
+<td><code>parameter_save</code></td>
+<td>login + access policy</td>
+<td>redirect</td>
+<td>Salva tutte le risposte del parametro</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/answers/&lt;str:question_id&gt;/save/</code></td>
+<td><code>answer_save</code></td>
+<td>login + access policy</td>
+<td>redirect</td>
+<td>Salva singola risposta</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/submit/</code></td>
+<td><code>language_submit</code></td>
+<td>login + access policy</td>
+<td>redirect</td>
+<td>Invia per approvazione</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/approve/</code></td>
+<td><code>language_approve</code></td>
+<td>admin</td>
+<td>redirect</td>
+<td>Approva + esegue DAG</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/reject/</code></td>
+<td><code>language_reject</code></td>
+<td>admin</td>
+<td>redirect</td>
+<td>Rigetta submission</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/reopen/</code></td>
+<td><code>language_reopen</code></td>
+<td>login + access policy</td>
+<td>redirect</td>
+<td>Riapre risposte rejected</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/languages/&lt;str:lang_id&gt;/debug/</code></td>
+<td><code>language_debug</code></td>
+<td>admin + access policy</td>
+<td>HTML</td>
+<td>Diagnostica parametri/condizioni</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/run_dag/</code></td>
+<td><code>language_run_dag</code></td>
+<td>admin</td>
+<td>redirect</td>
+<td>Forza approvazione + DAG</td>
+</tr>
+</tbody>
+</table>
+<h3 id="review-flags-json">Review flags (JSON)</h3>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/languages/&lt;str:lang_id&gt;/review-flags/</code></td>
+<td><code>review_flags_list</code></td>
+<td>login + access policy</td>
+<td>JSON</td>
+<td>Lista parametri flaggati utente</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/languages/&lt;str:lang_id&gt;/review-flags/&lt;str:param_id&gt;/toggle/</code></td>
+<td><code>toggle_review_flag</code></td>
+<td>login + access policy</td>
+<td>JSON</td>
+<td>Set/unset flag parametro</td>
+</tr>
+</tbody>
+</table>
+<h3 id="importexport">Import/export</h3>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET/POST</td>
+<td><code>/languages/import-excel/</code></td>
+<td><code>language_import_excel</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Import lingue da file Excel</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/languages/export.xlsx</code></td>
+<td><code>language_list_export_xlsx</code></td>
+<td>login</td>
+<td>XLSX</td>
+<td>Export lista lingue filtrata</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/languages/&lt;str:lang_id&gt;/export/</code></td>
+<td><code>language_export_xlsx</code></td>
+<td>login + access policy</td>
+<td>XLSX</td>
+<td>Export singola lingua</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/languages/export-all.zip</code></td>
+<td><code>language_export_all_zip</code></td>
+<td>admin</td>
+<td>ZIP</td>
+<td>Export XLSX di tutte le lingue</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-modulo-parameters-parameters">6) Modulo Parameters (<code>/parameters/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/parameters/</code></td>
+<td><code>parameter_list</code></td>
+<td>admin</td>
+<td>HTML</td>
+<td>Lista parametri</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/add/</code></td>
+<td><code>parameter_add</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Creazione parametro</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/&lt;str:param_id&gt;/edit/</code></td>
+<td><code>parameter_edit</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Modifica parametro + changelog</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/parameters/&lt;str:param_id&gt;/deactivate/</code></td>
+<td><code>parameter_deactivate</code></td>
+<td>admin</td>
+<td>redirect/HTML400</td>
+<td>Disattivazione sicura</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/parameters/&lt;str:param_id&gt;/questions/add/</code></td>
+<td><code>question_add</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Aggiunta domanda</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/parameters/&lt;str:param_id&gt;/questions/&lt;str:question_id&gt;/edit/</code></td>
+<td><code>question_edit</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Modifica domanda</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/parameters/&lt;str:param_id&gt;/questions/&lt;str:question_id&gt;/delete/</code></td>
+<td><code>question_delete</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Conferma+cancellazione domanda</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/&lt;str:param_id&gt;/questions/import/</code></td>
+<td><code>question_clone</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Clonazione domanda</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/lookups/</code></td>
+<td><code>lookups_manage</code></td>
+<td>admin</td>
+<td>HTML/partial/redirect</td>
+<td>Gestione lookup schema/tipo/livello</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/parameters/motivations/</code></td>
+<td><code>motivations_manage</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Gestione motivazioni</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/parameters/parameters/motivations/&lt;int:mot_id&gt;/edit/</code></td>
+<td><code>motivation_edit</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Modifica motivazione</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/parameters/parameters/&lt;str:param_id&gt;/pdf/</code></td>
+<td><code>parameter_download_pdf</code></td>
+<td>admin</td>
+<td>PDF</td>
+<td>Report parametro</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/parameters/languages/&lt;str:lang_id&gt;/review-flags/</code></td>
+<td><code>review_flags_list</code></td>
+<td>login</td>
+<td>JSON</td>
+<td>Lista flag review utente</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/parameters/languages/&lt;str:lang_id&gt;/parameters/&lt;str:param_id&gt;/review-flag/</code></td>
+<td><code>toggle_review_flag</code></td>
+<td>login</td>
+<td>JSON/400</td>
+<td>Toggle flag review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-modulo-glossary-glossary">7) Modulo Glossary (<code>/glossary/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/glossary/</code></td>
+<td><code>glossary_list</code></td>
+<td>login</td>
+<td>HTML</td>
+<td>Lista con ricerca/paginazione</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/glossary/add/</code></td>
+<td><code>glossary_add</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Nuova voce</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/glossary/&lt;str:word&gt;/</code></td>
+<td><code>glossary_view</code></td>
+<td>login</td>
+<td>HTML</td>
+<td>Dettaglio voce</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/glossary/&lt;str:word&gt;/edit/</code></td>
+<td><code>glossary_edit</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Modifica voce</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/glossary/&lt;str:word&gt;/delete/</code></td>
+<td><code>glossary_delete</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Conferma+cancellazione</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-modulo-graphs-graphs">8) Modulo Graphs (<code>/graphs/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/graphs/parameters/</code></td>
+<td><code>parameters_graph</code></td>
+<td>login</td>
+<td>HTML</td>
+<td>Pagina grafico parametri</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/graphs/api/graph.json</code></td>
+<td><code>api_graph</code></td>
+<td>login</td>
+<td>JSON</td>
+<td>Nodi+archi da implicational conditions</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/graphs/api/lang-values.json?lang=&lt;id&gt;</code></td>
+<td><code>api_lang_values</code></td>
+<td>login</td>
+<td>JSON</td>
+<td>Valori finali parametri per lingua</td>
+</tr>
+</tbody>
+</table>
+<h3 id="esempio-risposta-api_graph">Esempio risposta <code>api_graph</code></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;nodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P1&quot;</span><span class="p">}}],</span>
+<span class="w">  </span><span class="nt">&quot;edges&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P0-&gt;P1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P1&quot;</span><span class="p">}}]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="esempio-risposta-api_lang_values">Esempio risposta <code>api_lang_values</code></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;it&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Italian&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;values&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P1 - Example&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;final&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;+&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="9-modulo-table-a-table-a">9) Modulo Table A (<code>/table-a/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/table-a/</code></td>
+<td><code>tablea_index</code></td>
+<td>login</td>
+<td>HTML/partial</td>
+<td>Supporta HTMX (<code>HX-Request</code>)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/table-a/export.xlsx</code></td>
+<td><code>tablea_export_xlsx</code></td>
+<td>login</td>
+<td>XLSX</td>
+<td>Export matrice corrente</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/table-a/export_questions.xlsx</code></td>
+<td><code>tablea_export_questions_xlsx</code></td>
+<td>login</td>
+<td>XLSX</td>
+<td>Export orientato alle domande</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/table-a/export.csv</code></td>
+<td><code>tablea_export_csv</code></td>
+<td>login</td>
+<td>CSV</td>
+<td>Export trasposto per lingua</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/table-a/distances.zip</code></td>
+<td><code>tablea_export_distances_zip</code></td>
+<td>login</td>
+<td>ZIP</td>
+<td>Matrici Hamming/Jaccard</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/table-a/dendrograms.zip</code></td>
+<td><code>tablea_export_dendrogram</code></td>
+<td>login</td>
+<td>ZIP</td>
+<td>Dendrogrammi PNG</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/table-a/pca.png</code></td>
+<td><code>tablea_export_pca</code></td>
+<td>login</td>
+<td>PNG</td>
+<td>Scatterplot PCA</td>
+</tr>
+</tbody>
+</table>
+<p>Filtri principali via querystring:</p>
+<ul>
+<li>lingue: <code>f_lang_top_family</code>, <code>f_lang_family</code>, <code>f_lang_grp</code>, <code>f_lang_hist</code>, <code>f_lang_specific</code></li>
+<li>vista: <code>view=params|questions</code></li>
+<li>filtri parametro: <code>f_p_schema</code>, <code>f_p_type</code>, <code>f_p_level</code></li>
+<li>filtri domanda: <code>f_q_template</code>, <code>f_q_stop</code></li>
+</ul>
+<h2 id="10-modulo-submissions-submissions">10) Modulo Submissions (<code>/submissions/</code>)</h2>
+<p>Tutte le route del modulo sono riservate ad admin autenticati.</p>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/submissions/</code></td>
+<td><code>submissions_list</code></td>
+<td>admin</td>
+<td>HTML</td>
+<td>Lista backup/cartelle</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/submissions/&lt;int:submission_id&gt;/</code></td>
+<td><code>submission_detail</code></td>
+<td>admin</td>
+<td>HTML</td>
+<td>Dettaglio snapshot</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/submissions/create/&lt;str:language_id&gt;/</code></td>
+<td><code>submission_create_for_language</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Crea backup singola lingua</td>
+</tr>
+<tr>
+<td>GET/POST</td>
+<td><code>/submissions/create-all/</code></td>
+<td><code>submission_create_all_languages</code></td>
+<td>admin</td>
+<td>HTML/redirect</td>
+<td>Crea backup globale sincronizzato</td>
+</tr>
+<tr>
+<td>POST (consigliato)</td>
+<td><code>/submissions/delete-backup/</code></td>
+<td><code>submission_delete_backup</code></td>
+<td>admin</td>
+<td>redirect</td>
+<td>Elimina backup per timestamp</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-modulo-queries-queries">11) Modulo Queries (<code>/queries/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/queries/</code></td>
+<td><code>home</code></td>
+<td>login + role check</td>
+<td>HTML/partial</td>
+<td>Accesso consentito a admin/staff/linguist</td>
+</tr>
+</tbody>
+</table>
+<p>Caratteristiche:</p>
+<ul>
+<li>multi-tab logiche (<code>q1</code>...<code>q9</code>) via query params</li>
+<li>rendering parziale con HTMX: template <code>queries/partials/results.html</code></li>
+<li>analisi su implicazioni, neutralizzazioni, distribuzioni e confronti tra lingue</li>
+</ul>
+<h2 id="12-modulo-instruction-instruction">12) Modulo Instruction (<code>/instruction/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/instruction/instructions/</code></td>
+<td><code>instruction</code></td>
+<td>login</td>
+<td>HTML</td>
+<td>Pagina istruzioni con contenuti dinamici</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/instruction/api/update-content/</code></td>
+<td><code>update_site_content</code></td>
+<td>login + admin check</td>
+<td>JSON</td>
+<td>Aggiorna/crea blocchi <code>SiteContent</code></td>
+</tr>
+</tbody>
+</table>
+<p>Payload JSON atteso per update:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;instr_example&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Testo aggiornato&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;page&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Instructions&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Risposte tipiche:</p>
+<ul>
+<li><code>200</code>: <code>{"status": "success"}</code></li>
+<li><code>400</code>: <code>{"error": "Key is required"}</code></li>
+<li><code>403</code>: <code>{"error": "Unauthorized"}</code></li>
+</ul>
+<h2 id="13-modulo-questions-questions">13) Modulo Questions (<code>/questions/</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Metodo</th>
+<th>Path</th>
+<th>View</th>
+<th>Auth</th>
+<th>Output</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/questions/all/</code></td>
+<td><code>question_list</code></td>
+<td>admin</td>
+<td>HTML</td>
+<td>Lista globale domande con ricerca</td>
+</tr>
+</tbody>
+</table>
+<h2 id="14-errori-status-code-e-sicurezza">14) Errori, status code e sicurezza</h2>
+<p>Pattern osservati nel codice:</p>
+<ul>
+<li><code>200</code>: render HTML/JSON standard</li>
+<li><code>302</code>: redirect post-azione</li>
+<li><code>400</code>: input non valido (<code>HttpResponseBadRequest</code>, validazioni)</li>
+<li><code>403</code>: accesso non autorizzato (alcuni endpoint JSON)</li>
+<li><code>404</code>: risorsa non trovata / access denied mascherato</li>
+<li><code>500</code>: eccezioni non gestite (<code>/test500/</code> forza questo caso)</li>
+</ul>
+<p>Sicurezza applicata:</p>
+<ul>
+<li>CSRF middleware attivo</li>
+<li>protezione clickjacking (<code>X_FRAME_OPTIONS = DENY</code>)</li>
+<li>WhiteNoise per static in deploy</li>
+<li>policy cookie <code>SameSite=Lax</code></li>
+</ul>
+<h2 id="15-note-operative-per-manutenzione-docs">15) Note operative per manutenzione docs</h2>
+<p>Per mantenere questa pagina aggiornata, verificare a ogni release:</p>
+<ol>
+<li><code>progetto_lingua_2/urls.py</code></li>
+<li>tutti i file <code>*/urls.py</code></li>
+<li>decorator e metodi HTTP in <code>*/views.py</code></li>
+<li>eventuali nuove route JSON/export e relativi payload</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
