@@ -1,16 +1,33 @@
 # RIEPILOGO MODIFICHE
 
-- [ ] Roberto Romano per indirizzo tecnico per macchina virtuale
-- [ ] Servizi informatici per casella noreply
+
+- [x] Roberto Romano per indirizzo tecnico per macchina virtuale
+- [x] Servizi informatici per casella noreply
 - [ ] Richiedere di accettare di nuovo le condizioni sull'utilizzo se modifichiamo il file
+- [ ] Inserire nuovo Terms of use
 
 ## GENERALI
+- [ ] Il FLAGGED / UNSURE PARAMETERS fa cose strane, tipo mette problemi per Italian ma nella pagina Data i parametri sono tutti verdi
 - [x] Forse è il caso che FLAGGED / UNSURE PARAMETERS mostri i parametri rossi, quindi anche quelli per cui manca anche una sola risposta (es. CEX per Trieste)
 - [x] Rendere cliccabili i link nel menù (link circolari)
 - [x] Aggiornare i nomi delle pagine (Graph -> Parameter networks, Submissions -> Saved languages, Queries -> Filters)
 - [x] Aggiornare ordine nel menù User: Dashboard > Languages > Instructions > Glossary > My account
 - [x] Aggiornare ordine nel menù Admin: Dashboard > Languages > Parameters > Parameter networks > Table A > Saved languages > Filters > Instructions > Glossary > My account > Accounts
 - [x] Rendere cliccabile il breadcrumb
+
+## HOW TO CITE
+- [ ] Inserire la visualizzazione dei due How to cite (non modificabili) per User in una pagina "How to cite" (mentre per Admin è "How to cite (edit)")
+- [ ] Descrizione di "How to cite" sx: "Unless otherwise specified in the description of each parameter, if you quote a parameter description or any parameter manifestation, please refer to:"
+- [ ] Titolo di "How to cite" dx: "Language list & map", contenuto: "Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1). Accessed on: XX/XX/XXXX"
+- [ ] Nel "How to cite" dx il riferimento non si salva se modificato dal sito e quando si preme su "Edit reference" non compare il testo già presente 
+- [ ] Aggiungere un terzo riquadro sotto agli altri e largo quanto i due sopra messi insieme visibile e modificabile solo per gli Admin, con titolo "Outputs" e descrizione "To cite any content of the PCM Hub (except for parameters and manifestations):" e contenuto/ref uguale a quello sopra a dx
+
+## LANDING PAGE
+- [ ] Praticamente rendere la pagina che ora è la homepage di Public visibile senza accesso e con pulsante di login in alto a destra
+- [ ] Come "logo" immagine di un planisfero con segnaposti in corrispondenza delle coordinate inserite, che si aggiorni sulla base delle lingue nel db. Sarebbe ideale se i colori dei segnaposto dipendessero dalla top-level family della lingua
+- [ ] Togliere la colonna a sx (= per il momento tralasciamo le altre pagine) 
+- [ ] Lasciamo il pulsante che riconduce alle citazioni
+- [ ] Si può togliere anche la tabella a destra (magari teniamo il codice, che può essere utile in futuro)
 
 ## PUBLIC
 - [x] Valori aggiornati per lingue, famiglie, ...
@@ -24,11 +41,12 @@
 - [x] Modificare "How to cite": nuova pagina nel menù a sinistra
 
 ## QUESTIONS
+- [ ] Se modifico una question da questa pagina poi non chiede di specificare quale è stato il cambiamento per salvare
 - [x] Nuova pagina "Questions" simile a "Parameters" con pulsante Search una tabella: label | testo della  question | pulsante Edit (porta alla pagina del parametro)
 - [x] Lista delle questions con lo stesso ordine dei parametri
 
 ## LISTA LINGUE
-- [??] Mettere i pulsanti a destra in un'unica riga
+- [ ] Poter selezionare le lingue per scaricare gli esempi ecc (al momento o lingua singola o tutte le lingue)
 - [x] Inserire l'attributo location in Add, Edit, visualizzabile in Lingue Data e come colonna nel file excel che si scarica con le info di tutte le lingue
 - [x] Togliere l'attributo position
 - [x] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua)
@@ -60,6 +78,7 @@
 - [x] Mettere i pulsanti a destra in un'unica riga
 
 ## PARAMETERS EDIT
+- [ ] Inserire uno spazio sotto a brief summary of changes in cui sono conservate tutte le descrizioni delle modifiche fatte per quel parametro
 - [x] Instruction yes e no al plurale in edit question 
 - [x] Inserire un nuovo attributo Level of comparison con i due valori mutualmente esclusivi Canonico e Deuterocanonico
 - [x] Inserire due altre celle di testo libero una sotto l'altra intitolate "Long description" e "Explication of the implicational condition"

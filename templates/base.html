@@ -464,7 +464,7 @@
         </li>
 
         {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
-          <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">Edit Public Citations</a></li>
+          <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">How to cite (edit)</a></li>
         {% endif %}
 
         {# --- PUBLIC MENU --- #}
