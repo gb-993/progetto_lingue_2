@@ -3,9 +3,45 @@
 
 {% block title %}How to Cite{% endblock %}
 
+{# --- GESTIONE DINAMICA DELLA SIDEBAR --- #}
+{% block sidebar %}
+  {% if not request.user.is_authenticated or request.user.role == 'public' %}
+    {# Lasciamo il blocco vuoto per nasconderla agli utenti pubblici #}
+  {% else %}
+    {# Per User e Admin carichiamo la sidebar originale dal base.html #}
+    {{ block.super }}
+  {% endif %}
+{% endblock %}
+
+{# --- GESTIONE DINAMICA DELLA TOP BAR (BREADCRUMB / TASTO BACK) --- #}
+{% block topbar_left %}
+  {% if not request.user.is_authenticated or request.user.role == 'public' %}
+    {# Layout per il pubblico: Tasto "Back" + Logo #}
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+      <a href="{% url 'dashboard' %}" class="btn" style="padding: 0.4rem 0.8rem; font-weight: 600; text-decoration: none;">
+        &larr; Back
+      </a>
+      <div class="public-top-logo">
+        <h1 class="site-title" style="margin: 0; font-size: 1.25rem; line-height: 1.2; color: var(--text-color);">
+          The PCM Hub
+          <span style="display: block; font-size: 0.75rem; margin-top: 0.2rem; opacity: 0.7; font-weight: normal;">Parametric Comparison Method</span>
+        </h1>
+      </div>
+    </div>
+  {% else %}
+    {# Per User e Admin carichiamo breadcrumb e hamburger originali #}
+    {{ block.super }}
+  {% endif %}
+{% endblock %}
+
+{# --- BREADCRUMB SPECIFICO PER USER/ADMIN --- #}
+{% block breadcrumb %}
+  <li>Citation</li>
+{% endblock %}
+
 {% block content %}
-<div class="container dashboard" role="main">
-  <header class="dashboard-hero">
+<div class="container dashboard" role="main" style="max-width: 1000px; margin: 0 auto;">
+    <header class="dashboard-hero">
     <h1>Citation Guidelines</h1>
   </header>
 
