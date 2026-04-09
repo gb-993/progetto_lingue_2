@@ -3,11 +3,11 @@
 
 - [x] Roberto Romano per indirizzo tecnico per macchina virtuale
 - [x] Servizi informatici per casella noreply
-- [ ] Richiedere di accettare di nuovo le condizioni sull'utilizzo se modifichiamo il file
+- [x] Richiedere di accettare di nuovo le condizioni sull'utilizzo se modifichiamo il file
 - [ ] Inserire nuovo Terms of use
 
 ## GENERALI
-- [ ] Il FLAGGED / UNSURE PARAMETERS fa cose strane, tipo mette problemi per Italian ma nella pagina Data i parametri sono tutti verdi
+- [x] Il FLAGGED / UNSURE PARAMETERS fa cose strane, tipo mette problemi per Italian ma nella pagina Data i parametri sono tutti verdi
 - [x] Forse è il caso che FLAGGED / UNSURE PARAMETERS mostri i parametri rossi, quindi anche quelli per cui manca anche una sola risposta (es. CEX per Trieste)
 - [x] Rendere cliccabili i link nel menù (link circolari)
 - [x] Aggiornare i nomi delle pagine (Graph -> Parameter networks, Submissions -> Saved languages, Queries -> Filters)
