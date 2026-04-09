@@ -15,7 +15,7 @@
       <div class="citation-content">
         <h3>Parameters & Manifestations</h3>
         <p class="small">
-          {{ site_contents.params_desc|default:"To cite the theoretical framework.:" }}
+          Unless otherwise specified in the description of each parameter, if you quote a parameter description or any parameter manifestation, please refer to:        
         </p>
 
         <div class="cite-box" id="cite-params">
@@ -33,15 +33,15 @@
 
     <div class="card citation-card">
       <div class="citation-content">
-        <h3>Languages & Data</h3>
+        <h3>Language list & map</h3>
         <p class="small">
           {{ site_contents.data_desc|default:"To cite the linguistic data:" }}
         </p>
 
         <div class="cite-box" id="cite-data">
           <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">Copy</button>
-
-          Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1)
+          
+          {{ site_contents.data_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1). Accessed on: XX/XX/XXXX"|safe }}
         </div>
 
         {% if is_admin %}

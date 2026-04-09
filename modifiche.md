@@ -16,14 +16,14 @@
 - [x] Rendere cliccabile il breadcrumb
 
 ## HOW TO CITE
-- [ ] Inserire la visualizzazione dei due How to cite (non modificabili) per User in una pagina "How to cite" (mentre per Admin è "How to cite (edit)")
-- [ ] Descrizione di "How to cite" sx: "Unless otherwise specified in the description of each parameter, if you quote a parameter description or any parameter manifestation, please refer to:"
-- [ ] Titolo di "How to cite" dx: "Language list & map", contenuto: "Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1). Accessed on: XX/XX/XXXX"
-- [ ] Nel "How to cite" dx il riferimento non si salva se modificato dal sito e quando si preme su "Edit reference" non compare il testo già presente 
+- [x] Inserire la visualizzazione dei due How to cite (non modificabili) per User in una pagina "How to cite" (mentre per Admin è "How to cite (edit)")
+- [x] Descrizione di "How to cite" sx: "Unless otherwise specified in the description of each parameter, if you quote a parameter description or any parameter manifestation, please refer to:"
+- [x] Titolo di "How to cite" dx: "Language list & map", contenuto: "Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1). Accessed on: XX/XX/XXXX"
+- [x] Nel "How to cite" dx il riferimento non si salva se modificato dal sito e quando si preme su "Edit reference" non compare il testo già presente 
 - [ ] Aggiungere un terzo riquadro sotto agli altri e largo quanto i due sopra messi insieme visibile e modificabile solo per gli Admin, con titolo "Outputs" e descrizione "To cite any content of the PCM Hub (except for parameters and manifestations):" e contenuto/ref uguale a quello sopra a dx
 
 ## LANDING PAGE
-- [ ] Praticamente rendere la pagina che ora è la homepage di Public visibile senza accesso e con pulsante di login in alto a destra (lo sapevo che finiva così)
+- [x] Praticamente rendere la pagina che ora è la homepage di Public visibile senza accesso e con pulsante di login in alto a destra (lo sapevo che finiva così)
 - [ ] Come "logo" immagine di un planisfero con segnaposti in corrispondenza delle coordinate inserite, che si aggiorni sulla base delle lingue nel db. Sarebbe ideale se i colori dei segnaposto dipendessero dalla top-level family della lingua
 - [ ] Togliere la colonna a sx (= per il momento tralasciamo le altre pagine) 
 - [ ] Lasciamo il pulsante che riconduce alle citazioni
