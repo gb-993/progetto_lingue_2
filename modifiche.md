@@ -23,7 +23,7 @@
 - [ ] Aggiungere un terzo riquadro sotto agli altri e largo quanto i due sopra messi insieme visibile e modificabile solo per gli Admin, con titolo "Outputs" e descrizione "To cite any content of the PCM Hub (except for parameters and manifestations):" e contenuto/ref uguale a quello sopra a dx
 
 ## LANDING PAGE
-- [ ] Praticamente rendere la pagina che ora è la homepage di Public visibile senza accesso e con pulsante di login in alto a destra
+- [ ] Praticamente rendere la pagina che ora è la homepage di Public visibile senza accesso e con pulsante di login in alto a destra (lo sapevo che finiva così)
 - [ ] Come "logo" immagine di un planisfero con segnaposti in corrispondenza delle coordinate inserite, che si aggiorni sulla base delle lingue nel db. Sarebbe ideale se i colori dei segnaposto dipendessero dalla top-level family della lingua
 - [ ] Togliere la colonna a sx (= per il momento tralasciamo le altre pagine) 
 - [ ] Lasciamo il pulsante che riconduce alle citazioni
@@ -53,9 +53,7 @@
 - [x] Errori "parlanti" al caricamento di un file
 - [x] Equiparare Qs a QS nello script(?)
 - [x] Fare in modo che se nel file excel ci sono ID delle questions che non si trovano nel database, i dati di quelle questions non vengano copiati
-- [x] **RISOLTO**: Verificare che il caricamento di un foglio di una lingua sovrascriva i dati precedentemente caricati per quella lingua
-  - **Problema**: Il secondo upload non eliminava le risposte vecchie, causando inconsistenze
-  - **Soluzione**: Implementato "replace all" - tutti i dati vengono eliminati e ricreati da zero
+- [x] Verificare che il caricamento di un foglio di una lingua sovrascriva i dati precedentemente caricati per quella lingua
 
 ## LINGUE DATA
 - [x] A volte il numero dell'esempio è cancellato nella cella di Example text (anche se è del tipo 1.1). A questo punto conviene che lo script non cerchi di associare l'esempio a un numero ma lo copi direttamente così com'è
@@ -65,7 +63,6 @@
 
 ## DEBUG PARAMETRI
 - [x] Poter modificare manualmente il valore di un parametro nel final value, segnalando che è stata fatta una modifica 
--> risolto mettendo "?" e propagato per i parametri
 
 ## GLOSSARIO
 - [x] Controllare corrispondenza tra versione online e locale

@@ -33,24 +33,20 @@ def _is_admin(user: User) -> bool:
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
 
-@login_required
+# ASSICURATI CHE NON CI SIA @login_required QUI
 def dashboard(request: HttpRequest) -> HttpResponse:
-    """Render the main dashboard with role-specific widgets and statistics.
-
-    The view computes global counters for the platform and enriches the
-    context with admin-only or user-only sections depending on the current
-    account role.
-
-    Args:
-        request: Current authenticated HTTP request.
-
-    Returns:
-        Rendered dashboard response. Public users receive a dedicated template.
-    """
+    """Render the main dashboard with role-specific widgets and statistics."""
     user = request.user
-    role = getattr(user, "role", "user")
-    is_admin = _is_admin(user)
+    
+    # 1. INTERCETTA L'UTENTE NON AUTENTICATO (ANONIMO)
+    if not user.is_authenticated:
+        role = "public"
+        is_admin = False
+    else:
+        role = getattr(user, "role", "user")
+        is_admin = _is_admin(user)
 
+    # 2. STATISTICHE GLOBALI (calcolate per tutti)
     total_questions = Question.objects.filter(parameter__is_active=True).count()
 
     completed_langs_count = Language.objects.annotate(
@@ -60,7 +56,6 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         ))
     ).filter(valid_answers_count__gte=total_questions).count()
 
-    # Statistiche generali (rimosse le total_answers vecchie)
     stats = {
         "languages": Language.objects.count(),
         "completed_languages": completed_langs_count,
@@ -70,9 +65,14 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "glossary": Glossary.objects.count(),
     }
 
+    # 3. RITORNO ANTICIPATO PER UTENTI PUBBLICI O ANONIMI
+    # Se è public/anonimo, renderizza subito e BLOCCA l'esecuzione del resto della funzione
     if role == "public":
         return render(request, "accounts/public_dashboard.html", {"stats": stats, "is_public": True})
 
+    # ==========================================
+    # DA QUI IN POI CI ARRIVANO SOLO I LOGGATI
+    # ==========================================
     ctx: dict[str, Any] = {"is_admin": is_admin, "stats": stats}
 
     # --- LOGICA ADMIN ---
@@ -87,7 +87,6 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             .order_by("-changed_at")[:10]
         )
 
-        # NUOVO: Raggruppamento e conteggio dei Parametri Flagged/Unsure ("Rossi") per lingua
         red_langs = (
             ParameterReviewFlag.objects.filter(flag=True)
             .values('language__id', 'language__name_full')
@@ -96,13 +95,13 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             .order_by('-red_count')
         )
         
-        # Totale assoluto per il grande numero in alto
         stats["total_red"] = sum(item['red_count'] for item in red_langs)
         ctx["red_langs"] = red_langs
 
     # --- LOGICA USER ---
-    if role == "user":
+    elif role == "user":  # Usa elif per maggiore sicurezza
         total_q_count = Question.objects.filter(parameter__is_active=True).count()
+        # Qui user.m2m_languages è sicuro perché sappiamo che l'utente è loggato!
         assigned_langs = user.m2m_languages.annotate(
             done_count=Count('answers', filter=Q(answers__response_text__in=['yes', 'no'])),
             has_reject=Count('answers', filter=Q(answers__status='rejected'))

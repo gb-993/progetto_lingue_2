@@ -492,8 +492,9 @@ def language_data(request: HttpRequest, lang_id: str) -> HttpResponse:
     )
     answers_by_qid = {a.question_id: a for a in answers_qs}
 
+    # Ora guarda se il parametro è rosso, a prescindere da chi lo ha flaggato
     flagged_pids = set(
-        ParameterReviewFlag.objects.filter(language=lang, user=user, flag=True).values_list("parameter_id", flat=True)
+        ParameterReviewFlag.objects.filter(language=lang, flag=True).values_list("parameter_id", flat=True)
     )
 
     active_q_total = 0
@@ -736,16 +737,14 @@ def parameter_save(request: HttpRequest, lang_id: str, param_id: str) -> HttpRes
     is_complete = (len(questions) > 0 and saved_count == len(questions))
 
     try:
-        # Attiviamo il flag se l'azione è "next" OPPURE se il parametro è incompleto
         if action == "next" or not is_complete:
+            # Crea/aggiorna il flag per chi sta facendo l'azione
             ParameterReviewFlag.objects.update_or_create(
                 language=lang, parameter=param, user=request.user, defaults={"flag": True}
             )
         else:
-            # Rimuoviamo il flag solo se si clicca "save" E il parametro è completo al 100%
-            ParameterReviewFlag.objects.update_or_create(
-                language=lang, parameter=param, user=request.user, defaults={"flag": False}
-            )
+            # AZZERAMENTO GLOBALE: Se salvato e completo, rimuovi la flag per TUTTI gli utenti
+            ParameterReviewFlag.objects.filter(language=lang, parameter=param).update(flag=False)
     except Exception:
         pass
 
@@ -1271,7 +1270,7 @@ def review_flags_list(request: HttpRequest, lang_id: str) -> JsonResponse:
     if not _check_language_access(request.user, lang):
         return JsonResponse({"flags": []})
     flags = list(
-        ParameterReviewFlag.objects.filter(language=lang, user=request.user, flag=True)
+        ParameterReviewFlag.objects.filter(language=lang, flag=True)
         .values_list("parameter_id", flat=True)
     )
     return JsonResponse({"flags": flags})

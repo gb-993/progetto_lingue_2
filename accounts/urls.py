@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth.views import LoginView, LogoutView
-from django.views.generic import TemplateView  # <--- IMPORTANTE: Aggiungi questo import
+from django.views.generic import TemplateView  
 from . import views
 from .forms import EmailAuthForm
 
@@ -14,12 +14,20 @@ urlpatterns = [
     path("contacts/", TemplateView.as_view(template_name="public/contacts.html"), name="contacts"),
     # --------------------------------------------
     path('accept-terms/', views.accept_terms, name='accept_terms'),
-    # Le altre tue URL
-    path("", views.accounts_list, name="accounts_list"),
+    
+    # --- MODIFICHE EFFETTUATE QUI SOTTO ---
+    path("", views.dashboard, name="home"),  
+    path("accounts/list/", views.accounts_list, name="accounts_list"), 
+    # --------------------------------------
+    
     path("add/", views.accounts_add, name="accounts_add"),
     path("<int:user_id>/edit/", views.accounts_edit, name="accounts_edit"),
     path("login/", LoginView.as_view(template_name="accounts/login.html", authentication_form=EmailAuthForm, redirect_authenticated_user=True), name="login"),
-    path("logout/", LogoutView.as_view(next_page="/accounts/login/"), name="logout"),
+    
+    # --- MODIFICA EFFETTUATA QUI SOTTO ---
+    path("logout/", LogoutView.as_view(next_page="dashboard"), name="logout"), 
+    # --------------------------------------
+    
     path("me/", views.my_account, name="my_account"),
     path("<int:user_id>/delete/", views.accounts_delete, name="accounts_delete"),
     path('how-to-cite/', views.how_to_cite, name='how_to_cite'),

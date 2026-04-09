@@ -468,7 +468,7 @@
         {% endif %}
 
         {# --- PUBLIC MENU --- #}
-        {% if request.user.role == 'public' %}
+        {% if not request.user.is_authenticated or request.user.role == 'public' %}
           <li class="nav-divider-label">Information</li>
           <li><a class="btn {% if urln == 'about' %}is-current{% endif %}" href="{% url 'about' %}">About</a></li>
           <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">Citation Guidelines</a></li>
@@ -525,14 +525,19 @@
 
       <div class="top-bar-right">
         {% with urln=request.resolver_match.url_name|default:'' %}
-          <a class="btn {% if urln == 'my_account' %}is-current{% endif %}"
-             href="{% url 'my_account' %}">
-             My Account
-          </a>
           <button id="theme-toggle" type="button" class="btn theme-toggle"></button>
-          <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
-            <button class="btn" type="submit">Logout</button>
-          </form>
+          
+          {% if request.user.is_authenticated %}
+            <a class="btn {% if urln == 'my_account' %}is-current{% endif %}"
+               href="{% url 'my_account' %}">
+               My Account
+            </a>
+            <form action="{% url 'logout' %}" method="post" aria-label="Logout" style="display:inline">{% csrf_token %}
+              <button class="btn" type="submit">Logout</button>
+            </form>
+          {% else %}
+            <a class="btn btn-primary" href="{% url 'login' %}" style="margin-left: 1rem;">Login</a>
+          {% endif %}
         {% endwith %}
       </div>
     </header>

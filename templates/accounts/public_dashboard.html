@@ -6,7 +6,7 @@
 {% block content %}
 <div class="container dashboard" role="main">
 
-  {% if request.user.role == 'public' %}
+  {% if not request.user.is_authenticated or request.user.role == 'public' %}
     <header class="dashboard-hero">
       <h1>Welcome to the PCM Hub</h1>
       <p style="font-size: 1.1rem; line-height: 1.6;">
