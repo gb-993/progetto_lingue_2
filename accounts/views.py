@@ -1,5 +1,6 @@
 from typing import Any
 
+import json 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
@@ -33,7 +34,6 @@ def _is_admin(user: User) -> bool:
     return bool(user.is_authenticated and (user.is_staff or getattr(user, "role", "") == "admin"))
 
 
-# ASSICURATI CHE NON CI SIA @login_required QUI
 def dashboard(request: HttpRequest) -> HttpResponse:
     """Render the main dashboard with role-specific widgets and statistics."""
     user = request.user
@@ -65,10 +65,30 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "glossary": Glossary.objects.count(),
     }
 
-    # 3. RITORNO ANTICIPATO PER UTENTI PUBBLICI O ANONIMI
-    # Se è public/anonimo, renderizza subito e BLOCCA l'esecuzione del resto della funzione
+    # SEZIONE PUBBLICA: Aggiungiamo i dati per la mappa
     if role == "public":
-        return render(request, "accounts/public_dashboard.html", {"stats": stats, "is_public": True})
+        # Prendi solo le lingue con latitudine e longitudine
+        langs_with_coords = Language.objects.filter(
+            latitude__isnull=False,
+            longitude__isnull=False
+        ).values('id', 'name_full', 'latitude', 'longitude', 'top_level_family')
+
+        map_data = []
+        for l in langs_with_coords:
+            map_data.append({
+                'id': l['id'],
+                'name': l['name_full'],
+                'lat': float(l['latitude']),  # Converti Decimal in float per il JSON
+                'lng': float(l['longitude']),
+                'family': l['top_level_family'] or 'Unknown'
+            })
+
+        ctx = {
+            "stats": stats, 
+            "is_public": True, 
+            "map_data_json": json.dumps(map_data) # Passiamo il JSON al template
+        }
+        return render(request, "accounts/public_dashboard.html", ctx)
 
     # ==========================================
     # DA QUI IN POI CI ARRIVANO SOLO I LOGGATI

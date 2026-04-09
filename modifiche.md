@@ -25,9 +25,9 @@
 ## LANDING PAGE
 - [x] Praticamente rendere la pagina che ora è la homepage di Public visibile senza accesso e con pulsante di login in alto a destra (lo sapevo che finiva così)
 - [ ] Come "logo" immagine di un planisfero con segnaposti in corrispondenza delle coordinate inserite, che si aggiorni sulla base delle lingue nel db. Sarebbe ideale se i colori dei segnaposto dipendessero dalla top-level family della lingua
-- [ ] Togliere la colonna a sx (= per il momento tralasciamo le altre pagine) 
-- [ ] Lasciamo il pulsante che riconduce alle citazioni
-- [ ] Si può togliere anche la tabella a destra (magari teniamo il codice, che può essere utile in futuro)
+- [x] Togliere la colonna a sx (= per il momento tralasciamo le altre pagine) 
+- [x] Lasciamo il pulsante che riconduce alle citazioni
+- [x] Si può togliere anche la tabella a destra (magari teniamo il codice, che può essere utile in futuro)
 
 ## PUBLIC
 - [x] Valori aggiornati per lingue, famiglie, ...

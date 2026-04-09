@@ -16,53 +16,33 @@
 </div>
 {% endblock %}
 
-{% block content %}
-<div class="container dashboard" role="main">
-
-  <div class="landing-minimal-wrapper">
-    
-    <header class="landing-hero">
-      <img src="{% static 'img/img.png' %}" alt="PCM Hub Logo" class="landing-logo">
-      <h1>Welcome to the PCM Hub</h1>
-      <p class="landing-subtitle">
-        The Hub of the <strong>Parametric Comparison Method (PCM)</strong> aims to collect syntactic data of the world's languages.
-        By comparing language parameters, it is possible to reconstruct relationships and infer divergence patterns.
-      </p>
-    </header>
-
-    <div class="landing-cards-grid">
-      
-      <div class="card card-flex">
-        <div class="card-body">
-          <h3 style="margin-top: 0;">How to cite</h3>
-          <p class="muted">
-            If you use data or methodology from the PCM Hub in your research, please cite us correctly.
-          </p>
-        </div>
-        <div class="card-footer">
-          <a href="{% url 'how_to_cite' %}" class="btn btn-primary btn-wide-hover">
-            View Citation Guidelines
-          </a>
-        </div>
-      </div>
-
-      <div class="card card-flex collab-card">
-        <div class="card-body">
-          <h3 style="margin-top: 0;">Collaborate with us</h3>
-          <p>Are you interested in contributing to data collection or proposing a scientific collaboration?</p>
-          <p style="margin-bottom: 0;">
-            Contact us at: <br>
-            <strong><a href="mailto:pcm_lab@unimore.it" class="email-link">pcm_lab@unimore.it</a></strong>
-          </p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-</div>
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 
 <style>
+/* --- STILI PER LA MAPPA --- */
+#world-map {
+  height: 450px;
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 1; /* Previene sovrapposizioni con la topbar */
+  border: 1px solid var(--border-color);
+}
+
+:root[data-theme="dark"] #world-map {
+  filter: brightness(0.85) contrast(1.1); /* Integra meglio la mappa nel tema scuro */
+}
+
+.custom-marker {
+  width: 12px; 
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 4px rgba(0,0,0,0.4);
+}
+
 /* --- STILI PER LA LANDING MINIMALE --- */
 .landing-minimal-wrapper {
   max-width: 1000px;
@@ -149,4 +129,63 @@
   }
 }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="container dashboard" role="main">
+
+  <div class="landing-minimal-wrapper">
+    
+    <header class="landing-hero">
+      <img src="{% static 'img/img.png' %}" alt="PCM Hub Logo" class="landing-logo">
+      <h1>Welcome to the PCM Hub</h1>
+      <p class="landing-subtitle">
+        The Hub of the <strong>Parametric Comparison Method (PCM)</strong> aims to collect syntactic data of the world's languages.
+        By comparing language parameters, it is possible to reconstruct relationships and infer divergence patterns.
+      </p>
+    </header>
+
+    <div id="world-map"></div>
+
+    <div class="landing-cards-grid">
+      
+      <div class="card card-flex">
+        <div class="card-body">
+          <h3 style="margin-top: 0;">How to cite</h3>
+          <p class="muted">
+            If you use data or methodology from the PCM Hub in your research, please cite us correctly.
+          </p>
+        </div>
+        <div class="card-footer">
+          <a href="{% url 'how_to_cite' %}" class="btn btn-primary btn-wide-hover">
+            View Citation Guidelines
+          </a>
+        </div>
+      </div>
+
+      <div class="card card-flex collab-card">
+        <div class="card-body">
+          <h3 style="margin-top: 0;">Collaborate with us</h3>
+          <p>Are you interested in contributing to data collection or proposing a scientific collaboration?</p>
+          <p style="margin-bottom: 0;">
+            Contact us at: <br>
+            <strong><a href="mailto:pcm_lab@unimore.it" class="email-link">pcm_lab@unimore.it</a></strong>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script id="map-data" type="application/json">
+  {{ map_data_json|safe }}
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="{% static 'js/public_map.js' %}"></script>
 {% endblock %}
