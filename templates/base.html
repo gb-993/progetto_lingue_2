@@ -443,6 +443,7 @@
 
   <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
+  {% block sidebar %}
   <aside class="sidebar" id="main-sidebar">
     <div class="sidebar-header">
       <h1 class="site-title">
@@ -510,24 +511,31 @@
     </nav>
     {% endwith %}
   </aside>
+  {% endblock %}
 
   <div class="main-layout">
 
     <header class="top-bar">
       <div class="top-bar-left">
-        <button id="sidebar-toggle" class="hamburger-btn" aria-label="Toggle Navigation">
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-        </button>
+        {% block topbar_left %}
+        
+          {% block hamburger %}
+          <button id="sidebar-toggle" class="hamburger-btn" aria-label="Toggle Navigation">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+          </button>
+          {% endblock %}
 
-        <nav class="breadcrumb" aria-label="Breadcrumb">
-          <ol>
-            <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
-            {% block breadcrumb %}{% endblock %}
-          </ol>
-        </nav>
-      </div>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol>
+              <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+              {% block breadcrumb %}{% endblock %}
+            </ol>
+          </nav>
+          
+        {% endblock topbar_left %}
+        </div>
 
       <div class="top-bar-right">
         {% with urln=request.resolver_match.url_name|default:'' %}
