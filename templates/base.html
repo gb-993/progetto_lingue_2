@@ -455,47 +455,53 @@
     <nav class="sidebar-nav" aria-label="Main Navigation">
       <ul class="nav-list">
 
-        {# --- DASHBOARD --- #}
+        {# --- 1. SEMPRE VISIBILI --- #}
         <li>
-          <a class="btn {% if urln == 'dashboard' %}is-current{% endif %}"
-             href="{% url 'dashboard' %}">
+          <a class="btn {% if urln == 'dashboard' %}is-current{% endif %}" href="{% url 'dashboard' %}">
              Dashboard
           </a>
         </li>
 
+        {# How to cite: Edit per Admin, Lettura per tutti gli altri (User inclusi) #}
         {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
           <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">How to cite (edit)</a></li>
+        {% else %}
+          <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">Citation Guidelines</a></li>
         {% endif %}
 
-        {# --- PUBLIC MENU --- #}
+
+        {# --- 2. SEZIONE PUBBLICA (Anonimi o ruolo 'public') --- #}
+        {# Nascondiamo i dati e mostriamo le pagine informative #}
         {% if not request.user.is_authenticated or request.user.role == 'public' %}
           <li class="nav-divider-label">Information</li>
           <li><a class="btn {% if urln == 'about' %}is-current{% endif %}" href="{% url 'about' %}">About</a></li>
-          <li><a class="btn {% if urln == 'how_to_cite' %}is-current{% endif %}" href="{% url 'how_to_cite' %}">Citation Guidelines</a></li>
           <li><a class="btn {% if urln == 'methodology' %}is-current{% endif %}" href="{% url 'methodology' %}">Methodology</a></li>
           <li><a class="btn {% if urln == 'team' %}is-current{% endif %}" href="{% url 'team' %}">Team</a></li>
           <li><a class="btn {% if urln == 'contacts' %}is-current{% endif %}" href="{% url 'contacts' %}">Contacts</a></li>
         {% endif %}
 
-        {# --- DATA MENU --- #}
-        {% if request.user.role != 'public' %}
+
+        {# --- 3. SEZIONE DATI (Solo User loggati e Admin) --- #}
+        {# Mostriamo Languages, Instructions e Glossary #}
+        {% if request.user.is_authenticated and request.user.role != 'public' %}
+          <li class="nav-divider-label">Data & Tools</li>
           <li>
-            <a class="btn {% if urln == 'language_list' or urln == 'language_add' or urln == 'language_edit' or urln == 'language_data' %}is-current{% endif %}"
-               href="{% url 'language_list' %}">
+            <a class="btn {% if urln == 'language_list' or urln == 'language_data' %}is-current{% endif %}" href="{% url 'language_list' %}">
                Languages
             </a>
           </li>
 
+          {# Strumenti esclusivi Admin #}
           {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
             <li><a class="btn {% if urln == 'parameter_list' %}is-current{% endif %}" href="{% url 'parameter_list' %}">Parameters</a></li>
             <li><a class="btn {% if urln == 'questions_list' %}is-current{% endif %}" href="{% url 'questions_list' %}">Questions</a></li>
             <li><a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}" href="{% url 'parameters_graph' %}">Network</a></li>
             <li><a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}" href="{% url 'tablea_index' %}">Table A</a></li>
             <li><a class="btn {% if urln == 'home' %}is-current{% endif %}" href="{% url 'queries:home' %}">Filters</a></li>
-            <li><a class="btn {% if urln == 'submissions_list' %}is-current{% endif %}" href="{% url 'submissions_list' %}">Backup</a></li>
             <li><a class="btn {% if urln == 'accounts_list' %}is-current{% endif %}" href="{% url 'accounts_list' %}">Accounts</a></li>
           {% endif %}
 
+          {# Tool comuni a User e Admin #}
           <li><a class="btn {% if urln == 'instruction' %}is-current{% endif %}" href="{% url 'instruction' %}">Instructions</a></li>
           <li><a class="btn {% if urln == 'glossary_list' %}is-current{% endif %}" href="{% url 'glossary_list' %}">Glossary</a></li>
         {% endif %}
