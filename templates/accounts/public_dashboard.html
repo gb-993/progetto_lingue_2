@@ -47,19 +47,12 @@
 .landing-minimal-wrapper {
   max-width: 1000px;
   margin: 0 auto;
-  padding-top: 2rem;
+  padding-top: 0; /* Ridotto da 2rem a 0 per spostare tutto in alto */
 }
 
 .landing-hero {
   text-align: center;
-  margin-bottom: 3rem;
-}
-
-.landing-logo {
-  width: 200px;
-  height: auto;
-  margin-bottom: 1.5rem;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+  margin-bottom: 2rem; /* Ridotto da 3rem a 2rem */
 }
 
 .landing-subtitle {
@@ -137,7 +130,6 @@
   <div class="landing-minimal-wrapper">
     
     <header class="landing-hero">
-      <img src="{% static 'img/img.png' %}" alt="PCM Hub Logo" class="landing-logo">
       <h1>Welcome to the PCM Hub</h1>
       <p class="landing-subtitle">
         The Hub of the <strong>Parametric Comparison Method (PCM)</strong> aims to collect syntactic data of the world's languages.

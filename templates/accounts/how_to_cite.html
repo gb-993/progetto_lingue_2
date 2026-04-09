@@ -41,7 +41,7 @@
 
 {% block content %}
 <div class="container dashboard" role="main" style="max-width: 1000px; margin: 0 auto;">
-    <header class="dashboard-hero">
+  <header class="dashboard-hero">
     <h1>Citation Guidelines</h1>
   </header>
 
@@ -89,7 +89,28 @@
     </div>
 
   </div>
-</div>
+
+  {# --- NUOVO RIQUADRO OUTPUTS (SOLO ADMIN, FULL WIDTH) --- #}
+  {% if is_admin %}
+  <div class="card citation-card" style="margin-top: 2rem;">
+    <div class="citation-content">
+      <h3>Outputs</h3>
+      <p class="small">
+        To cite any content of the PCM Hub (except for parameters and manifestations):
+      </p>
+
+      <div class="cite-box" id="cite-outputs">
+        <button class="btn-copy-mini" onclick="copyCitation('cite-outputs', this)" title="Copia citazione">Copy</button>
+        {{ site_contents.outputs_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1). Accessed on: XX/XX/XXXX"|safe }}
+      </div>
+
+      <div style="margin-top: 10px; text-align: right;">
+        <a href="{% url 'edit_site_content' 'outputs_cite' %}" style="font-size: 0.85rem; text-decoration: none; font-weight: 600; color: var(--brand);">✏️ Edit reference</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 
 <style>
@@ -155,9 +176,9 @@
   border-color: var(--ok);
 }
 
-  .dashboard-hero {
-    margin-bottom: 5rem;
-  }
+.dashboard-hero {
+  margin-bottom: 5rem;
+}
 
 @media (max-width: 800px) {
   .citation-grid { flex-direction: column; }
