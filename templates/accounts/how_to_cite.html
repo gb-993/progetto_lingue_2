@@ -69,15 +69,15 @@
 
     <div class="card citation-card">
       <div class="citation-content">
-        <h3>Language list & map</h3>
-        <p class="small">
+        <h3>Updated language list & map, analyses, graphs and scripts</h3>
+        <!-- <p class="small">
           {{ site_contents.data_desc|default:"To cite the linguistic data:" }}
-        </p>
+        </p> -->
 
         <div class="cite-box" id="cite-data">
           <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">Copy</button>
           
-          {{ site_contents.data_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1). Accessed on: XX/XX/XXXX"|safe }}
+          {{ site_contents.data_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1, accessed on: XX/XX/20XX)"|safe }}
         </div>
 
         {% if is_admin %}
@@ -101,7 +101,7 @@
 
       <div class="cite-box" id="cite-outputs">
         <button class="btn-copy-mini" onclick="copyCitation('cite-outputs', this)" title="Copia citazione">Copy</button>
-        {{ site_contents.outputs_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1). Accessed on: XX/XX/XXXX"|safe }}
+          {{ site_contents.data_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1, accessed on: XX/XX/20XX)"|safe }}
       </div>
 
       <div style="margin-top: 10px; text-align: right;">
