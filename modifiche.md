@@ -4,7 +4,7 @@
 - [x] Roberto Romano per indirizzo tecnico per macchina virtuale
 - [x] Servizi informatici per casella noreply
 - [x] Richiedere di accettare di nuovo le condizioni sull'utilizzo se modifichiamo il file
-- [ ] Inserire nuovo Terms of use
+- [x] Inserire nuovo Terms of use
 
 ## GENERALI
 - [x] Il FLAGGED / UNSURE PARAMETERS fa cose strane, tipo mette problemi per Italian ma nella pagina Data i parametri sono tutti verdi
@@ -23,6 +23,7 @@
 - [x] Aggiungere un terzo riquadro sotto agli altri e largo quanto i due sopra messi insieme visibile e modificabile solo per gli Admin, con titolo "Outputs" e descrizione "To cite any content of the PCM Hub (except for parameters and manifestations):" e contenuto/ref uguale a quello sopra a dx
 
 ## LANDING PAGE
+- [ ] Meglio togliere riferimenti politici dalla mappa
 - [x] Praticamente rendere la pagina che ora è la homepage di Public visibile senza accesso e con pulsante di login in alto a destra (lo sapevo che finiva così)
 - [x] Come "logo" immagine di un planisfero con segnaposti in corrispondenza delle coordinate inserite, che si aggiorni sulla base delle lingue nel db. Sarebbe ideale se i colori dei segnaposto dipendessero dalla top-level family della lingua
 - [x] Togliere la colonna a sx (= per il momento tralasciamo le altre pagine) 
@@ -75,13 +76,14 @@
 - [x] Mettere i pulsanti a destra in un'unica riga
 
 ## PARAMETERS EDIT
-- [ ] Inserire uno spazio sotto a brief summary of changes in cui sono conservate tutte le descrizioni delle modifiche fatte per quel parametro
+- [ ] Inserire uno spazio sotto a brief summary of changes in cui sono conservate tutte le descrizioni delle modifiche fatte per quel parametro (una sorta di cronologia dei cambiamenti)
 - [x] Instruction yes e no al plurale in edit question 
 - [x] Inserire un nuovo attributo Level of comparison con i due valori mutualmente esclusivi Canonico e Deuterocanonico
 - [x] Inserire due altre celle di testo libero una sotto l'altra intitolate "Long description" e "Explication of the implicational condition"
 - [x] Inserire un bottone di download alla fine della pagina di edit del parametro per scaricare un pdf con tutte le informazioni di un parametro e delle sue questions
 
 ## TABLE A
+- [ ] Nell'export xlsx di parameter view sostituire l'etichetta "Question text" con "Parameter", invece nell'export xlsx di question view sostituire l'etichetta "Parameter name" con "Question text"
 - [?] Scaricare mappa Lorenzo e Federico
 - [x] Poter cliccare sul valore di un parametro o su YES/NO di una question e visualizzare le questions e gli esempi che hanno permesso di fissare quel parametro/risposta
 - [x] Poter selezionare le lingue anche per Family e per Group, oltre che per Top-level family, e i parametri per Level of Comparison
