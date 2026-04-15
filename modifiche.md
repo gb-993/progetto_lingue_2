@@ -47,7 +47,7 @@
 - [x] Lista delle questions con lo stesso ordine dei parametri
 
 ## LISTA LINGUE
-- [ ] Poter selezionare le lingue per scaricare gli esempi ecc (al momento o lingua singola o tutte le lingue)
+- [x] Poter selezionare le lingue per scaricare gli esempi ecc (al momento o lingua singola o tutte le lingue)
 - [x] Inserire l'attributo location in Add, Edit, visualizzabile in Lingue Data e come colonna nel file excel che si scarica con le info di tutte le lingue
 - [x] Togliere l'attributo position
 - [x] Inserire due nuovi attributi: Latitude e Longitude (da definire già quando si crea la lingua)
