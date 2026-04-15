@@ -168,7 +168,7 @@ def tablea_export_xlsx(request: HttpRequest) -> HttpResponse:
     languages, rows, view_mode = get_tablea_filtered_data(request)
     wb = Workbook()
     ws = wb.active
-    ws.append(["Label", "Question_text", "Implicational Condition(s)"] + [l.id for l in languages])
+    ws.append(["Label", "Parameter", "Implicational Condition(s)"] + [l.id for l in languages])
     for r in rows:
         name_val = getattr(r['p'], 'name', getattr(r['p'], 'text', ''))
         impl_val = r['p'].parameter_id if view_mode == "questions" else getattr(r['p'], 'implicational_condition', '')
@@ -196,7 +196,7 @@ def tablea_export_questions_xlsx(request: HttpRequest) -> HttpResponse:
     wb = Workbook()
     ws = wb.active
 
-    ws.append(["Label", "Parameter name"] + [l.id for l in languages])
+    ws.append(["Label", "Question text"] + [l.id for l in languages])
 
     for r in rows:
         # Recuperiamo il testo della domanda

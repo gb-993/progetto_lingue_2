@@ -302,8 +302,8 @@ def parameter_edit(request: HttpRequest, param_id: str) -> HttpResponse:
         )
         questions_normal = [q for q in questions if not q.is_stop_question]
         questions_stop = [q for q in questions if q.is_stop_question]
-
         deactivate_form = DeactivateParameterForm(request=None) if can_deactivate else None
+        change_logs = param.change_logs.select_related("changed_by").all()
 
         return render(
             request,
@@ -319,6 +319,7 @@ def parameter_edit(request: HttpRequest, param_id: str) -> HttpResponse:
                 "questions_normal": questions_normal,
                 "questions_stop": questions_stop,
                 "external_dirty": had_external_changes,
+                "change_logs": change_logs,
             },
             status=400,
         )
@@ -337,8 +338,8 @@ def parameter_edit(request: HttpRequest, param_id: str) -> HttpResponse:
         )
         questions_normal = [q for q in questions if not q.is_stop_question]
         questions_stop = [q for q in questions if q.is_stop_question]
-
         deactivate_form = DeactivateParameterForm(request=None) if can_deactivate else None
+        change_logs = param.change_logs.select_related("changed_by").all()
 
         return render(
             request,
@@ -354,6 +355,7 @@ def parameter_edit(request: HttpRequest, param_id: str) -> HttpResponse:
                 "questions_normal": questions_normal,
                 "questions_stop": questions_stop,
                 "external_dirty": external_dirty,
+                "change_logs": change_logs,
             },
         )
 

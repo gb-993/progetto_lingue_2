@@ -1855,26 +1855,27 @@ def language_export_xlsx(request: HttpRequest, lang_id: str) -> HttpResponse:
 
 
 
+# Aggiungi "POST" ai metodi consentiti
 @login_required
+@require_http_methods(["GET", "POST"]) 
 def language_export_all_zip(request: HttpRequest) -> HttpResponse:
-    """Export all languages as a ZIP containing one XLSX per language.
-
-    Args:
-        request: Current authenticated HTTP request.
-
-    Returns:
-        ZIP file response for admins, or redirect for unauthorized users.
+    """Export languages as a ZIP containing one XLSX per language.
+    If specific IDs are provided via POST, exports only those.
     """
     if not _is_admin(request.user):
         messages.error(request, _t("You are not allowed to perform this action."))
         return redirect("language_list")
 
-    # Lingue in ordine di position/id (come in language_list)
-    langs = (
-        Language.objects
-        .all()
-        .order_by("position", "id")
-    )
+    # Lingue di default (tutte)
+    langs = Language.objects.all().order_by("position", "id")
+
+    # Se arrivano ID specifici, filtriamo il queryset
+    if request.method == "POST":
+        lang_ids_str = request.POST.get("lang_ids", "")
+        if lang_ids_str:
+            selected_ids = [x.strip() for x in lang_ids_str.split(",") if x.strip()]
+            if selected_ids:
+                langs = langs.filter(id__in=selected_ids)
 
     zip_buffer = io.BytesIO()
     ts = now().strftime("%Y%m%d")
@@ -1892,7 +1893,11 @@ def language_export_all_zip(request: HttpRequest) -> HttpResponse:
             zf.writestr(inner_name, xlsx_io.getvalue())
 
     zip_buffer.seek(0)
-    zip_filename = f"PCM_languages_full_{ts}.zip"
+    # Rinominiamo leggermente il file se è un'esportazione parziale
+    if request.method == "POST" and request.POST.get("lang_ids"):
+        zip_filename = f"PCM_languages_selected_{ts}.zip"
+    else:
+        zip_filename = f"PCM_languages_full_{ts}.zip"
 
     resp = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
     resp["Content-Disposition"] = f'attachment; filename="{zip_filename}"'

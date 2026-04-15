@@ -3,15 +3,13 @@
 
 {% block title %}Welcome to the PCM Hub{% endblock %}
 
-{# --- SVUOTIAMO LA SIDEBAR A PRESCINDERE --- #}
 {% block sidebar %}{% endblock %}
 
-{# --- SOSTITUIAMO HAMBURGER E BREADCRUMB CON IL LOGO NELLA TOP BAR --- #}
 {% block topbar_left %}
 <div class="public-top-logo">
   <h1 class="site-title" style="margin: 0; font-size: 1.25rem; line-height: 1.2; color: var(--text-color);">
     The PCM Hub
-    <span style="display: block; font-size: 0.75rem; margin-top: 0.2rem; opacity: 0.7; font-weight: normal;">Parametric Comparison Method</span>
+    <span style="display: block; font-size: 0.75rem; margin-top: 0.2rem; opacity: 0.7; font-weight: normal;"><a href="http://www.parametricomparison.unimore.it" target="_blank" style="color: inherit; text-decoration: none;">www.parametricomparison.unimore.it</a></span>
   </h1>
 </div>
 {% endblock %}
@@ -132,7 +130,7 @@
     <header class="landing-hero">
       <h1>Welcome to the PCM Hub</h1>
       <p class="landing-subtitle">
-        The <strong>Parametric Comparison Method</strong> (PCM, Longobardi and Guardiano 2009) compares languages using universal syntactic parameters, to measure their degree of similarity, reconstruct phylogenetic relationships, and infer patterns of divergence and convergence at a cross-family level.
+        <a href="http://www.parametricomparison.unimore.it" target="_blank"><strong>Parametric Comparison Method (PCM)</strong></a>, Longobardi and Guardiano 2009) compares languages using universal syntactic parameters, to measure their degree of similarity, reconstruct phylogenetic relationships, and infer patterns of divergence and convergence at a cross-family level.
       </p>
     </header>
 
@@ -156,7 +154,7 @@
 
       <div class="card card-flex collab-card">
         <div class="card-body">
-          <p><strong>Are you interested in contributing to data collection or proposing a scientific collaboration?</strong></p>
+          <p><b>Are you interested in contributing to data collection or proposing a scientific collaboration?</b></p>
           <p style="margin-bottom: 0;">
             Contact us at: <br>
             <strong><a href="mailto:pcm_lab@unimore.it" class="email-link">pcm_lab@unimore.it</a></strong>

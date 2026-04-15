@@ -20,7 +20,7 @@
 <div class="toolbar-actions desktop-actions" style="margin:.5rem 0 1rem; display:flex; gap:.5rem; flex-wrap:wrap;">
   <a class="btn" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export .xlsx</a>
   {% if is_admin %}
-    <a class="btn" href="{% url 'language_export_all_zip' %}">Export all languages (.zip)</a>
+    <button class="btn btn-export-zip">Export data (.zip)</button>
     <a class="btn" href="{% url 'language_import_excel' %}">Import from Excel</a>
     <a class="btn" href="{% url 'submission_create_all' %}">Backup all languages</a>
   {% endif %}
@@ -33,7 +33,7 @@
   <div class="menu-content" style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; padding: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
     <a class="btn" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow" style="justify-content: flex-start;">Export .xlsx</a>
     {% if is_admin %}
-      <a class="btn" href="{% url 'language_export_all_zip' %}" style="justify-content: flex-start;">Export all languages (.zip)</a>
+      <button class="btn btn-export-zip" style="justify-content: flex-start; width: 100%; text-align: left;">Export data (.zip)</button>
       <a class="btn" href="{% url 'language_import_excel' %}" style="justify-content: flex-start;">Import from Excel</a>
       <a class="btn" href="{% url 'submission_create_all' %}" style="justify-content: flex-start;">Backup all languages</a>
     {% endif %}
@@ -45,6 +45,11 @@
   <table class="table">
     <thead>
       <tr>
+
+        <th scope="col" style="width: 40px; text-align: center;">
+          <input type="checkbox" id="selectAllCheckbox" title="Select all">
+        </th>
+
         <th scope="col">
           <a href="{{ sort_urls.id }}" class="sort-link {% if sort == 'id' %}active{% endif %}">
             Id <span class="sort-indicator">{% if sort == 'id' %}{% if dir == 'asc' %}↑{% else %}↓{% endif %}{% else %}↕{% endif %}</span>
@@ -87,6 +92,9 @@
     <tbody>
       {% for l in languages %}
         <tr>
+          <td data-label="Select" style="text-align: center;">
+            <input type="checkbox" class="lang-checkbox" value="{{ l.id }}">
+          </td>
           <td data-label="Id">{{ l.id }}</td>
           <td data-label="Name">{{ l.name_full }}</td>
           <td data-label="Top-level">
@@ -155,6 +163,59 @@
     font-weight: bold;
   }
 </style>
+<form id="exportZipForm" method="POST" action="{% url 'language_export_all_zip' %}" style="display: none;">
+  {% csrf_token %}
+  <input type="hidden" name="lang_ids" id="exportZipIds">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAllCb = document.getElementById('selectAllCheckbox');
+  const langCheckboxes = document.querySelectorAll('.lang-checkbox');
+  const exportZipBtns = document.querySelectorAll('.btn-export-zip');
+  const exportZipForm = document.getElementById('exportZipForm');
+  const exportZipIdsInput = document.getElementById('exportZipIds');
+
+  if (selectAllCb) {
+    selectAllCb.addEventListener('change', function() {
+      langCheckboxes.forEach(cb => cb.checked = this.checked);
+      updateButtonText();
+    });
+  }
+
+  langCheckboxes.forEach(cb => {
+    cb.addEventListener('change', function() {
+      // Se non sono tutte spuntate, togli la spunta da Select All
+      if (!this.checked && selectAllCb) selectAllCb.checked = false;
+      updateButtonText();
+    });
+  });
+
+  function updateButtonText() {
+    const selectedCount = Array.from(langCheckboxes).filter(cb => cb.checked).length;
+    exportZipBtns.forEach(btn => {
+      if (selectedCount > 0) {
+        btn.textContent = `Export selected (${selectedCount}) (.zip)`;
+      } else {
+        btn.textContent = `Export all data (.zip)`;
+      }
+    });
+  }
+
+  exportZipBtns.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      // Raccogli gli ID selezionati
+      const selectedIds = Array.from(langCheckboxes)
+                              .filter(cb => cb.checked)
+                              .map(cb => cb.value);
+      
+      exportZipIdsInput.value = selectedIds.join(',');
+            exportZipForm.submit();
+    });
+  });
+});
+</script>
 
 
 {% endblock %}

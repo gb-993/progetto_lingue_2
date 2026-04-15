@@ -256,6 +256,24 @@
         </p>
         {% if form.change_note.errors %}<div class="form-error">{{ form.change_note.errors }}</div>{% endif %}
       </div>
+      <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text);">Previous changes</h4>
+        {% if change_logs %}
+          <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; max-height: 160px; overflow-y: auto; padding-right: 0.5rem;">
+            {% for log in change_logs %}
+              <li style="margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px dashed #cbd5e1;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem;">
+                  <strong style="color: var(--text);">{{ log.changed_by.email|default:"System" }}</strong>
+                  <span class="muted">{{ log.changed_at|date:"Y-m-d H:i" }}</span>
+                </div>
+                <div class="muted">{{ log.recap|linebreaksbr }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted" style="font-size: 0.85rem;">No changes have been recorded yet.</p>
+        {% endif %}
+      </div>
     {% endif %}
 
     <div class="toolbar" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1rem;">
@@ -269,6 +287,7 @@
     </div>
   </section>
 </form>
+
 
 {% if not is_create %}
 <section class="card" aria-labelledby="where-used-heading">

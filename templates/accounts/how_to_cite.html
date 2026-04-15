@@ -6,30 +6,22 @@
 {# --- GESTIONE DINAMICA DELLA SIDEBAR --- #}
 {% block sidebar %}
   {% if not request.user.is_authenticated or request.user.role == 'public' %}
-    {# Lasciamo il blocco vuoto per nasconderla agli utenti pubblici #}
   {% else %}
-    {# Per User e Admin carichiamo la sidebar originale dal base.html #}
     {{ block.super }}
   {% endif %}
 {% endblock %}
 
-{# --- GESTIONE DINAMICA DELLA TOP BAR (BREADCRUMB / TASTO BACK) --- #}
 {% block topbar_left %}
   {% if not request.user.is_authenticated or request.user.role == 'public' %}
-    {# Layout per il pubblico: Tasto "Back" + Logo #}
-    <div style="display: flex; align-items: center; gap: 1.5rem;">
-      <a href="{% url 'dashboard' %}" class="btn" style="padding: 0.4rem 0.8rem; font-weight: 600; text-decoration: none;">
-        &larr; Back
-      </a>
+    <div style="display: flex; align-items: center;">
       <div class="public-top-logo">
         <h1 class="site-title" style="margin: 0; font-size: 1.25rem; line-height: 1.2; color: var(--text-color);">
-          The PCM Hub
-          <span style="display: block; font-size: 0.75rem; margin-top: 0.2rem; opacity: 0.7; font-weight: normal;">Parametric Comparison Method</span>
+          <a href="{% url 'dashboard' %}" style="color: inherit; text-decoration: none;">The PCM Hub</a>
+          <span style="display: block; font-size: 0.75rem; margin-top: 0.2rem; opacity: 0.7; font-weight: normal;"><a href="http://www.parametricomparison.unimore.it" target="_blank" style="color: inherit; text-decoration: none;">www.parametricomparison.unimore.it</a></span>
         </h1>
       </div>
     </div>
   {% else %}
-    {# Per User e Admin carichiamo breadcrumb e hamburger originali #}
     {{ block.super }}
   {% endif %}
 {% endblock %}
@@ -49,6 +41,7 @@
 
     <div class="card citation-card">
       <div class="citation-content">
+        <b>For Admins and Users</b>
         <h3>Parameters & Manifestations</h3>
         <p class="small">
           Unless otherwise specified in the description of each parameter, if you quote a parameter description or any parameter manifestation, please refer to:        
@@ -69,10 +62,8 @@
 
     <div class="card citation-card">
       <div class="citation-content">
+        <b>For Public and Admins</b>
         <h3>Updated language list & map, analyses, graphs and scripts</h3>
-        <!-- <p class="small">
-          {{ site_contents.data_desc|default:"To cite the linguistic data:" }}
-        </p> -->
 
         <div class="cite-box" id="cite-data">
           <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">Copy</button>
@@ -92,7 +83,7 @@
 
   {# --- NUOVO RIQUADRO OUTPUTS (SOLO ADMIN, FULL WIDTH) --- #}
   {% if is_admin %}
-  <div class="card citation-card" style="margin-top: 2rem;">
+  <div class="card citation-card" style="margin-top: 2rem !important;">
     <div class="citation-content">
       <h3>Outputs</h3>
       <p class="small">
