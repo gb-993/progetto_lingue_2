@@ -186,7 +186,8 @@ function copyCitation(elementId, btn) {
   
   const textToCopy = tempBox.innerText.trim();
 
-  navigator.clipboard.writeText(textToCopy).then(() => {
+  // Funzione helper per l'animazione del tasto
+  const triggerSuccess = () => {
     const originalText = "Copy";
     btn.innerText = "✓ Copied";
     btn.classList.add('copied');
@@ -195,7 +196,36 @@ function copyCitation(elementId, btn) {
       btn.innerText = originalText;
       btn.classList.remove('copied');
     }, 2000);
-  });
+  };
+
+  // 1. Prova l'API moderna (se disponibile e in HTTPS/localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(textToCopy)
+      .then(triggerSuccess)
+      .catch(err => console.error("Clipboard API failed: ", err));
+  } else {
+    // 2. Fallback per HTTP
+    const textArea = document.createElement("textarea");
+    textArea.value = textToCopy;
+    // Nascondi la textarea per non disturbare la UI
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      triggerSuccess();
+    } catch (err) {
+      console.error("Fallback execCommand failed: ", err);
+      alert("Copia automatica non supportata dal tuo browser. Seleziona il testo manualmente.");
+    }
+    
+    textArea.remove();
+  }
 }
 </script>
 {% endblock %}
