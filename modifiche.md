@@ -63,6 +63,7 @@
 - [x] Ristrutturazione dei pulsanti  
 
 ## DEBUG PARAMETRI
+- [ ] Il DAG aggiorna TUTTE le lingue a prescindere da dove viene invocato (valutare spostamento btn)
 - [x] Poter modificare manualmente il valore di un parametro nel final value, segnalando che è stata fatta una modifica 
 
 ## GLOSSARIO
