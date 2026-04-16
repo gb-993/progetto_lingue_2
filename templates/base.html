@@ -472,7 +472,6 @@
 
 
         {# --- 2. SEZIONE PUBBLICA (Anonimi o ruolo 'public') --- #}
-        {# Nascondiamo i dati e mostriamo le pagine informative #}
         {% if not request.user.is_authenticated or request.user.role == 'public' %}
           <li class="nav-divider-label">Information</li>
           <li><a class="btn {% if urln == 'about' %}is-current{% endif %}" href="{% url 'about' %}">About</a></li>
@@ -483,14 +482,9 @@
 
 
         {# --- 3. SEZIONE DATI (Solo User loggati e Admin) --- #}
-        {# Mostriamo Languages, Instructions e Glossary #}
         {% if request.user.is_authenticated and request.user.role != 'public' %}
           <li class="nav-divider-label">Data & Tools</li>
-          <li>
-            <a class="btn {% if urln == 'language_list' or urln == 'language_data' %}is-current{% endif %}" href="{% url 'language_list' %}">
-               Languages
-            </a>
-          </li>
+          <li><a class="btn {% if urln == 'language_list' or urln == 'language_data' %}is-current{% endif %}" href="{% url 'language_list' %}">Languages</a></li>
 
           {# Strumenti esclusivi Admin #}
           {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'admin' %}
@@ -499,6 +493,7 @@
             <li><a class="btn {% if urln == 'parameters_graph' %}is-current{% endif %}" href="{% url 'parameters_graph' %}">Network</a></li>
             <li><a class="btn {% if urln == 'tablea_index' %}is-current{% endif %}" href="{% url 'tablea_index' %}">Table A</a></li>
             <li><a class="btn {% if urln == 'home' %}is-current{% endif %}" href="{% url 'queries:home' %}">Filters</a></li>
+            <li><a class="btn {% if urln == 'submissions_list' or urln == 'submission_detail' or urln == 'submission_create_for_language' or urln == 'submission_create_all' or urln == 'submission_delete_backup' %}is-current{% endif %}" href="{% url 'submissions_list' %}">Backup</a></li>
             <li><a class="btn {% if urln == 'accounts_list' %}is-current{% endif %}" href="{% url 'accounts_list' %}">Accounts</a></li>
           {% endif %}
 
