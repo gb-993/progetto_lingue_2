@@ -250,26 +250,25 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
 @login_required
+@require_http_methods(["GET"])
 def language_list(request: HttpRequest) -> HttpResponse:
-    """Render the language list with filtering and sortable columns.
-
-    Args:
-        request: Current authenticated HTTP request.
-
-    Returns:
-        Rendered language list page.
-    """
+    """Render the language list with filtering and sortable columns."""
 
     q = (request.GET.get("q") or "").strip()
 
-    #parametri per ordinamento
-    sort_key = (request.GET.get("sort") or "name").strip()  # Default impostato su 'name'
+    # --- Nuovi Filtri ---
+    f_lang_top_family = request.GET.get("f_lang_top_family", "").strip()
+    f_lang_family = request.GET.get("f_lang_family", "").strip()
+    f_lang_hist = request.GET.get("f_lang_hist", "all").strip()
+    f_lang_grp = request.GET.get("f_lang_grp", "").strip()
+
+    # Parametri per ordinamento
+    sort_key = (request.GET.get("sort") or "name").strip()
     sort_dir = (request.GET.get("dir") or "asc").strip()
 
     user = request.user
     is_admin = _is_admin(user)
 
-    #  default order = position
     qs = (
         Language.objects
         .select_related("assigned_user")
@@ -279,6 +278,7 @@ def language_list(request: HttpRequest) -> HttpResponse:
     if not is_admin:
         qs = qs.filter(Q(assigned_user=user) | Q(users=user))
 
+    # --- Filtro Ricerca Testuale ---
     if q:
         filt = (
             Q(id__icontains=q)
@@ -291,7 +291,6 @@ def language_list(request: HttpRequest) -> HttpResponse:
             | Q(family__icontains=q)
             | Q(top_level_family__icontains=q)
             | Q(source__icontains=q)
-
         )
         if q.lower() in {"hist", "stor", "storica", "storico", "true", "yes"}:
             filt |= Q(historical_language=True)
@@ -301,6 +300,25 @@ def language_list(request: HttpRequest) -> HttpResponse:
             filt |= Q(assigned_user__email__icontains=q)
         qs = qs.filter(filt)
 
+    # --- Applicazione Filtri Avanzati ---
+    if f_lang_top_family:
+        qs = qs.filter(top_level_family=f_lang_top_family)
+    if f_lang_family:
+        qs = qs.filter(family=f_lang_family)
+    if f_lang_grp:
+        qs = qs.filter(grp=f_lang_grp)
+    
+    if f_lang_hist == "yes":
+        qs = qs.filter(historical_language=True)
+    elif f_lang_hist == "no":
+        qs = qs.filter(historical_language=False)
+
+    # --- Popolamento Dropdown (esclude stringhe vuote o nulle) ---
+    opt_top_families = Language.objects.exclude(top_level_family__isnull=True).exclude(top_level_family="").values_list("top_level_family", flat=True).distinct().order_by("top_level_family")
+    opt_families = Language.objects.exclude(family__isnull=True).exclude(family="").values_list("family", flat=True).distinct().order_by("family")
+    opt_groups = Language.objects.exclude(grp__isnull=True).exclude(grp="").values_list("grp", flat=True).distinct().order_by("grp")
+
+    # --- Ordinamento ---
     sort_map = {
         "id": "id",
         "name": "name_full",
@@ -315,56 +333,42 @@ def language_list(request: HttpRequest) -> HttpResponse:
     active_sort = None
     if sort_key in sort_map:
         active_sort = sort_key
-
         if sort_key == "name":
-            # case-insensitive
             qs = qs.annotate(_name_ci=Lower("name_full"))
             order_field = "_name_ci"
         elif sort_key == "top":
-            # case-insensitive 
             qs = qs.annotate(_top_ci=Lower("top_level_family"))
             order_field = "_top_ci"
         else:
             order_field = sort_map[sort_key]
 
-        # stabilità: a parità di campo, tieni position
         if sort_dir == "desc":
             qs = qs.order_by(f"-{order_field}", "position")
         else:
             qs = qs.order_by(order_field, "position")
 
-
+    # Genera gli URL per l'ordinamento mantenendo TUTTI i parametri correnti (ricerca + filtri)
     def _toggle_url(column: str) -> str:
-        # se clicchi la stessa colonna, alterna asc/desc; altrimenti riparti asc
         next_dir = "desc" if (active_sort == column and sort_dir == "asc") else "asc"
+        get_params = request.GET.copy()
+        get_params["sort"] = column
+        get_params["dir"] = next_dir
+        return "?" + get_params.urlencode()
 
-        params = []
-        if q:
-            params.append(("q", q))
-        params.append(("sort", column))
-        params.append(("dir", next_dir))
-        return "?" + urlencode(params)
-
-    sort_urls = {
-        "id": _toggle_url("id"),
-        "name": _toggle_url("name"),
-        "top": _toggle_url("top"),
-        "family": _toggle_url("family"),
-        "group": _toggle_url("group"),
-        "modified": _toggle_url("modified"),
-        "lat": _toggle_url("lat"),
-        "lon": _toggle_url("lon"),
-    }
+    sort_urls = {k: _toggle_url(k) for k in sort_map.keys()}
 
     ctx = {
         "languages": qs,
         "page_obj": None,
         "q": q,
         "is_admin": is_admin,
-
         "sort": active_sort,
         "dir": sort_dir,
         "sort_urls": sort_urls,
+        "params": request.GET,
+        "opt_top_families": opt_top_families,
+        "opt_families": opt_families,
+        "opt_groups": opt_groups,
     }
     return render(request, "languages/list.html", ctx)
 
