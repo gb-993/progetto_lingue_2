@@ -64,7 +64,9 @@
       <div class="citation-content">
         <b>For Public and Admins</b>
         <h3>Updated language list & map, analyses, graphs and scripts</h3>
-
+      <p class="small">
+         To cite any content of the PCM Hub (except for parameters and manifestations):        
+        </p>
         <div class="cite-box" id="cite-data">
           <button class="btn-copy-mini" onclick="copyCitation('cite-data', this)" title="Copia citazione">Copy</button>
           
@@ -80,28 +82,6 @@
     </div>
 
   </div>
-
-  {# --- NUOVO RIQUADRO OUTPUTS (SOLO ADMIN, FULL WIDTH) --- #}
-  {% if is_admin %}
-  <div class="card citation-card" style="margin-top: 2rem !important;">
-    <div class="citation-content">
-      <h3>Outputs</h3>
-      <p class="small">
-        To cite any content of the PCM Hub (except for parameters and manifestations):
-      </p>
-
-      <div class="cite-box" id="cite-outputs">
-        <button class="btn-copy-mini" onclick="copyCitation('cite-outputs', this)" title="Copia citazione">Copy</button>
-          {{ site_contents.data_cite|default:"Guardiano, Cristina, Paola Crisma, Giuseppe Longobardi, Marco Longhin, Giovanni Battista Matteazzi, Emanuela Li Destri, Gaia Sorge (eds.). 2026. The PCM_Hub (version 1, accessed on: XX/XX/20XX)"|safe }}
-      </div>
-
-      <div style="margin-top: 10px; text-align: right;">
-        <a href="{% url 'edit_site_content' 'outputs_cite' %}" style="font-size: 0.85rem; text-decoration: none; font-weight: 600; color: var(--brand);">✏️ Edit reference</a>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
 </div>
 
 <style>
