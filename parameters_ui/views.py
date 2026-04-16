@@ -119,20 +119,18 @@ def _to_jsonable(value: Any) -> Any:
 @user_passes_test(_is_admin)
 @require_http_methods(["GET"])
 def parameter_list(request: HttpRequest) -> HttpResponse:
-    """Render the parameter list with optional text filtering.
-
-    Args:
-        request: Current authenticated admin request.
-
-    Returns:
-        Rendered parameters list page.
-    """
+    """Render the parameter list with optional text filtering and advanced filters."""
     q = (request.GET.get("q") or "").strip()
-    qs = (
-        ParameterDef.objects
-        .order_by("position")
-        
-    )
+    
+    # --- Estrazione Filtri Avanzati ---
+    f_schema = request.GET.get("f_schema", "")
+    f_type = request.GET.get("f_type", "")
+    f_level = request.GET.get("f_level", "")
+    f_status = request.GET.get("f_status", "")
+
+    qs = ParameterDef.objects.order_by("position")
+    
+    # --- Applicazione Filtro Testuale ---
     if q:
         qs = qs.filter(
             Q(id__icontains=q)
@@ -145,13 +143,38 @@ def parameter_list(request: HttpRequest) -> HttpResponse:
             | Q(param_type__icontains=q)
             | Q(level_of_comparison__icontains=q)
         )
+
+    # --- Applicazione Filtri Dropdown ---
+    if f_schema:
+        qs = qs.filter(schema=f_schema)
+    if f_type:
+        qs = qs.filter(param_type=f_type)
+    if f_level:
+        qs = qs.filter(level_of_comparison=f_level)
+    if f_status == "active":
+        qs = qs.filter(is_active=True)
+    elif f_status == "disabled":
+        qs = qs.filter(is_active=False)
+
     qs = qs.annotate(
         questions_count=Count("questions", filter=Q(questions__is_stop_question=False), distinct=True),
         stop_count=Count("questions", filter=Q(questions__is_stop_question=True), distinct=True),
     )
 
+    opt_schemas = list(ParamSchema.objects.order_by("label").values_list("label", flat=True))
+    opt_types = list(ParamType.objects.order_by("label").values_list("label", flat=True))
+    opt_levels = list(ParamLevelOfComparison.objects.order_by("label").values_list("label", flat=True))
     
-    return render(request, "parameters/list.html", {"parameters": qs, "q": q})
+    context = {
+        "parameters": qs,
+        "q": q,
+        "opt_schemas": opt_schemas,
+        "opt_types": opt_types,
+        "opt_levels": opt_levels,
+        "params": request.GET, 
+    }
+    
+    return render(request, "parameters/list.html", context)
 
 
 @login_required

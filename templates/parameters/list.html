@@ -6,13 +6,101 @@
 {% endblock %}
 
 {% block content %}
-<header class="dashboard-hero">
+<header class="dashboard-hero" style="margin-bottom: 2rem;">
   <h1>Parameters</h1>
 </header>
 
 {% include "_toolbar_search.html" with q=q placeholder="Search parameters…" %}
 
-  <h2 id="table-heading" class="sr-only">Parameter list</h2>
+<style>
+    .control-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-top: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+    .filter-item label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    .filter-item select {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 0.85rem;
+    }
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        border-top: 1px solid var(--border);
+        padding-top: 1.25rem;
+        margin-top: 1.25rem;
+    }
+</style>
+
+<form id="paramFilterForm" method="GET" action="{% url 'parameter_list' %}">
+    
+    {% if q %}
+        <input type="hidden" name="q" value="{{ q }}">
+    {% endif %}
+
+    <div class="control-panel">
+        <div class="filter-grid">
+            <div class="filter-item">
+                <label>Schema</label>
+                <select name="f_schema">
+                    <option value="">All</option>
+                    {% for s in opt_schemas %}<option value="{{ s }}" {% if params.f_schema == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>Type</label>
+                <select name="f_type">
+                    <option value="">All</option>
+                    {% for t in opt_types %}<option value="{{ t }}" {% if params.f_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>Level of comparison</label>
+                <select name="f_level">
+                    <option value="">All</option>
+                    {% for l in opt_levels %}<option value="{{ l }}" {% if params.f_level == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>Status</label>
+                <select name="f_status">
+                    <option value="">All</option>
+                    <option value="active" {% if params.f_status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="disabled" {% if params.f_status == 'disabled' %}selected{% endif %}>Disabled</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="action-bar">
+            <button type="submit" class="btn btn--primary">Apply Filters</button>
+            <a href="{% url 'parameter_list' %}" class="btn btn--secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+<h2 id="table-heading" class="sr-only">Parameter list</h2>
 
   <table class="table" role="table" aria-describedby="table-caption">
     <caption id="table-caption" class="sr-only">

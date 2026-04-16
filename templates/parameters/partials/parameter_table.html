@@ -1,0 +1,52 @@
+<table class="table" role="table" aria-describedby="table-caption">
+  <caption id="table-caption" class="sr-only">
+    Ordered parameters with position, label, name, questions, stop count, status and actions.
+    {% if parameters %} Total items: {{ parameters|length }}.{% endif %}
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">Label</th>
+      <th scope="col">Name</th>
+      <th scope="col">Schema</th>   
+      <th scope="col">Type</th>
+      <th scope="col">Lvl comparison</th>
+      <th scope="col">#Q</th>
+      <th scope="col">#QS</th>
+      <th scope="col">Status</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for p in parameters %}
+    <tr>
+      <td data-label="Label">{{ p.id }}</td>
+      <td data-label="Name">{{ p.name }}</td>
+      <td data-label="Schema">{{ p.schema|default:"—" }}</td>
+      <td data-label="Type">{{ p.param_type|default:"—" }}</td>
+      <td data-label="Lvl comparison">{{ p.level_of_comparison|default:"—" }}</td>
+      <td data-label="#Q">{{ p.questions_count  }}</td>
+      <td data-label="#Stop">{{ p.stop_count }}</td>
+      <td data-label="Status">
+        {% if p.is_active %}
+          <span class="status-indicator active" aria-label="Active">Active</span>
+        {% else %}
+          <span class="status-indicator disabled" aria-label="Disabled">Disabled</span>
+        {% endif %}
+      </td>
+      <td data-label="Actions" class="row-actions">
+        <div class="row-actions-buttons">
+          <a class="btn" href="{% url 'parameter_download_pdf' p.id %}">PDF</a>
+          <a class="btn" href="{% url 'parameter_edit' p.id %}">Edit</a>
+        </div>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="9">
+        <p class="muted" role="status" aria-live="polite">No parameters found.</p>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
