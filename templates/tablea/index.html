@@ -6,7 +6,7 @@
 
 {% block content %}
 <style>
-    /* UI Enhancements */
+    
     .control-panel {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -16,7 +16,7 @@
         box-shadow: var(--shadow);
     }
 
-    /* Layout side-by-side per i filtri */
+    
     .filters-main-layout {
         display: flex;
         gap: 2rem;
@@ -45,7 +45,7 @@
     color: var(--brand);
 }
 
-    /* Griglia interna per i campi di input */
+    
     .filter-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -71,7 +71,7 @@
         font-size: 0.85rem;
     }
 
-    /* VIEW SWITCHER  */
+    
     .view-switcher-wrapper { display: flex; justify-content: center; margin-bottom: 1.5rem; }
     .view-switcher { background: #e9ecef; padding: 5px; border-radius: 50px; display: inline-flex; }
     .view-switcher-item { padding: 8px 25px; border-radius: 50px; text-decoration: none; color: #6c757d; font-weight: 600; transition: 0.2s; }
@@ -85,7 +85,7 @@
         padding-top: 1.25rem;
     }
 
-    /* Dropdown Styles */
+    
     .dropdown { position: relative; display: inline-block; }
     .dropdown-content {
         display: none;
@@ -99,17 +99,25 @@
         border: 1px solid var(--border);
         overflow: hidden;
     }
-    .dropdown-content a {
+    
+    
+    .dropdown-content a, .dropdown-content button {
         color: var(--text);
         padding: 12px 16px;
         text-decoration: none;
         display: block;
         font-size: 0.9rem;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
     }
-    .dropdown-content a:hover { background-color: var(--surface-2); color: var(--brand); }
+    .dropdown-content a:hover, .dropdown-content button:hover { background-color: var(--surface-2); color: var(--brand); }
     .dropdown:hover .dropdown-content { display: block; }
 
-    /* Responsive: sotto i 900px torna incolonnato */
+    
     @media (max-width: 900px) {
         .filters-main-layout { flex-direction: column; gap: 1.5rem; }
     }
@@ -125,14 +133,11 @@
     </div>
 </header>
 
-<div class="control-panel">
-    <form id="filterForm" 
-          hx-get="" 
-          hx-target="#table-results-container" 
-          hx-swap="innerHTML"
-          hx-push-url="true">
-        <input type="hidden" name="view" value="{{ view }}">
+<form id="mainFilterForm" method="GET">
+    {% csrf_token %}
+    <input type="hidden" name="view" value="{{ view }}">
 
+    <div class="control-panel">
         <div class="filters-main-layout">
             <div class="filter-column">
                 <span class="filter-group-title">Language Filters</span>
@@ -237,7 +242,13 @@
 
         <div class="action-bar">
             <div>
-                <button type="submit" class="btn btn--primary">Apply Filters</button>
+                <button type="submit" class="btn btn--primary"
+                        hx-get="{% url 'tablea_index' %}"
+                        hx-target="#table-results-container"
+                        hx-include="#mainFilterForm"
+                        hx-push-url="true">
+                    Apply Filters
+                </button>
                 <a href="?view={{ view }}" class="btn btn--secondary">Reset</a>
             </div>
 
@@ -245,71 +256,48 @@
                 <button type="button" class="btn btn--accent">Download Data ▾</button>
                 <div class="dropdown-content">
                     {% if view == 'questions' %}
-                        <a href="{% url 'tablea_export_questions_xlsx' %}?{{ request.GET.urlencode }}">Export .xlsx (Standard)</a>
+                        <button type="submit" formaction="{% url 'tablea_export_questions_xlsx' %}" formmethod="POST">Export .xlsx (Standard)</button>
                     {% else %}
-                        <a href="{% url 'tablea_export_xlsx' %}?{{ request.GET.urlencode }}">Export .xlsx (Standard)</a>
+                        <button type="submit" formaction="{% url 'tablea_export_xlsx' %}" formmethod="POST">Export .xlsx (Standard)</button>
                     {% endif %}
-                    <a href="{% url 'tablea_export_csv' %}?{{ request.GET.urlencode }}">Export .csv (Transposed)</a>
+                    <button type="submit" formaction="{% url 'tablea_export_csv' %}" formmethod="POST">Export .csv (Transposed)</button>
                     {% if view == 'params' %}
-                        <a href="{% url 'tablea_export_distances_zip' %}?{{ request.GET.urlencode }}">Distances (.txt zip)</a>
-                        <a href="{% url 'tablea_export_dendrogram' %}?{{ request.GET.urlencode }}">Dendrograms (.png zip)</a>
-                        <a href="{% url 'tablea_export_pca' %}?{{ request.GET.urlencode }}">PCA Scatterplot (.png)</a>
+                        <button type="submit" formaction="{% url 'tablea_export_distances_zip' %}" formmethod="POST">Distances (.txt zip)</button>
+                        <button type="submit" formaction="{% url 'tablea_export_dendrogram' %}" formmethod="POST">Dendrograms (.png zip)</button>
+                        <button type="submit" formaction="{% url 'tablea_export_pca' %}" formmethod="POST">PCA Scatterplot (.png)</button>
                     {% endif %}
                 </div>
             </div>
         </div>
-    </form>
-</div>
+    </div> <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+        <button type="button" class="btn btn--secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="toggleAllCheckboxes(true)">Select All</button>
+        <button type="button" class="btn btn--secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="toggleAllCheckboxes(false)">Deselect All</button>
+    </div>
 
-<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
-    <button type="button" class="btn btn--secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="toggleAllCheckboxes(true)">Select All</button>
-    <button type="button" class="btn btn--secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="toggleAllCheckboxes(false)">Deselect All</button>
-</div>
+    <div class="card table-container" id="table-results-container">
+        {% include "tablea/partials/tablea_results.html" %}
+    </div>
 
-<div class="card table-container" id="table-results-container">
-    {% include "tablea/partials/tablea_results.html" %}
-</div>
-
-    <script>
+</form> <script>
+// MODIFICA: Lasciata solo la logica di Selezione, eliminato il listener sui link
 function toggleAllCheckboxes(source) {
     const checkboxes = document.querySelectorAll('.row-checkbox');
     const master = document.getElementById('masterCheckbox');
     checkboxes.forEach(cb => cb.checked = (typeof source === 'boolean' ? source : source.checked));
     if (master) master.checked = (typeof source === 'boolean' ? source : source.checked);
 }
-
-// Intercetta i click sui link di download nel dropdown
-document.querySelectorAll('.dropdown-content a').forEach(link => {
-    link.addEventListener('click', function(e) {
-        const selected = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
-
-        // Se ci sono righe selezionate, modifichiamo l'URL del download al volo
-        if (selected.length > 0) {
-            e.preventDefault();
-            const url = new URL(this.href, window.location.origin);
-
-            // Puliamo eventuali selezioni precedenti e aggiungiamo le nuove
-            url.searchParams.delete('selected_ids');
-            selected.forEach(id => url.searchParams.append('selected_ids', id));
-
-            window.location.href = url.toString();
-        }
-        // Se non c'è nulla di selezionato, il link procede normalmente usando i filtri della pagina
-    });
-});
 </script>
-
 
 <style>
   .dashboard-hero {
     margin-bottom: 4rem;
   }
-/* --- MOBILE OPTIMIZATION PER TABLE A (< 900px) --- */
+
 @media (max-width: 900px) {
 
-  /* 1. Header e View Switcher */
+  
   .dashboard-hero {
-    margin-bottom: 1.5rem; /* Riduciamo lo spazio vuoto */
+    margin-bottom: 1.5rem; 
     text-align: center;
   }
   .view-switcher-wrapper {
@@ -327,7 +315,6 @@ document.querySelectorAll('.dropdown-content a').forEach(link => {
     font-size: 0.85rem;
   }
 
-  /* 2. Control Panel (Filtri) - Più compatto */
   .control-panel {
     padding: 1rem;
     margin-bottom: 1rem;
@@ -338,23 +325,22 @@ document.querySelectorAll('.dropdown-content a').forEach(link => {
     font-size: 0.75rem;
   }
 
-  /* Griglia filtri: 2 colonne invece di 1 per risparmiare altezza */
   .filter-grid {
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
   }
 
-  /* Input e Select più alti per il touch */
+  
   .filter-item select, .filter-item input {
-    height: 40px; /* Facile da toccare */
-    font-size: 16px; /* Evita lo zoom automatico su iPhone */
+    height: 40px; 
+    font-size: 16px; 
   }
 
-  /* 3. Action Bar (Bottoni in fondo ai filtri) */
+  
   .action-bar {
-    flex-direction: column; /* Impilati verticalmente */
+    flex-direction: column; 
     gap: 0.75rem;
-    align-items: stretch; /* A tutta larghezza */
+    align-items: stretch; 
   }
 
   .action-bar > div {
@@ -370,72 +356,65 @@ document.querySelectorAll('.dropdown-content a').forEach(link => {
     padding: 0.8rem;
   }
 
-  /* Fix per il Dropdown Download su mobile:
-     Lo rendiamo statico o facile da gestire senza hover */
   .dropdown {
     width: 100%;
   }
   .dropdown-content {
     width: 100%;
-    position: relative; /* Non più absolute, spinge il contenuto sotto */
+    position: relative; 
     box-shadow: none;
     border: 1px solid var(--border);
     margin-top: 0.25rem;
   }
 
-  /* 4. TABELLA E SCROLL */
+  
 
-  /* Contenitore scrollabile: occupa buona parte dello schermo verticale */
+  
   .table-scroll {
-    max-height: 65vh; /* Altezza massima per vedere header e scrollare il corpo */
+    max-height: 65vh; 
     border: 1px solid var(--border);
     background: var(--surface);
   }
 
-  /* Intestazioni (TH) */
+  
   .table thead th {
     font-size: 0.8rem;
     padding: 0.5rem;
-    white-space: nowrap; /* Niente a capo nelle intestazioni lingua */
+    white-space: nowrap; 
     height: 40px;
     vertical-align: middle;
   }
 
-  /* Celle (TD) */
+  
   .table tbody td {
     padding: 0.5rem;
-    height: 40px; /* Altezza minima riga */
+    height: 40px; 
     vertical-align: middle;
   }
 
-  /* COLONNE STICKY SU MOBILE */
-  /* Manteniamo le checkbox e l'ID fissi a sinistra,
-     ma aggiungiamo un'ombra per far capire che il resto scorre sotto */
+  
   .table.table--freeze .col-sticky-left {
-    background: var(--surface) !important; /* Copre il contenuto che scorre sotto */
-    z-index: 20; /* Assicura che stia sopra */
+    background: var(--surface) !important; 
+    z-index: 20; 
   }
 
-  /* L'ultima colonna sticky (di solito l'ID o il Nome) deve proiettare l'ombra */
+  
   .table.table--freeze th:nth-child(2),
   .table.table--freeze td:nth-child(2) {
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
     border-right: 1px solid var(--border);
   }
 
-  /* Override delle larghezze minime definite inline nell'HTML */
-  /* Riduciamo un po' la larghezza del "Parameter Name" su mobile per vedere più dati */
   .table th:nth-child(3),
   .table td:nth-child(3) {
     min-width: 140px !important;
     max-width: 160px !important;
-    white-space: normal; /* Permetti al nome di andare a capo */
+    white-space: normal; 
     font-size: 0.8rem;
     line-height: 1.2;
   }
 
 }
 </style>
-
 
 {% endblock %}

@@ -21,27 +21,20 @@ import numpy as np
 from adjustText import adjust_text
 
 def get_tablea_filtered_data(request: HttpRequest) -> tuple[list[Language], list[dict[str, Any]], str]:
-    """Build filtered languages and matrix rows for the TableA views.
-
-    Args:
-        request: Current HTTP request containing filter and selection params.
-
-    Returns:
-        A tuple with:
-            - filtered language list,
-            - matrix rows containing item metadata and per-language cells,
-            - active view mode (``params`` or ``questions``).
-    """
-    view_mode = request.GET.get("view", "params").strip().lower()
+    """Build filtered languages and matrix rows for the TableA views."""
+    
+    # Prende i dati da POST se presenti (Download), altrimenti da GET (Filtri)
+    data = request.POST if request.method == "POST" else request.GET
+    
+    view_mode = data.get("view", "params").strip().lower()
 
     # 1. Filtro Lingue
     languages = Language.objects.all().order_by("position")
-    f_lang_family = request.GET.get("f_lang_family")
-    f_lang_top_family = request.GET.get("f_lang_top_family")
-    f_lang_grp = request.GET.get("f_lang_grp")
-    f_lang_hist = request.GET.get("f_lang_hist")
-    f_lang_specific = request.GET.getlist("f_lang_specific")
-
+    f_lang_family = data.get("f_lang_family")
+    f_lang_top_family = data.get("f_lang_top_family")
+    f_lang_grp = data.get("f_lang_grp")
+    f_lang_hist = data.get("f_lang_hist")
+    f_lang_specific = data.getlist("f_lang_specific")
 
     if f_lang_top_family: languages = languages.filter(top_level_family=f_lang_top_family)
     if f_lang_family: languages = languages.filter(family=f_lang_family)
@@ -52,31 +45,32 @@ def get_tablea_filtered_data(request: HttpRequest) -> tuple[list[Language], list
     languages = list(languages)
 
     # 2. Filtro Item e Selezione Manuale
-    selected_ids = request.GET.getlist("selected_ids")
+    selected_ids = data.getlist("selected_ids") 
 
     if view_mode == "questions":
         items = Question.objects.filter(parameter__is_active=True).select_related("parameter").order_by(
             "parameter__position", "id")
-        f_q_template = request.GET.get("f_q_template")
-        f_q_stop = request.GET.get("f_q_stop")
+        f_q_template = data.get("f_q_template")
+        f_q_stop = data.get("f_q_stop")
         if f_q_template: items = items.filter(template_type=f_q_template)
         if f_q_stop == "yes": items = items.filter(is_stop_question=True)
         if f_q_stop == "no": items = items.filter(is_stop_question=False)
     else:
         items = ParameterDef.objects.filter(is_active=True).order_by("position")
-        f_p_schema = request.GET.get("f_p_schema")
-        f_p_type = request.GET.get("f_p_type")
-        f_p_level = request.GET.get("f_p_level")
+        f_p_schema = data.get("f_p_schema")
+        f_p_type = data.get("f_p_type")
+        f_p_level = data.get("f_p_level")
         if f_p_schema: items = items.filter(schema=f_p_schema)
         if f_p_type: items = items.filter(param_type=f_p_type)
         if f_p_level: items = items.filter(level_of_comparison=f_p_level)
 
+    # Applica la selezione manuale (checkbox) SOPRA i filtri esistenti
     if selected_ids:
         items = items.filter(id__in=selected_ids)
 
     items = list(items)
 
-    # 3. Costruzione Matrice
+    # 3. Costruzione Matrice 
     matrix = []
     if view_mode == "questions":
         ans_dict = {(a.question_id, a.language_id): a.response_text for a in Answer.objects.filter(question__in=items)}
