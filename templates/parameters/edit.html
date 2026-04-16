@@ -316,6 +316,7 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // 1. GESTIONE STATO ACTIVE/DISABLED (Pre-esistente)
     const toggleInput = document.getElementById('{{ form.is_active.id_for_label }}');
     const statusText = document.getElementById('status-text');
 
@@ -326,15 +327,74 @@
           statusText.style.color = 'inherit';
         } else {
           statusText.textContent = 'Disabled';
-          statusText.style.color = '#64748b'; // Colore grigio chiaro per stato disattivato
+          statusText.style.color = '#64748b';
         }
       }
-
-      // Controlla lo stato appena la pagina viene caricata
       updateStatusText();
-
-      // Aggiorna lo stato ogni volta che l'utente clicca l'interruttore
       toggleInput.addEventListener('change', updateStatusText);
+    }
+
+    // 2. LOGICA LOCAL STORAGE (Persistenza dati)
+    // Usiamo l'ID del parametro per separare le bozze (es: draft_param_FGM)
+    const paramId = "{{ parameter.id|default:'new' }}";
+    const storageKey = 'draft_parameter_' + paramId;
+
+    // Mappiamo i campi critici usando gli ID generati da Django
+    const fieldsToTrack = {
+      'change_note': document.getElementById('{{ form.change_note.id_for_label }}'),
+      'short_description': document.getElementById('{{ form.short_description.id_for_label }}'),
+      'long_description': document.getElementById('{{ form.long_description.id_for_label }}'),
+      'implicational_condition': document.getElementById('{{ form.implicational_condition.id_for_label }}'),
+      'description_of_the_implicational_condition': document.getElementById('{{ form.description_of_the_implicational_condition.id_for_label }}')
+    };
+
+    //Carica dati dal browser
+    function loadDraft() {
+      const savedData = localStorage.getItem(storageKey);
+      if (!savedData) return;
+
+      const data = JSON.parse(savedData);
+      Object.keys(fieldsToTrack).forEach(key => {
+        const field = fieldsToTrack[key];
+        // Ripristiniamo il valore solo se il campo è attualmente vuoto sul server
+        // o se l'utente ha navigato avanti e indietro
+        if (field && data[key] !== undefined) {
+          field.value = data[key];
+          // Lanciamo un evento 'input' per far capire a parameter_edit.js che il form è "sporco"
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+    }
+
+    // FUNZIONE: Salva dati nel browser
+    function saveDraft() {
+      const data = {};
+      Object.keys(fieldsToTrack).forEach(key => {
+        const field = fieldsToTrack[key];
+        if (field) {
+          data[key] = field.value;
+        }
+      });
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+
+    // Esecuzione al caricamento
+    loadDraft();
+
+    // Ascolta ogni cambiamento nei campi e salva la bozza
+    Object.values(fieldsToTrack).forEach(field => {
+      if (field) {
+        field.addEventListener('input', saveDraft);
+      }
+    });
+
+    // 3. PULIZIA AL SALVATAGGIO
+    const form = document.getElementById('param-edit-form');
+    if (form) {
+      form.addEventListener('submit', function() {
+        // Se l'utente preme Salva, rimuoviamo la bozza locale
+        localStorage.removeItem(storageKey);
+      });
     }
   });
 </script>
