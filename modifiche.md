@@ -53,4 +53,4 @@
 
 
 ## BACKUP
-- [ ] Non trovo più la pagina
+- [x] Non trovo più la pagina
