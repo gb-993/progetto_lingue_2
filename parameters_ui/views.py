@@ -1264,7 +1264,7 @@ def parameter_download_pdf(request: HttpRequest, param_id: str) -> FileResponse:
             pdf.set_text_color(27, 29, 32)
             pdf.set_fill_color(241, 242, 244)
             pdf.set_draw_color(218, 221, 226)
-            pdf.cell(0, 8, f"  {q.id} ({q_type})", ln=True, fill=True, border="B")
+            pdf.cell(0, 8, f"  {q.id} {q_type}", ln=True, fill=True, border="B")
             pdf.ln(3)
 
             add_long_text("Text:", q.text)

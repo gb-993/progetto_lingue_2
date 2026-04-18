@@ -45,13 +45,12 @@
 Similmente, se modifico altri campi (es. modifico la Short description) questa dovrebbe "salvarsi" se cambio pagina, pur mantenendo il salvataggio globale del parametro con il sistema che c'è adesso
 
 - [ ] Per salvare una question mantenere il bottone che c'è adesso ma chiamarlo "Save the changes and maintain data" e aggiungere un altro bottone "Save the changes and delete the linked data (the old data will still be accessible in ...)". 
-
 L'idea è che la modifica al testo di una question potrebbe:
     1. comunque essere coerente con i vecchi esempi raccolti oppure 
     2. far sì che i vecchi dati non vadano più bene con il nuovo testo della question. 
         -> Nel caso 2. i dati di tutte le lingue relativi a quella question dovrebbero essere rimossi ma non eliminati, ci vorrebbe una pagina che li conservasse, magari con anche la possibilità di scaricarli come xlsx. Tipo una pagina simile a "Questions" con la lista delle questions obsolete e la possibilità di scaricare i vecchi dati
 
-- [ ] Nel download del pdf togliere le parentesi dopo il label delle question normali
+- [x] Nel download del pdf togliere le parentesi dopo il label delle question normali
 
 ## TABLE A
 - [x] I filtri a volte non funzionano bene in visualizzazione e non si scaricano solo i subset selezionati (ma a volte sì ma purtroppo non sono riuscito a capire quando sì e quando no)
