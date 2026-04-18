@@ -1,0 +1,548 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../api/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Database (ER) - PCM-Hub</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#architettura-database-er" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PCM-Hub" class="md-header__button md-logo" aria-label="PCM-Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PCM-Hub
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Database (ER)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PCM-Hub" class="md-nav__button md-logo" aria-label="PCM-Hub" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PCM-Hub
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API completa
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database (ER)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="architettura-database-er">Architettura database (ER)</h1>
+<p>Di seguito un diagramma ER in Mermaid derivato da <code>core/models.py</code>.
+{ .center }
+<pre class="mermaid"><code>erDiagram
+    USER {
+        string email PK
+        string role
+        boolean is_staff
+        datetime date_joined
+    }
+
+    LANGUAGE {
+        string id PK
+        string name_full
+        int position
+        string family
+        string top_level_family
+    }
+
+    PARAMETERDEF {
+        string id PK
+        string name
+        int position
+        boolean is_active
+    }
+
+    QUESTION {
+        string id PK
+        string parameter_id FK
+        text text
+        boolean is_stop_question
+    }
+
+    ANSWER {
+        int id PK
+        string language_id FK
+        string question_id FK
+        string status
+        string response_text
+        boolean modifiable
+    }
+
+    EXAMPLE {
+        int id PK
+        int answer_id FK
+        string number
+    }
+
+    MOTIVATION {
+        int id PK
+        string code
+        string label
+    }
+
+    QUESTION_ALLOWED_MOTIVATION {
+        int id PK
+        string question_id FK
+        int motivation_id FK
+        int position
+    }
+
+    ANSWER_MOTIVATION {
+        int id PK
+        int answer_id FK
+        int motivation_id FK
+    }
+
+    LANGUAGE_PARAMETER {
+        int id PK
+        string language_id FK
+        string parameter_id FK
+        string value_orig
+        boolean warning_orig
+    }
+
+    LANGUAGE_PARAMETER_EVAL {
+        int id PK
+        int language_parameter_id FK
+        string value_eval
+        boolean warning_eval
+    }
+
+    PARAMETER_CHANGE_LOG {
+        int id PK
+        string parameter_id FK
+        int changed_by_id FK
+        datetime changed_at
+    }
+
+    LANGUAGE_REVIEW {
+        int id PK
+        string language_id FK
+        int created_by_id FK
+        string decision
+        datetime created_at
+    }
+
+    PARAMETER_REVIEW_FLAG {
+        int id PK
+        string language_id FK
+        string parameter_id FK
+        int user_id FK
+        boolean flag
+    }
+
+    SUBMISSION {
+        int id PK
+        string language_id FK
+        int submitted_by_id FK
+        datetime submitted_at
+    }
+
+    SUBMISSION_ANSWER {
+        int id PK
+        int submission_id FK
+        string question_code
+        string response_text
+    }
+
+    SUBMISSION_ANSWER_MOTIVATION {
+        int id PK
+        int submission_id FK
+        string question_code
+        string motivation_code
+    }
+
+    SUBMISSION_EXAMPLE {
+        int id PK
+        int submission_id FK
+        string question_code
+    }
+
+    SUBMISSION_PARAM {
+        int id PK
+        int submission_id FK
+        string parameter_id
+        string value_orig
+        string value_eval
+    }
+
+    GLOSSARY {
+        int id PK
+        string word
+    }
+
+    PARAM_SCHEMA {
+        int id PK
+        string label
+    }
+
+    PARAM_TYPE {
+        int id PK
+        string label
+    }
+
+    PARAM_LEVEL_OF_COMPARISON {
+        int id PK
+        string label
+    }
+
+    SITE_CONTENT {
+        int id PK
+        string key
+        string page
+        int updated_by_id FK
+    }
+
+    USER }o--o{ LANGUAGE : "N:N m2m_languages"
+    USER ||--o{ LANGUAGE : "1:N assigned_user"
+
+    PARAMETERDEF ||--o{ QUESTION : "1:N questions"
+    LANGUAGE ||--o{ ANSWER : "1:N answers"
+    QUESTION ||--o{ ANSWER : "1:N answers"
+    ANSWER ||--o{ EXAMPLE : "1:N examples"
+
+    QUESTION ||--o{ QUESTION_ALLOWED_MOTIVATION : "1:N allowed_motivation_links"
+    MOTIVATION ||--o{ QUESTION_ALLOWED_MOTIVATION : "1:N allowed_for_questions"
+
+    ANSWER ||--o{ ANSWER_MOTIVATION : "1:N answer_motivations"
+    MOTIVATION ||--o{ ANSWER_MOTIVATION : "1:N answer_motivations"
+
+    LANGUAGE ||--o{ LANGUAGE_PARAMETER : "1:N language_parameters"
+    PARAMETERDEF ||--o{ LANGUAGE_PARAMETER : "1:N language_parameters"
+    LANGUAGE_PARAMETER ||--|| LANGUAGE_PARAMETER_EVAL : "1:1 eval"
+
+    PARAMETERDEF ||--o{ PARAMETER_CHANGE_LOG : "1:N change_logs"
+    USER ||--o{ PARAMETER_CHANGE_LOG : "1:N changed_by"
+
+    LANGUAGE ||--o{ LANGUAGE_REVIEW : "1:N reviews"
+    USER ||--o{ LANGUAGE_REVIEW : "1:N created_by"
+
+    LANGUAGE ||--o{ PARAMETER_REVIEW_FLAG : "1:N review_flags"
+    PARAMETERDEF ||--o{ PARAMETER_REVIEW_FLAG : "1:N review_flags"
+    USER ||--o{ PARAMETER_REVIEW_FLAG : "1:N review_flags"
+
+    LANGUAGE ||--o{ SUBMISSION : "1:N submissions"
+    USER ||--o{ SUBMISSION : "1:N submissions"
+    SUBMISSION ||--o{ SUBMISSION_ANSWER : "1:N answers"
+    SUBMISSION ||--o{ SUBMISSION_ANSWER_MOTIVATION : "1:N answer_motivations"
+    SUBMISSION ||--o{ SUBMISSION_EXAMPLE : "1:N examples"
+    SUBMISSION ||--o{ SUBMISSION_PARAM : "1:N params"
+
+    USER ||--o{ SITE_CONTENT : "1:N updated_site_contents"</code></pre></p>
+<p>Note:
+- <code>ParamSchema</code>, <code>ParamType</code> e <code>ParamLevelOfComparison</code> sono lookup non collegati con FK dirette in <code>ParameterDef</code> (attualmente campi testuali).
+- Alcune tabelle (<code>SubmissionAnswer</code>, <code>SubmissionAnswerMotivation</code>, <code>SubmissionParam</code>) usano vincoli unici composti ma non una PK esplicita nel modello.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
