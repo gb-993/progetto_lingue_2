@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Languages{% endblock %}
 {% block breadcrumb %}
   <li aria-current="page">Languages</li>
@@ -16,8 +17,23 @@
 {% else %}
   {% include "_toolbar_search.html" with q=q placeholder="Search language…" %}
 {% endif %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.3.1/ol.css">
 
 <style>
+
+    #world-map {
+        height: 450px;
+        width: 100%;
+        border-radius: 12px;
+        margin-bottom: 2rem; /* Spazio prima della lista/pulsanti */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 1;
+        border: 1px solid var(--border);
+    }
+    :root[data-theme="dark"] #world-map {
+        filter: brightness(0.85) contrast(1.1);
+    }
+
     .control-panel {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -104,6 +120,11 @@
         </div>
     </div>
 </form>
+
+<div id="world-map"></div>
+<script id="map-data" type="application/json">
+  {{ map_data_json|safe }}
+</script>
 
 <div class="toolbar-actions desktop-actions" style="margin:.5rem 0 1rem; display:flex; gap:.5rem; flex-wrap:wrap;">
   <a class="btn" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export .xlsx</a>
@@ -304,7 +325,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/ol@v10.3.1/dist/ol.js"></script>
+<script src="{% static 'js/public_map_2.js' %}"></script>
 
 {% endblock %}
 

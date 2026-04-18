@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from typing import Any
 import os
 import tempfile  
-
+import json
 import io
 import zipfile
 import threading          
@@ -357,19 +357,41 @@ def language_list(request: HttpRequest) -> HttpResponse:
 
     sort_urls = {k: _toggle_url(k) for k in sort_map.keys()}
 
+
+
+    map_languages = qs.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
+    
+    map_data = []
+    for lang in map_languages:
+        try:
+            map_data.append({
+                'id': lang.id,
+                'name': lang.name_full,
+                'lat': float(lang.latitude),  # Assicuriamoci che siano numeri
+                'lng': float(lang.longitude),
+                'family': lang.family if lang.family else 'Unknown'
+            })
+        except (ValueError, TypeError):
+            # Ignora le lingue le cui coordinate non sono convertibili in float
+            continue
+
+    map_data_json = json.dumps(map_data)
+
+
     ctx = {
-        "languages": qs,
-        "page_obj": None,
-        "q": q,
-        "is_admin": is_admin,
-        "sort": active_sort,
-        "dir": sort_dir,
-        "sort_urls": sort_urls,
-        "params": request.GET,
-        "opt_top_families": opt_top_families,
-        "opt_families": opt_families,
-        "opt_groups": opt_groups,
-    }
+            "languages": qs,
+            "page_obj": None,
+            "q": q,
+            "is_admin": is_admin,
+            "sort": active_sort,
+            "dir": sort_dir,
+            "sort_urls": sort_urls,
+            "params": request.GET,
+            "opt_top_families": opt_top_families,
+            "opt_families": opt_families,
+            "opt_groups": opt_groups,
+            "map_data_json": map_data_json, 
+        }
     return render(request, "languages/list.html", ctx)
 
 

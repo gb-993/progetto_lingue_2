@@ -2,11 +2,12 @@ function initPublicMap() {
     const mapContainer = document.getElementById('world-map');
     if (!mapContainer || mapContainer.innerHTML !== "") return; // Evita doppie inizializzazioni
 
-    // 1. RECUPERA I DATI
+// 1. RECUPERA I DATI
     const dataElement = document.getElementById('map-data');
     if (!dataElement) return;
     const rawData = dataElement.textContent;
-    if (!rawData || rawData.trim() === "[]") return;
+        if (!rawData || rawData.trim() === "") return; 
+
     const languages = JSON.parse(rawData);
 
     // 2. FUNZIONE COLORE (identica alla tua)
