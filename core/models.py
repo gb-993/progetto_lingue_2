@@ -554,6 +554,7 @@ class Example(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["answer"])]
+        ordering = ['id']  
 
 
 # ============

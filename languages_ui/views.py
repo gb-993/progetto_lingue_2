@@ -313,12 +313,11 @@ def language_list(request: HttpRequest) -> HttpResponse:
     elif f_lang_hist == "no":
         qs = qs.filter(historical_language=False)
 
-    # --- Popolamento Dropdown (esclude stringhe vuote o nulle) ---
+    # --- Popolamento Dropdown 
     opt_top_families = Language.objects.exclude(top_level_family__isnull=True).exclude(top_level_family="").values_list("top_level_family", flat=True).distinct().order_by("top_level_family")
     opt_families = Language.objects.exclude(family__isnull=True).exclude(family="").values_list("family", flat=True).distinct().order_by("family")
     opt_groups = Language.objects.exclude(grp__isnull=True).exclude(grp="").values_list("grp", flat=True).distinct().order_by("grp")
 
-    # --- Ordinamento ---
     sort_map = {
         "id": "id",
         "name": "name_full",
@@ -367,7 +366,7 @@ def language_list(request: HttpRequest) -> HttpResponse:
             map_data.append({
                 'id': lang.id,
                 'name': lang.name_full,
-                'lat': float(lang.latitude),  # Assicuriamoci che siano numeri
+                'lat': float(lang.latitude),  
                 'lng': float(lang.longitude),
                 'family': lang.family if lang.family else 'Unknown',
                 'top_level_family': lang.top_level_family if lang.top_level_family else 'Unknown'
@@ -770,7 +769,6 @@ def parameter_save(request: HttpRequest, lang_id: str, param_id: str) -> HttpRes
                 language=lang, parameter=param, user=request.user, defaults={"flag": True}
             )
         else:
-            # AZZERAMENTO GLOBALE: Se salvato e completo, rimuovi la flag per TUTTI gli utenti
             ParameterReviewFlag.objects.filter(language=lang, parameter=param).update(flag=False)
     except Exception:
         pass
@@ -779,10 +777,8 @@ def parameter_save(request: HttpRequest, lang_id: str, param_id: str) -> HttpRes
     missing_count = len(questions) - saved_count
     
     if missing_count > 0:
-        # Se mancano risposte, mostra l'avviso di warning (che diventerà rosso/giallo in base al tuo CSS)
         messages.warning(request, _t(f"Warning: {missing_count} missing answers for parameter {param.id}."))
     else:
-        # Se tutto è completo, mostra il messaggio di successo verde
         messages.success(request, _t(f"Saved {saved_count} answers for parameter {param.id}."))
     next_param = (
         ParameterDef.objects.filter(is_active=True, position__gt=param.position).order_by("position").first()
@@ -912,7 +908,6 @@ def answer_save(request: HttpRequest, lang_id: str, question_id: str) -> HttpRes
         if del_ids:
             Example.objects.filter(answer=answer, id__in=del_ids).delete()
 
-        # update esistenti (tutti i campi)
         for key, val in request.POST.items():
             if not key.startswith("ex_"):
                 continue
@@ -926,7 +921,6 @@ def answer_save(request: HttpRequest, lang_id: str, question_id: str) -> HttpRes
             cleaned = (val or "").strip()
             Example.objects.filter(id=ex_id, answer=answer).update(**{field: cleaned})
 
-        # create nuovi
         if buckets:
             to_create = []
             for idx, (uid, data) in enumerate(buckets.items()):
@@ -1096,8 +1090,6 @@ def language_run_dag(request: HttpRequest, lang_id: str) -> HttpResponse:
 
     lang = get_object_or_404(Language, pk=lang_id)
 
-    # 1. Approva le risposte attuali FORZATAMENTE (senza controllare se sono tutte compilate)
-    # Aggiorniamo tutte le risposte non ancora approvate bloccandole.
     changed = Answer.objects.filter(
         language=lang
     ).exclude(
@@ -1106,11 +1098,9 @@ def language_run_dag(request: HttpRequest, lang_id: str) -> HttpResponse:
         status=AnswerStatus.APPROVED, modifiable=False
     )
 
-    # 2. Registra l'azione nell'audit log per tracciare chi ha forzato l'approvazione
     if changed > 0:
         LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
 
-    # 3. Esecuzione del DAG sui dati attuali (calcolerà i parametri anche se mancano risposte)
     try:
         report = run_dag_for_language(lang_id)
         msg = _t(
@@ -1728,7 +1718,6 @@ def _build_language_workbook(lang: Language, user: Any) -> tuple[Workbook, str]:
         for col_idx in range(1, len(upload_header) + 1):
             ws_upload.cell(row=1, column=col_idx).font = bold_white
 
-        # Costruzione righe nel formato atteso da import_language_from_excel
         for p in params:
             p_label = p.id
             for q in qs_by_param.get(p.id, []):
@@ -1789,7 +1778,7 @@ def _build_language_workbook(lang: Language, user: Any) -> tuple[Workbook, str]:
         # ----------------------------
         # Foglio Answers
         # ----------------------------
-        ws_answers = wb.create_sheet("Answers", 1)  # Database_model, Answers, Examples
+        ws_answers = wb.create_sheet("Answers", 1)  
         ws_answers.append(ans_header)
         for i in range(1, len(ans_header) + 1):
             ws_answers.cell(row=1, column=i).font = bold_white
@@ -1882,7 +1871,6 @@ def language_export_xlsx(request: HttpRequest, lang_id: str) -> HttpResponse:
 
 
 
-# Aggiungi "POST" ai metodi consentiti
 @login_required
 @require_http_methods(["GET", "POST"]) 
 def language_export_all_zip(request: HttpRequest) -> HttpResponse:
@@ -1920,7 +1908,6 @@ def language_export_all_zip(request: HttpRequest) -> HttpResponse:
             zf.writestr(inner_name, xlsx_io.getvalue())
 
     zip_buffer.seek(0)
-    # Rinominiamo leggermente il file se è un'esportazione parziale
     if request.method == "POST" and request.POST.get("lang_ids"):
         zip_filename = f"PCM_languages_selected_{ts}.zip"
     else:

@@ -9,7 +9,7 @@ function initPublicMap() {
     if (!rawData || rawData.trim() === "") return;
     const languages = JSON.parse(rawData);
 
-    // 2. FUNZIONE COLORE (Ora usa la Top Level Family)
+    // 2. FUNZIONE COLORE 
     function getColorForFamily(family) {
         let hash = 0;
         for (let i = 0; i < family.length; i++) {
@@ -24,13 +24,13 @@ function initPublicMap() {
         return color;
     }
 
-    // 3. CREA I PUNTI (FEATURES)
+    // 3. CREA I PUNTI
     const features = languages.map(lang => {
         const feature = new ol.Feature({
             geometry: new ol.geom.Point(ol.proj.fromLonLat([lang.lng, lang.lat])),
             name: lang.name,
             id: lang.id,
-            family: lang.top_level_family // Salviamo per il popup
+            family: lang.top_level_family 
         });
 
         // Colora in base alla TOP LEVEL FAMILY
@@ -55,7 +55,7 @@ function initPublicMap() {
                 source: new ol.source.XYZ({
                     url: 'https://{a-d}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
                     attributions: '&copy; OpenStreetMap contributors &copy; CARTO',
-                    crossOrigin: 'anonymous' // <--- CRITICO PER IL DOWNLOAD DELLA MAPPA IN PNG
+                    crossOrigin: 'anonymous'
                 })
             }),
             vectorLayer
@@ -111,7 +111,6 @@ function initPublicMap() {
                 mapCanvas.height = size[1];
                 const mapContext = mapCanvas.getContext('2d');
                 
-                // Unisce tutti i layer (Sfondo + Punti) in un unico canvas
                 Array.prototype.forEach.call(
                     document.querySelectorAll('.ol-layer canvas'),
                     function (canvas) {
@@ -120,7 +119,6 @@ function initPublicMap() {
                             mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
                             const transform = canvas.style.transform;
                             
-                            // Applica la matrice di trasformazione del canvas originale
                             const matrix = transform
                                 .match(/^matrix\(([^\(]*)\)$/)[1]
                                 .split(',')
@@ -136,7 +134,6 @@ function initPublicMap() {
                 link.href = mapCanvas.toDataURL('image/png');
                 link.click();
             });
-            // Forza il rendering della mappa prima di scattare la foto
             map.renderSync(); 
         });
     }
