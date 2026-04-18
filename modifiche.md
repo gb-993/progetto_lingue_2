@@ -16,7 +16,7 @@
 (ancora non so esattamente cosa sarà visualizzabile per questi utenti)
 
 ## QUESTIONS
-- [ ] Se modifico una question da questa pagina poi non chiede di specificare quale è stato il cambiamento per salvare
+- [ ] Se modifico una question  poi non chiede di specificare quale è stato il cambiamento per salvare
 
 ## LISTA LINGUE
 - [ ] Inserire la mappa "interattiva" che c'è nella homepage anche in alto in questa pagina
@@ -31,24 +31,20 @@
 
 ## LINGUE DATA
 
-
 ## DEBUG PARAMETRI
-- [ ] Il DAG aggiorna TUTTE le lingue a prescindere da dove viene invocato (valutare spostamento btn). Magari si può mettere in alto nella pagina con la lista delle lingue?
 
 ## GLOSSARIO
 
-
 ## DEBUG
-
 
 ## LISTA PARAMETRI
 - [x] Inserire gli stessi "Parameter filters" che ci sono nella pagina della Table A anche qui in alto e poterli selezionare per visualizzare solo subset di parametri
 
 ## PARAMETERS EDIT
-- [ ] Fare in modo che se si scrive testo nel Brief summary of changes e poi si cambia pagina (es. per modificare le implicazioni di un parametro e poter disattivarne un altro), il testo precedentemente scritto rimanga e non si cancelli. 
+- [x] Fare in modo che se si scrive testo nel Brief summary of changes e poi si cambia pagina (es. per modificare le implicazioni di un parametro e poter disattivarne un altro), il testo precedentemente scritto rimanga e non si cancelli. 
 Similmente, se modifico altri campi (es. modifico la Short description) questa dovrebbe "salvarsi" se cambio pagina, pur mantenendo il salvataggio globale del parametro con il sistema che c'è adesso
 
-- [ ] Per salvare una question mantenere il bottone che c'è adesso ma chiamarlo "Sava the changes and maintain data" e aggiungere un altro bottone "Save the changes and delete the linked data (the old data will still be accessible in ...)". 
+- [ ] Per salvare una question mantenere il bottone che c'è adesso ma chiamarlo "Save the changes and maintain data" e aggiungere un altro bottone "Save the changes and delete the linked data (the old data will still be accessible in ...)". 
 
 L'idea è che la modifica al testo di una question potrebbe:
     1. comunque essere coerente con i vecchi esempi raccolti oppure 
