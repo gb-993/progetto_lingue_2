@@ -369,7 +369,8 @@ def language_list(request: HttpRequest) -> HttpResponse:
                 'name': lang.name_full,
                 'lat': float(lang.latitude),  # Assicuriamoci che siano numeri
                 'lng': float(lang.longitude),
-                'family': lang.family if lang.family else 'Unknown'
+                'family': lang.family if lang.family else 'Unknown',
+                'top_level_family': lang.top_level_family if lang.top_level_family else 'Unknown'
             })
         except (ValueError, TypeError):
             # Ignora le lingue le cui coordinate non sono convertibili in float

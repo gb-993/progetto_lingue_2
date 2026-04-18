@@ -19,11 +19,11 @@
 - [ ] Se modifico una question  poi non chiede di specificare quale è stato il cambiamento per salvare
 
 ## LISTA LINGUE
-- [ ] Inserire la mappa "interattiva" che c'è nella homepage anche in alto in questa pagina
+- [x] Inserire la mappa "interattiva" che c'è nella homepage anche in alto in questa pagina
 
 - [x] Inserire gli stessi "Language filters" che ci sono nella pagina della Table A anche qui in alto e poterli selezionare per visualizzare solo subset di lingue
 
-- [ ] Bottone per scaricare una mappa "statica" png a partire dalle coordinate geografiche (idealmente sono stati applicati dei filtri per la visualizzazione della lista delle lingue, la mappa dovrebbe mostrare solo quelle lingue). Va bene che le località siano indicate con colori diversi a seconda della top-level family
+- [x] Bottone per scaricare una mappa "statica" png a partire dalle coordinate geografiche (idealmente sono stati applicati dei filtri per la visualizzazione della lista delle lingue, la mappa dovrebbe mostrare solo quelle lingue). Va bene che le località siano indicate con colori diversi a seconda della top-level family
 
 - [ ] Bottone per scaricare le distanze geografiche GCD (come per la mappa, se sono selezionati dei filtri dovrebbe scaricare solo le distanze delle località per cui sono state selezionate le lingue). Ti metto il file gcd.py (metto anche coord.txt solo per mostrarti come vuole formattati i dati, poi si può eliminare)
 
