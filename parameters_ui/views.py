@@ -420,8 +420,6 @@ def parameter_deactivate(request: HttpRequest, param_id: str) -> HttpResponse:
             status=400,
         )
 
-
-
     with transaction.atomic():
         param = ParameterDef.objects.select_for_update().get(pk=param_id)
 
@@ -466,7 +464,7 @@ def _suggest_question_id_for_target(src_q: Question, target_param: ParameterDef)
     dst_id = (target_param.id or "").strip()
 
     if src_id.startswith(src_param_id + "_"):
-        suffix = src_id[len(src_param_id):]  # include underscore + resto
+        suffix = src_id[len(src_param_id):]  
         base = dst_id + suffix
     else:
         base = f"{dst_id}_{src_id}"
@@ -1159,7 +1157,7 @@ def parameter_download_pdf(request: HttpRequest, param_id: str) -> FileResponse:
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
-    # --- Helpers con i colori del tuo CSS ---
+    # --- Helpers con i colori del CSS ---
 
     def add_section_title(title: str) -> None:
         """Add a styled section title row to the PDF.

@@ -172,7 +172,7 @@ class Command(BaseCommand):
         imported_examples = 0
         skipped_rows = 0
 
-        # NEW: disabilitiamo i signal per evitare ricalcoli ridondanti durante l'import
+        # disabilitiamo i signal per evitare ricalcoli ridondanti durante l'import
         post_save.disconnect(answer_saved_recompute, sender=Answer)
         post_delete.disconnect(answer_deleted_recompute, sender=Answer)
 
@@ -180,7 +180,7 @@ class Command(BaseCommand):
             # import atomico per sicurezza
             with transaction.atomic():
                 # STEP 1: Rimuoviamo tutte le Answer esistenti per questa lingua
-                # (approccio "replace all" per garantire consistenza)
+                # "replace all" per garantire consistenza
                 old_answers = Answer.objects.filter(language=language)
                 old_count = old_answers.count()
                 if old_count > 0:
@@ -189,7 +189,7 @@ class Command(BaseCommand):
                             f"Rimozione di {old_count} Answer esistenti per {language_name}..."
                         )
                     )
-                    # La delete in cascata rimuoverà anche Example e AnswerMotivation
+                    # La delete cascade rimuoverà anche Example e AnswerMotivation
                     old_answers.delete()
 
                 # STEP 2: Importiamo le nuove Answer dal file
@@ -251,23 +251,21 @@ class Command(BaseCommand):
                         skipped_rows += 1
                         continue
 
-                    # NEW: mappiamo Language_Answer -> "yes"/"no"
+                    # mappiamo Language_Answer -> "yes"/"no"
                     raw_ans = (_coerce_str(row.get("Language_Answer")) or "").strip().upper()
                     if raw_ans in ("YES", "Y"):
                         resp = "yes"
                     elif raw_ans in ("NO", "N"):
                         resp = "no"
                     else:
-                        # --- INIZIO MODIFICA: Segnala risposta non valida ---
                         self.stdout.write(
                             self.style.WARNING(f"Riga saltata: risposta '{raw_ans}' non valida per la domanda {qid}"))
-                        # --- FINE MODIFICA ---
                         skipped_rows += 1
                         continue
 
                     comments = parse_null(row.get("Language_Comments"))
 
-                    # NEW: crea la nuova Answer (dato che abbiamo fatto delete all sopra)
+                    # crea la nuova Answer (dato che abbiamo fatto delete all sopra)
                     answer = Answer.objects.create(
                         language=language,
                         question=question,
@@ -278,7 +276,7 @@ class Command(BaseCommand):
                     )
                     imported_answers += 1
 
-                    # NEW: costruiamo gli Example dalle colonne Language_Examples/Gloss/Translation/References
+                    # costruiamo gli Example dalle colonne Language_Examples/Gloss/Translation/References
                     ex_main = _split_examples(row.get("Language_Examples"))
                     gloss_lines = _split_lines(row.get("Language_Example_Gloss"))
                     trans_lines = _split_lines(row.get("Language_Example_Translation"))
@@ -303,12 +301,12 @@ class Command(BaseCommand):
                         imported_examples += 1
 
         finally:
-            # NEW: riconnettiamo i signal
+            # riconnettiamo i signal
             post_save.connect(answer_saved_recompute, sender=Answer)
             post_delete.connect(answer_deleted_recompute, sender=Answer)
 
         # STEP 3: Ricalcoliamo tutti i LanguageParameter per questa lingua
-        # (una sola volta alla fine, invece che ad ogni Answer)
+        # una sola volta alla fine, invece che ad ogni Answer
         self.stdout.write(
             self.style.SUCCESS(
                 f"Import completato. Answers creati: {imported_answers}, "
