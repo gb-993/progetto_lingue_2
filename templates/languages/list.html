@@ -130,7 +130,7 @@
 </script>
 
 <div class="toolbar-actions desktop-actions" style="margin:.5rem 0 1rem; display:flex; gap:.5rem; flex-wrap:wrap;">
-  <a class="btn" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export .xlsx</a>
+  <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export .xlsx</a>
   {% if is_admin %}
     <button class="btn btn-export-zip">Export data (.zip)</button>
     <a class="btn" href="{% url 'language_import_excel' %}">Import from Excel</a>
@@ -143,7 +143,7 @@
     <span>Tools & Export</span> <span>▾</span>
   </summary>
   <div class="menu-content" style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; padding: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
-    <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow" style="justify-content: flex-start;">Export .xlsx</a>
+    <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export .xlsx</a>
     <form id="exportXlsxForm" method="POST" action="{% url 'language_list_export_xlsx' %}" style="display: none;">
       {% csrf_token %}
       <input type="hidden" name="lang_ids" id="exportXlsxIds">
@@ -312,19 +312,19 @@
       });
     });
 
-    function updateButtonText() {
-      const selectedCount = Array.from(langCheckboxes).filter(cb => cb.checked).length;
-      
-      // Aggiorna testo pulsante ZIP
-      exportZipBtns.forEach(btn => {
-        btn.textContent = selectedCount > 0 ? `Export selected (${selectedCount}) (.zip)` : `Export all data (.zip)`;
-      });
+  function updateButtonText() {
+    const selectedCount = Array.from(langCheckboxes).filter(cb => cb.checked).length;
+    
+    // Aggiorna testo pulsante ZIP
+    exportZipBtns.forEach(btn => {
+      btn.textContent = selectedCount > 0 ? `Export selected (${selectedCount}) (.zip)` : `Export all data (.zip)`;
+    });
 
-      // Aggiorna testo pulsante XLSX
-      exportXlsxBtns.forEach(btn => {
-        btn.textContent = selectedCount > 0 ? `Export selected (${selectedCount}) (.xlsx)` : `Export .xlsx`;
-      });
-    }
+    // AGGIUNTO: Aggiorna testo pulsante XLSX
+    exportXlsxBtns.forEach(btn => {
+      btn.textContent = selectedCount > 0 ? `Export selected (${selectedCount}) (.xlsx)` : `Export .xlsx`;
+    });
+  }
 
     // Gestore click ZIP
     exportZipBtns.forEach(btn => {

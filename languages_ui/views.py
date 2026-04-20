@@ -1322,17 +1322,11 @@ from datetime import datetime, time
 from django.utils import timezone
 from django.db.models import Max, Q
 
+
+
 @login_required
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 def language_list_export_xlsx(request: HttpRequest) -> HttpResponse:
-    """Export the filtered language list to an Excel workbook.
-
-    Args:
-        request: Current authenticated HTTP request.
-
-    Returns:
-        XLSX file response containing language metadata and last-change info.
-    """
     q = (request.GET.get("q") or "").strip()
     user = request.user
     is_admin = _is_admin(user)
@@ -1340,23 +1334,12 @@ def language_list_export_xlsx(request: HttpRequest) -> HttpResponse:
     qs = (
         Language.objects
         .select_related("assigned_user")
-        .prefetch_related("users")  # <-- AGGIUNTO PER IL MANY-TO-MANY
+        .prefetch_related("users")
         .annotate(last_change=Max("answers__updated_at"))
         .order_by("position")
     )
-    if q:
-        qs = qs.filter(
-            Q(id__icontains=q) |
-            Q(name_full__icontains=q) |
-            Q(top_level_family__icontains=q) |
-            Q(family__icontains=q) |
-            Q(grp__icontains=q) |
-            Q(isocode__icontains=q) |
-            Q(glottocode__icontains=q) |
-            Q(source__icontains=q) |
-            Q(location__icontains=q)
-        )
 
+    # 1. Gestione Selezione (POST) - Ha la priorità assoluta
     if request.method == "POST":
         lang_ids_str = request.POST.get("lang_ids", "")
         if lang_ids_str:
@@ -1364,15 +1347,21 @@ def language_list_export_xlsx(request: HttpRequest) -> HttpResponse:
             if selected_ids:
                 qs = qs.filter(id__in=selected_ids)
     
-    # Se è un GET, mantiene il filtro di ricerca testuale esistente
-    elif q:
-        qs = qs.filter(
-            Q(id__icontains=q) |
-            # ... (restante codice dei filtri Q esistente)
-            Q(location__icontains=q)
-        )
+    # 2. Gestione Ricerca (GET) - Solo se non stiamo esportando selezionati
+    else:
+        if q:
+            qs = qs.filter(
+                Q(id__icontains=q) |
+                Q(name_full__icontains=q) |
+                Q(top_level_family__icontains=q) |
+                Q(family__icontains=q) |
+                Q(grp__icontains=q) |
+                Q(isocode__icontains=q) |
+                Q(glottocode__icontains=q) |
+                Q(source__icontains=q) |
+                Q(location__icontains=q)
+            )
 
-        
     if not is_admin:
         qs = qs.filter(Q(assigned_user=user) | Q(users=user)).distinct()
 

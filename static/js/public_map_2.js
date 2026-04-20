@@ -100,7 +100,7 @@ function initPublicMap() {
         }
     });
 
-    // 6. LOGICA DI ESPORTAZIONE IN PNG
+// 6. LOGICA DI ESPORTAZIONE IN PNG
     const exportBtn = document.getElementById('export-map-btn');
     if (exportBtn) {
         exportBtn.addEventListener('click', function () {
@@ -119,20 +119,40 @@ function initPublicMap() {
                             mapContext.globalAlpha = opacity === '' ? 1 : Number(opacity);
                             const transform = canvas.style.transform;
                             
-                            const matrix = transform
-                                .match(/^matrix\(([^\(]*)\)$/)[1]
-                                .split(',')
-                                .map(Number);
+                            let matrix;
+                            if (transform) {
+                                // Se c'è una trasformazione CSS (es. panning attivo)
+                                matrix = transform
+                                    .match(/^matrix\(([^\(]*)\)$/)[1]
+                                    .split(',')
+                                    .map(Number);
+                            } else {
+                                // Fallback sicuro se transform è vuoto (evita il crash del .match)
+                                matrix = [
+                                    parseFloat(canvas.style.width) / canvas.width || 1,
+                                    0,
+                                    0,
+                                    parseFloat(canvas.style.height) / canvas.height || 1,
+                                    0,
+                                    0
+                                ];
+                            }
+                            
                             CanvasRenderingContext2D.prototype.setTransform.apply(mapContext, matrix);
                             mapContext.drawImage(canvas, 0, 0);
                         }
                     }
                 );
                 
-                // Scarica l'immagine
-                const link = document.getElementById('image-download');
-                link.href = mapCanvas.toDataURL('image/png');
-                link.click();
+                try {
+                    // Scarica l'immagine
+                    const link = document.getElementById('image-download');
+                    link.href = mapCanvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) {
+                    console.error("Errore durante l'esportazione della mappa (CORS o Tainted Canvas):", err);
+                    alert("Impossibile esportare la mappa per restrizioni di sicurezza del browser (CORS). Controlla la console.");
+                }
             });
             map.renderSync(); 
         });
