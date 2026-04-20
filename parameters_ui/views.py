@@ -1139,92 +1139,75 @@ class PDFParamReport(FPDF):
 
 
 # --- Vista di download ---
+import os
+from django.conf import settings
+
+import os
+from django.conf import settings
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required, user_passes_test
+import io
+from typing import Any
+
 @login_required
 @user_passes_test(_is_admin)
 def parameter_download_pdf(request: HttpRequest, param_id: str) -> FileResponse:
-    """Generate and download a PDF report for a parameter.
-
-    Args:
-        request: Current authenticated admin request.
-        param_id: Parameter ID to export.
-
-    Returns:
-        File response containing the generated PDF document.
-    """
     param = get_object_or_404(ParameterDef, pk=param_id)
 
-    pdf = PDFParamReport()
+    pdf = PDFParamReport()  
+    
+    # 1. Carichiamo sia il font normale che quello in grassetto
+    font_path = os.path.join(settings.BASE_DIR, 'static', 'dejavu-sans', 'DejaVuSans.ttf')
+    font_bold_path = os.path.join(settings.BASE_DIR, 'static', 'dejavu-sans', 'DejaVuSans-Bold.ttf')
+    
+    pdf.add_font("DejaVu", "", font_path)
+    pdf.add_font("DejaVu", "B", font_bold_path)
+    
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
-    # --- Helpers con i colori del CSS ---
-
     def add_section_title(title: str) -> None:
-        """Add a styled section title row to the PDF.
-
-        Args:
-            title: Section title text.
-
-        Returns:
-            None.
-        """
         pdf.ln(5)
-        pdf.set_font("helvetica", style="B", size=12)
-        pdf.set_fill_color(241, 242, 244)  # var(--surface-2)
-        pdf.set_text_color(209, 65, 36)  # var(--brand)
+        pdf.set_font("DejaVu", style="B", size=12) # Cambiato in DejaVu
+        pdf.set_fill_color(241, 242, 244)
+        pdf.set_text_color(209, 65, 36)
         pdf.cell(0, 10, f"  {title}", ln=True, fill=True)
         pdf.ln(3)
 
     def add_line(label: str, value: str = "") -> None:
-        """Add a label/value line to the PDF.
-
-        Args:
-            label: Left-hand label.
-            value: Optional value rendered on the same line.
-
-        Returns:
-            None.
-        """
-        pdf.set_font("helvetica", style="B", size=10)
-        pdf.set_text_color(97, 101, 107)  # var(--text-muted)
+        pdf.set_font("DejaVu", style="B", size=10) # Cambiato in DejaVu
+        pdf.set_text_color(97, 101, 107)
         pdf.write(6, str(label) + " ")
         if value:
-            pdf.set_font("helvetica", size=10)
-            pdf.set_text_color(27, 29, 32)  # var(--text)
-            safe_text = str(value).encode('latin-1', 'replace').decode('latin-1')
-            pdf.write(6, safe_text)
+            pdf.set_font("DejaVu", size=10) # Cambiato in DejaVu
+            pdf.set_text_color(27, 29, 32)
+            pdf.write(6, str(value))
         pdf.ln(7)
 
     def add_long_text(label: str, value: Any) -> None:
-        """Add a label and a multiline text block to the PDF.
-
-        Args:
-            label: Block label.
-            value: Textual content rendered below the label.
-
-        Returns:
-            None.
-        """
+        """Add a label and a multiline text block to the PDF."""
         add_line(label)
-        pdf.set_font("helvetica", size=10)
-        pdf.set_text_color(27, 29, 32)  # var(--text)
-        safe_text = str(value or "-").encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 5, safe_text)
+        pdf.set_font("DejaVu", size=10) # Cambiato in DejaVu
+        pdf.set_text_color(27, 29, 32)
+        # NESSUN encode('latin-1'). Lasciamo la stringa pura.
+        pdf.multi_cell(0, 5, str(value or "-"))
         pdf.ln(4)
 
     # --- Costruzione del Documento ---
 
     # Titolo Principale (Text + Brand)
-    pdf.set_font("helvetica", style="B", size=18)
+    pdf.set_font("DejaVu", style="B", size=18)
     pdf.set_text_color(27, 29, 32)
     pdf.cell(pdf.get_string_width("Parameter: "), 10, "Parameter: ", ln=False)
-    pdf.set_text_color(209, 65, 36)  # var(--brand) per l'ID
+    pdf.set_text_color(209, 65, 36)
     pdf.cell(0, 10, f"{param.id}", ln=True)
 
     # Sottotitolo (Text Muted)
-    pdf.set_font("helvetica", size=14)
+    pdf.set_font("DejaVu", size=14)
     pdf.set_text_color(97, 101, 107)
-    pdf.cell(0, 8, str(param.name).encode('latin-1', 'replace').decode('latin-1'), ln=True)
+    # Rimosso encode latin-1
+    pdf.cell(0, 8, str(param.name), ln=True)
     pdf.ln(2)
 
     # 1. INFO DI BASE
@@ -1250,15 +1233,15 @@ def parameter_download_pdf(request: HttpRequest, param_id: str) -> FileResponse:
     questions = param.questions.order_by('is_stop_question', 'id').prefetch_related('allowed_motivations')
 
     if not questions.exists():
-        pdf.set_font("helvetica", style="I", size=10)
-        pdf.set_text_color(97, 101, 107)  # var(--text-muted)
+        pdf.set_font("DejaVu", style="I", size=10)
+        pdf.set_text_color(97, 101, 107)
         pdf.cell(0, 8, "No questions linked to this parameter.", ln=True)
     else:
         for q in questions:
             q_type = "Stop Question" if q.is_stop_question else ""
 
-            # Box ID Domanda (Sfondo var(--surface-2), Bordo var(--border))
-            pdf.set_font("helvetica", style="B", size=11)
+            # Box ID Domanda
+            pdf.set_font("DejaVu", style="B", size=11)
             pdf.set_text_color(27, 29, 32)
             pdf.set_fill_color(241, 242, 244)
             pdf.set_draw_color(218, 221, 226)
@@ -1275,18 +1258,14 @@ def parameter_download_pdf(request: HttpRequest, param_id: str) -> FileResponse:
             mots = q.allowed_motivations.all()
             if mots.exists():
                 add_line("Allowed Motivations (NO):")
-                pdf.set_font("helvetica", size=10)
-                pdf.set_text_color(27, 29, 32)  # var(--text)
+                pdf.set_font("DejaVu", size=10)
+                pdf.set_text_color(27, 29, 32)
 
-                # --- MODIFICA QUI: Creiamo un elenco puntato ---
                 for m in mots:
-                    # Usiamo un trattino per evitare problemi di codifica con i pallini nativi
-                    safe_text = f"- {m.code} ({m.label})".encode('latin-1', 'replace').decode('latin-1')
-
-                    # Impostiamo il margine sinistro a 15 (indentazione rispetto al testo normale che parte da 10)
+                    # Rimosso encode latin-1
+                    safe_text = f"- {m.code} ({m.label})"
                     pdf.set_x(15)
                     pdf.multi_cell(0, 5, safe_text)
-                # -----------------------------------------------
 
             pdf.ln(4)
 

@@ -14,7 +14,7 @@
 - [ ] Se modifico una question poi non chiede di specificare quale è stato il cambiamento per salvare
 
 ## LISTA LINGUE
-- [ ] Far sì che anche il bottone "Export .xlsx" scarichi solo le info delle lingue selezionate (come fa Export selected (N) (.zip))
+- [x] Far sì che anche il bottone "Export .xlsx" scarichi solo le info delle lingue selezionate (come fa Export selected (N) (.zip))
 
 - [ ] Se premo su "Download Map (.png)" non mi scarica la mappa
 
@@ -38,7 +38,7 @@ L'idea è che la modifica al testo di una question potrebbe:
     2. far sì che i vecchi dati non vadano più bene con il nuovo testo della question. 
         -> Nel caso 2. i dati di tutte le lingue relativi a quella question dovrebbero essere rimossi ma non eliminati, ci vorrebbe una pagina che li conservasse, magari con anche la possibilità di scaricarli come xlsx. Tipo una pagina simile a "Questions" con la lista delle questions obsolete e la possibilità di scaricare i vecchi dati
 
-- [ ] Il download del pdf non restituisce l'alfabeto greco (tipo in FGK_Qc)
+- [x] Il download del pdf non restituisce l'alfabeto greco (tipo in FGK_Qc)
 
 ## TABLE A
 - [ ] Scaricare i mantel test (ti metto lo script mantel.py). Quest'analisi richiede due matrici di distanze: noi abbiamo hamming, jaccard[+] e gcd (che è quella geografica)
