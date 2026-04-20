@@ -1357,6 +1357,22 @@ def language_list_export_xlsx(request: HttpRequest) -> HttpResponse:
             Q(location__icontains=q)
         )
 
+    if request.method == "POST":
+        lang_ids_str = request.POST.get("lang_ids", "")
+        if lang_ids_str:
+            selected_ids = [x.strip() for x in lang_ids_str.split(",") if x.strip()]
+            if selected_ids:
+                qs = qs.filter(id__in=selected_ids)
+    
+    # Se è un GET, mantiene il filtro di ricerca testuale esistente
+    elif q:
+        qs = qs.filter(
+            Q(id__icontains=q) |
+            # ... (restante codice dei filtri Q esistente)
+            Q(location__icontains=q)
+        )
+
+        
     if not is_admin:
         qs = qs.filter(Q(assigned_user=user) | Q(users=user)).distinct()
 
