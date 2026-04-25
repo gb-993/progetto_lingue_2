@@ -25,10 +25,14 @@
 - [ ] Poter scaricare le distanze geografiche GCD (come per la mappa, se sono selezionati dei filtri dovrebbe scaricare solo le distanze delle località per cui sono state selezionate le lingue). Ti metto il file gcd.py (metto anche coord.txt solo per mostrarti come vuole formattati i dati, poi si può eliminare)
 - [ ] Inserire un pulsante download con tendina come per la pagina della Table A che scarichi la mappa "Map (.png)" e le distanze geografiche GCD "Geo distances (.txt)" entrambe con il dataset intero o solo con le lingue selezionate
 - [ ] Scaricare la mappa di Lorenzo e Federico (ne riparliamo prossimamente con loro)
+- [ ] Mettere un pulsante unico che ricalcoli i final values per tutte le lingue
+- [ ] Inserire una colonna con una spunta per ogni lingua da mettere quando riteniamo che sia completata (tipo bandierina trasparente che diventa verde quando la premo o qualcosa di simile)
 
 ## LINGUE DATA
 - [ ] Nel foglio "Database model" dell'export aggiungere la colonna "Motivations" per le motivazioni selezionate sul sito dalla checkbox e la colonna Language_Example_Transliteration. Forse da quel foglio possiamo rimuovere le colonne Question, Question_Examples_YES e Question_Intructions_Comments visto che non sono info linguo-specifiche e teniamo quel foglio primariamente come "backup"?
 - [ ] Sostituire "Download .xlsx" con "Export parametric data (.xlsx)"
+- [ ] Per ogni esempio vicino al pulsante Delete mettere anche il pulsante Save (per salvare ogni esempio singolarmente)
+- [ ] Per ogni esempio vicino al pulsante Delete mettere anche il pulsante Copy (per copiare testo/traslitterazione/glossa/traduzione/ref e poterli incollare nello blocco esempio di un'altra question, eventualmente anche di un altro parametro)
 
 ## DEBUG PARAMETRI
 
@@ -36,6 +40,7 @@
 - [ ] È scomparso il bottone "Add a new parameter"
 - [ ] Mettere in alto un bottone che permetta di scaricare un pdf con le info di tutti i parametri, tipo "Download parameters info (.pdf)" 
 - [ ] Si può mettere anche un bottone che permetta di fare un 'backup' delle info di tutti i parametri (con questions ecc) come si fa per i dati delle lingue, da vedere poi nella pagina "Backup"? Se sì poi possiamo mettere un bottone "Backup" anche vicino al bottone "PDF" per farlo del singolo parametro
+- [ ] Poter riordinare i parametri. Dimmi come secondo te è meglio, potrebbe essere comodo da questa pagina poterli trascinare in alto o in basso così che gli altri scorrano di conseguenza. L'ordine stabilio qui dovrebbe poi essere quello in cui compaiono i parametri nelle altre parti del sito. Altrimenti mettiamo, come c'era, l'attributo position in parameter edit
 
 ## PARAMETERS EDIT
 - [ ] Per salvare una question mantenere il bottone che c'è adesso ma chiamarlo "Save the changes and maintain data" e aggiungere un altro bottone "Save the changes and delete the linked data (the old data will still be accessible in Old questins archive)". 
@@ -46,10 +51,11 @@ L'idea è che la modifica al testo di una question potrebbe:
 - [ ] Spostare in alto a dx il download del pdf con le info del parametro "Download parameter info (.pdf)"
 - [ ] Il bottone "Download PDF" nel riquadro "Brief summary of changes" potrebbe scaricare la cronologia delle modifiche
 - [ ] Fare in modo che le finestre di edit delle motivazioni, di schema/type ecc si aprano come pop up e quindi non si perdano le info inserite (funziona in edit parameter ma non in edit question)
+- [ ] Mettere una barra di ricerca sotto a "Behavior & Motivations" per cercare tra le motivazioni senza doverle leggere tutte
 
 ## LISTA QUESTIONS
 - [ ] Aggiungere il bottone "Add a new question" sul modello di "Add a new language"
-- [ ] Se modifico una question da questa pagina poi non chiede di specificare quale è stato il cambiamento per salvare
+- [ ] Se modifico una question da questa pagina poi non chiede di specificare quale è stato il cambiamento per salvare. Dopo il save della question dovrebbe reindirizzare alla pagina di edit del parametro e chiedere il summary delle modifiche
 
 ## NETWORK
 
