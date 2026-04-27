@@ -170,7 +170,7 @@
                         </select>
                     </div>
                     <div class="filter-item">
-                        <label>Family</label>
+                        <label>SubFamily</label>
                         <select name="f_lang_family">
                             <option value="">All</option>
                             {% for f in opt_families %}<option value="{{ f }}" {% if params.f_lang_family == f %}selected{% endif %}>{{ f }}</option>{% endfor %}
