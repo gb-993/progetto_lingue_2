@@ -18,8 +18,8 @@
 - [ ] Se seleziono una certa top-level family poi si può fare che vedo solo le subfamily rilevanti e così via?
 - [ ] Nei filtri mettere una checkbox che permetta ad es. di selezionare più top-level family ecc
 - [ ] Dopo aver applicato i filtri, vorrebbero trovare un modo per deselezionare le lingue che non vogliono ma che sono state identificate dai filtri, es. se seleziono le lingue indoeuropee ma per qualche motivo non voglio l'italiano nella mappa e nelle distanze si dovrebbe poter deselezionare solo l'italiano e mantenere le altre indoeuropee
-- [x] Si può inserire un modo per decidere sulla base di cosa assegnare i colori nella mappa? Se per "top-level family", "subfamily", "group" oppure "historical"
-- [x] Inserire una legenda dei colori
+- [ ] Si può inserire un modo per decidere sulla base di cosa assegnare i colori nella mappa? Se per "top-level family", "subfamily", "group" oppure "historical"
+- [ ] Inserire una legenda dei colori
 - [ ] Sostituire "Export .xlsx" con "Export language metadata (.xlsx)"
 - [ ] Sostituire "Export data (.zip)" con "Export parametric data (.zip)"
 - [ ] Poter scaricare le distanze geografiche GCD (come per la mappa, se sono selezionati dei filtri dovrebbe scaricare solo le distanze delle località per cui sono state selezionate le lingue). Ti metto il file gcd.py (metto anche coord.txt solo per mostrarti come vuole formattati i dati, poi si può eliminare)
