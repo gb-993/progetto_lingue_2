@@ -132,6 +132,7 @@
 <div class="toolbar-actions desktop-actions" style="margin:.5rem 0 1rem; display:flex; gap:.5rem; flex-wrap:wrap;">
   <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export language metadata (.xlsx)</a>
   {% if is_admin %}
+    <a href="{% url 'language_export_migration_bundle' %}"class="btn btn-export-xlsx" style="background:#b91c1c; color:#fff; border-color:#b91c1c;" title="Genera il Migration Bundle ZIP per popolare il sito nuovo"> ⤓ Export migration bundle</a>
     <button class="btn btn-export-zip">Export parametric data (.zip)</button>
     <a class="btn" href="{% url 'language_import_excel' %}">Import from Excel</a>
     <a class="btn" href="{% url 'submission_create_all' %}">Backup all languages</a>
@@ -148,15 +149,9 @@
       {% csrf_token %}
       <input type="hidden" name="lang_ids" id="exportXlsxIds">
     </form>
+
     {% if is_admin %}
-<a href="{% url 'language_export_migration_bundle' %}"
-   class="btn btn-export-xlsx"
-   style="background:#b91c1c; color:#fff; border-color:#b91c1c;"
-   title="Genera il Migration Bundle ZIP per popolare il sito nuovo">
-  ⤓ Export migration bundle
-</a>
-{% endif %}
-    {% if is_admin %}
+      <a href="{% url 'language_export_migration_bundle' %}"class="btn btn-export-xlsx" style="background:#b91c1c; color:#fff; border-color:#b91c1c;" title="Genera il Migration Bundle ZIP per popolare il sito nuovo"> ⤓ Export migration bundle</a>
       <button class="btn btn-export-zip" style="justify-content: flex-start; width: 100%; text-align: left;">Export parametric data (.zip)</button>
       <a class="btn" href="{% url 'language_import_excel' %}" style="justify-content: flex-start;">Import from Excel</a>
       <a class="btn" href="{% url 'submission_create_all' %}" style="justify-content: flex-start;">Backup all languages</a>
