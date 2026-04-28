@@ -44,8 +44,8 @@ from core.models import (
     Motivation,
     AnswerMotivation,
     QuestionAllowedMotivation,
-    LanguageParameter,  
-    ParameterReviewFlag,        
+    LanguageParameter,
+    Glossary,
 )
 try:
     from core.models import LanguageParameterEval  
