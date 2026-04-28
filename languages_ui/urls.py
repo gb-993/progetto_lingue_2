@@ -30,5 +30,7 @@ urlpatterns = [
 
     path("export.xlsx", views.language_list_export_xlsx, name="language_list_export_xlsx"),
     path("export-all.zip", views.language_export_all_zip, name="language_export_all_zip"),
+    path("migration-bundle.zip", views.language_export_migration_bundle, name="language_export_migration_bundle"),
+
 
 ]

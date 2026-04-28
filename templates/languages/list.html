@@ -130,9 +130,9 @@
 </script>
 
 <div class="toolbar-actions desktop-actions" style="margin:.5rem 0 1rem; display:flex; gap:.5rem; flex-wrap:wrap;">
-  <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export .xlsx</a>
+  <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export language metadata (.xlsx)</a>
   {% if is_admin %}
-    <button class="btn btn-export-zip">Export data (.zip)</button>
+    <button class="btn btn-export-zip">Export parametric data (.zip)</button>
     <a class="btn" href="{% url 'language_import_excel' %}">Import from Excel</a>
     <a class="btn" href="{% url 'submission_create_all' %}">Backup all languages</a>
   {% endif %}
@@ -143,13 +143,21 @@
     <span>Tools & Export</span> <span>▾</span>
   </summary>
   <div class="menu-content" style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; padding: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
-    <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export .xlsx</a>
+    <a class="btn btn-export-xlsx" href="{% url 'language_list_export_xlsx' %}{% if q %}?q={{ q|urlencode }}{% endif %}" rel="nofollow">Export language metadata (.xlsx)</a>
     <form id="exportXlsxForm" method="POST" action="{% url 'language_list_export_xlsx' %}" style="display: none;">
       {% csrf_token %}
       <input type="hidden" name="lang_ids" id="exportXlsxIds">
     </form>
     {% if is_admin %}
-      <button class="btn btn-export-zip" style="justify-content: flex-start; width: 100%; text-align: left;">Export data (.zip)</button>
+<a href="{% url 'language_export_migration_bundle' %}"
+   class="btn btn--small"
+   style="background:#b91c1c; color:#fff; border-color:#b91c1c;"
+   title="Genera il Migration Bundle ZIP per popolare il sito nuovo">
+  ⤓ Export migration bundle
+</a>
+{% endif %}
+    {% if is_admin %}
+      <button class="btn btn-export-zip" style="justify-content: flex-start; width: 100%; text-align: left;">Export parametric data (.zip)</button>
       <a class="btn" href="{% url 'language_import_excel' %}" style="justify-content: flex-start;">Import from Excel</a>
       <a class="btn" href="{% url 'submission_create_all' %}" style="justify-content: flex-start;">Backup all languages</a>
     {% endif %}
@@ -317,12 +325,12 @@
     
     // Aggiorna testo pulsante ZIP
     exportZipBtns.forEach(btn => {
-      btn.textContent = selectedCount > 0 ? `Export selected (${selectedCount}) (.zip)` : `Export all data (.zip)`;
+      btn.textContent = selectedCount > 0 ? `Export selected parametric data (${selectedCount}) (.zip)` : `Export parametric data (.zip)`;
     });
 
     // AGGIUNTO: Aggiorna testo pulsante XLSX
     exportXlsxBtns.forEach(btn => {
-      btn.textContent = selectedCount > 0 ? `Export selected (${selectedCount}) (.xlsx)` : `Export .xlsx`;
+      btn.textContent = selectedCount > 0 ? `Export selected language metadata (${selectedCount}) (.xlsx)` : `Export language metadata (.xlsx)`;
     });
   }
 

@@ -13,25 +13,25 @@
 
 ## LISTA LINGUE
 - [ ] La mappa si scarica ma è molto sfocata
-- [ ] Sostituire la stringa "family" con "subfamily" (anche nelle altre parti del sito)
-- [ ] Invertire l'ordine di "group" e "historical"
+- [x] Sostituire la stringa "family" con "subfamily" (anche nelle altre parti del sito)
+- [x] Invertire l'ordine di "group" e "historical"
 - [ ] Se seleziono una certa top-level family poi si può fare che vedo solo le subfamily rilevanti e così via?
 - [ ] Nei filtri mettere una checkbox che permetta ad es. di selezionare più top-level family ecc
 - [ ] Dopo aver applicato i filtri, vorrebbero trovare un modo per deselezionare le lingue che non vogliono ma che sono state identificate dai filtri, es. se seleziono le lingue indoeuropee ma per qualche motivo non voglio l'italiano nella mappa e nelle distanze si dovrebbe poter deselezionare solo l'italiano e mantenere le altre indoeuropee
 - [ ] Si può inserire un modo per decidere sulla base di cosa assegnare i colori nella mappa? Se per "top-level family", "subfamily", "group" oppure "historical"
 - [ ] Inserire una legenda dei colori
-- [ ] Sostituire "Export .xlsx" con "Export language metadata (.xlsx)"
-- [ ] Sostituire "Export data (.zip)" con "Export parametric data (.zip)"
+- [x] Sostituire "Export .xlsx" con "Export language metadata (.xlsx)"
+- [x] Sostituire "Export data (.zip)" con "Export parametric data (.zip)"
 - [ ] Poter scaricare le distanze geografiche GCD (come per la mappa, se sono selezionati dei filtri dovrebbe scaricare solo le distanze delle località per cui sono state selezionate le lingue). Ti metto il file gcd.py (metto anche coord.txt solo per mostrarti come vuole formattati i dati, poi si può eliminare)
 - [ ] Inserire un pulsante download con tendina come per la pagina della Table A che scarichi la mappa "Map (.png)" e le distanze geografiche GCD "Geo distances (.txt)" entrambe con il dataset intero o solo con le lingue selezionate
 - [ ] Scaricare la mappa di Lorenzo e Federico (ne riparliamo prossimamente con loro)
 - [ ] Mettere un pulsante unico che ricalcoli i final values per tutte le lingue
-- [ ] Inserire una colonna con una spunta per ogni lingua da mettere quando riteniamo che sia completata (tipo bandierina trasparente che diventa verde quando la premo o qualcosa di simile)
+- [ ] Inserire una colonna con una spunta per ogni lingua da mettere quando riteniamo che sia completata (tipo bandierina trasparente che diventa verde quando la premo o qualcosa di simile) -> collegato ad approved altrimenti bisogna modificare il db
 - [ ] Aggiungere la possibilità di duplicare una lingua con informazioni e dati (esempi, glosse ecc) aggiungendo automaticamente “2” nel nome e nell'id, es. “Italian” (It) lo copio e si crea “Italian2” (It2)
 
 ## LINGUE DATA
 - [ ] Nel foglio "Database model" dell'export aggiungere la colonna "Motivations" per le motivazioni selezionate sul sito dalla checkbox e la colonna Language_Example_Transliteration. Forse da quel foglio possiamo rimuovere le colonne Question, Question_Examples_YES e Question_Intructions_Comments visto che non sono info linguo-specifiche e teniamo quel foglio primariamente come "backup"?
-- [ ] Sostituire "Download .xlsx" con "Export parametric data (.xlsx)"
+- [x] Sostituire "Download .xlsx" con "Export parametric data (.xlsx)"
 - [ ] Per ogni esempio vicino al pulsante Delete mettere anche il pulsante Save (per salvare ogni esempio singolarmente)
 - [ ] Per ogni esempio vicino al pulsante Delete mettere anche il pulsante Copy (per copiare testo/traslitterazione/glossa/traduzione/ref e poterli incollare nello blocco esempio di un'altra question, eventualmente anche di un altro parametro)
 - [ ] Cella con testo libero per ogni parametro di ogni lingua modificabile e visibile solo da admin

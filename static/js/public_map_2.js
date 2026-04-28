@@ -100,15 +100,34 @@ function initPublicMap() {
         }
     });
 
-// 6. LOGICA DI ESPORTAZIONE IN PNG
+// 6. LOGICA DI ESPORTAZIONE IN PNG (ALTA RISOLUZIONE)
     const exportBtn = document.getElementById('export-map-btn');
     if (exportBtn) {
         exportBtn.addEventListener('click', function () {
+            
+            // --- 1. IMPOSTAZIONI ALTA RISOLUZIONE ---
+            // Aumenta questo numero per avere un'immagine più grande e dettagliata. 
+            // 2 = doppia grandezza, 3 = tripla (consigliato), 4 = gigante (attenzione alla RAM del browser)
+            const scaleFactor = 3; 
+            
+            // Salviamo lo stato originale
+            const originalSize = map.getSize();
+            const originalResolution = map.getView().getResolution();
+            
+            // Calcoliamo la dimensione gigante e la risoluzione per avere più "zoom" interno
+            const exportSize = [originalSize[0] * scaleFactor, originalSize[1] * scaleFactor];
+            const exportResolution = originalResolution / scaleFactor;
+
+            // Applichiamo la dimensione gigante alla mappa
+            map.setSize(exportSize);
+            map.getView().setResolution(exportResolution);
+
+            // --- 2. CATTURA DELL'IMMAGINE ---
             map.once('rendercomplete', function () {
                 const mapCanvas = document.createElement('canvas');
-                const size = map.getSize();
-                mapCanvas.width = size[0];
-                mapCanvas.height = size[1];
+                // Usiamo le dimensioni giganti per il canvas
+                mapCanvas.width = exportSize[0];
+                mapCanvas.height = exportSize[1];
                 const mapContext = mapCanvas.getContext('2d');
                 
                 Array.prototype.forEach.call(
@@ -121,20 +140,14 @@ function initPublicMap() {
                             
                             let matrix;
                             if (transform) {
-                                // Se c'è una trasformazione CSS (es. panning attivo)
                                 matrix = transform
                                     .match(/^matrix\(([^\(]*)\)$/)[1]
                                     .split(',')
                                     .map(Number);
                             } else {
-                                // Fallback sicuro se transform è vuoto (evita il crash del .match)
                                 matrix = [
-                                    parseFloat(canvas.style.width) / canvas.width || 1,
-                                    0,
-                                    0,
-                                    parseFloat(canvas.style.height) / canvas.height || 1,
-                                    0,
-                                    0
+                                    parseFloat(canvas.style.width) / canvas.width || 1, 0, 0,
+                                    parseFloat(canvas.style.height) / canvas.height || 1, 0, 0
                                 ];
                             }
                             
@@ -148,16 +161,24 @@ function initPublicMap() {
                     // Scarica l'immagine
                     const link = document.getElementById('image-download');
                     link.href = mapCanvas.toDataURL('image/png');
+                    // Opzionale: aggiungi timestamp al nome del file per non sovrascriverli
+                    link.download = `pcm_map_high_res_${Date.now()}.png`; 
                     link.click();
                 } catch (err) {
-                    console.error("Errore durante l'esportazione della mappa (CORS o Tainted Canvas):", err);
-                    alert("Impossibile esportare la mappa per restrizioni di sicurezza del browser (CORS). Controlla la console.");
+                    console.error("Errore durante l'esportazione della mappa:", err);
+                    alert("Impossibile esportare la mappa per restrizioni di sicurezza del browser (CORS).");
                 }
+
+                // --- 3. RIPRISTINO ---
+                // Riportiamo immediatamente la mappa alla sua dimensione originale
+                map.setSize(originalSize);
+                map.getView().setResolution(originalResolution);
             });
+            
+            // Forza la mappa a renderizzare i nuovi dati
             map.renderSync(); 
         });
     }
 }
-
 document.addEventListener("DOMContentLoaded", initPublicMap);
 document.body.addEventListener("htmx:afterSwap", initPublicMap);

@@ -1921,3 +1921,281 @@ def language_export_all_zip(request: HttpRequest) -> HttpResponse:
     resp = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
     resp["Content-Disposition"] = f'attachment; filename="{zip_filename}"'
     return resp
+
+
+# ============================================================================
+# MIGRATION BUNDLE: export completo per popolare il sito nuovo (FastAPI)
+# ============================================================================
+
+def _build_database_model_workbook(lang: Language) -> Workbook:
+    """Workbook con il SOLO foglio Database_model per una lingua.
+
+    Stesso identico formato del foglio Database_model prodotto da
+    _build_language_workbook(), ma senza gli altri 6 fogli: il bundle è
+    già autoconsistente e non vogliamo duplicare schema/answers.
+    """
+    upload_header = [
+        "Language", "Parameter_Label", "Question_ID", "Question",
+        "Question_Examples_YES", "Question_Intructions_Comments",
+        "Language_Answer", "Language_Comments",
+        "Language_Examples", "Language_Example_Gloss",
+        "Language_Example_Translation", "Language_References",
+    ]
+    bold_white = Font(bold=True, color="FFFFFF")
+
+    params = ParameterDef.objects.filter(is_active=True).order_by("position", "id")
+    qs_by_param: dict[str, list[Question]] = {}
+    for q in Question.objects.order_by("parameter__position", "id"):
+        qs_by_param.setdefault(q.parameter_id, []).append(q)
+
+    answers = Answer.objects.select_related("question").filter(language_id=lang.id)
+    ans_by_qid = {a.question_id: a for a in answers}
+
+    ex_by_qid: dict[str, list[Example]] = {}
+    for ex in Example.objects.select_related("answer").filter(answer__language_id=lang.id):
+        ex_by_qid.setdefault(ex.answer.question_id, []).append(ex)
+    for arr in ex_by_qid.values():
+        def _as_int(v):
+            try: return int(v)
+            except Exception: return 10**9
+        arr.sort(key=lambda e: _as_int(getattr(e, "number", "")))
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Database_model"
+    ws.append(upload_header)
+    for i in range(1, len(upload_header) + 1):
+        ws.cell(row=1, column=i).font = bold_white
+
+    for p in params:
+        for q in qs_by_param.get(p.id, []):
+            a = ans_by_qid.get(q.id)
+            if a and a.response_text == "yes":
+                lang_answer = "YES"
+            elif a and a.response_text == "no":
+                lang_answer = "NO"
+            else:
+                lang_answer = ""
+            lang_comments = (a.comments or "") if a else ""
+            ex_list = ex_by_qid.get(q.id, [])
+            cell_ex = "\n".join((ex.textarea or "") for ex in ex_list)
+            cell_gl = "\n".join((ex.gloss or "") for ex in ex_list)
+            cell_tr = "\n".join((ex.translation or "") for ex in ex_list)
+            cell_rf = "\n".join((ex.reference or "") for ex in ex_list)
+            ws.append([
+                lang.name_full, p.id, q.id, q.text or "",
+                q.example_yes or "", q.instruction or "",
+                lang_answer, lang_comments,
+                cell_ex, cell_gl, cell_tr, cell_rf,
+            ])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+def _build_languages_metadata_workbook() -> Workbook:
+    """00_languages.xlsx: anagrafica completa con taxonomy."""
+    headers = [
+        "ID", "Name", "Position", "Top-level family", "Family", "Group",
+        "ISO code", "Glottocode", "Location", "Latitude", "Longitude",
+        "Supervisor", "Informant", "Historical", "Source",
+    ]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Languages"
+    ws.append(headers)
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+    for L in Language.objects.all().order_by("position", "id"):
+        ws.append([
+            L.id, L.name_full, L.position,
+            L.top_level_family or "", L.family or "", L.grp or "",
+            L.isocode or "", L.glottocode or "", L.location or "",
+            float(L.latitude) if L.latitude is not None else "",
+            float(L.longitude) if L.longitude is not None else "",
+            L.supervisor or "", L.informant or "",
+            "Yes" if L.historical_language else "No",
+            L.source or "",
+        ])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+def _build_motivations_workbook() -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Motivations"
+    ws.append(["ID", "Code", "Label"])
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+    for m in Motivation.objects.all().order_by("code"):
+        ws.append([m.id, m.code or "", m.label or ""])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+def _build_parameters_workbook() -> Workbook:
+    headers = [
+        "ID", "Position", "Name", "Schema", "Type", "Level",
+        "Short Description", "Long Description",
+        "Implicational Condition", "Explanation of Implicational Condition",
+        "Is Active",
+    ]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Parameters"
+    ws.append(headers)
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+    for p in ParameterDef.objects.all().order_by("position", "id"):
+        ws.append([
+            p.id, p.position, p.name or "",
+            p.schema or "", p.param_type or "", p.level_of_comparison or "",
+            p.short_description or "", p.long_description or "",
+            p.implicational_condition or "",
+            p.description_of_the_implicational_condition or "",
+            "Yes" if p.is_active else "No",
+        ])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+def _build_questions_workbook() -> Workbook:
+    headers = [
+        "ID", "Parameter ID", "Text", "Template Type",
+        "Instruction", "Instruction YES", "Instruction NO",
+        "Example YES", "Help Info",
+        "Is Stop Question", "Is Active",
+    ]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Questions"
+    ws.append(headers)
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+    # Nota: nel vecchio modello Question non ha is_active. Lo forziamo a Yes.
+    for q in Question.objects.all().order_by("parameter_id", "id"):
+        ws.append([
+            q.id, q.parameter_id, q.text or "",
+            q.template_type or "",
+            q.instruction or "", q.instruction_yes or "", q.instruction_no or "",
+            q.example_yes or "", q.help_info or "",
+            "Yes" if getattr(q, "is_stop_question", False) else "No",
+            "Yes",
+        ])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+def _build_qam_workbook() -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "QuestionAllowedMotivations"
+    ws.append(["Question ID", "Motivation Code"])
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+    rows = (
+        QuestionAllowedMotivation.objects
+        .select_related("motivation")
+        .order_by("question_id", "position", "id")
+    )
+    for qam in rows:
+        ws.append([qam.question_id, qam.motivation.code if qam.motivation else ""])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+def _build_glossary_workbook() -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Glossary"
+    ws.append(["Word", "Description"])
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+    for g in Glossary.objects.all().order_by("word"):
+        ws.append([g.word, g.description or ""])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+def _build_unsure_flags_workbook() -> Workbook:
+    """Aggrega ParameterReviewFlag per (lang, param): se almeno un utente
+    ha flag=True, esporta una riga. Nel sito nuovo diventerà is_unsure=True."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "UnsureFlags"
+    ws.append(["Language ID", "Parameter ID"])
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+    pairs = (
+        ParameterReviewFlag.objects
+        .filter(flag=True)
+        .values_list("language_id", "parameter_id")
+        .distinct()
+        .order_by("language_id", "parameter_id")
+    )
+    for lid, pid in pairs:
+        ws.append([lid, pid])
+    ws.freeze_panes = "A2"
+    return wb
+
+
+@login_required
+@require_http_methods(["GET"])
+def language_export_migration_bundle(request: HttpRequest) -> HttpResponse:
+    """Genera il Migration Bundle ZIP per popolare il sito nuovo (FastAPI).
+
+    Contenuto:
+        00_languages.xlsx
+        01_motivations.xlsx
+        02_parameters.xlsx
+        03_questions.xlsx
+        04_question_allowed_motivations.xlsx
+        06_glossary.xlsx
+        08_unsure_flags.xlsx
+        data/<NomeLingua>.xlsx  (foglio Database_model per ogni lingua)
+
+    Solo admin. Il file prodotto va caricato su:
+        POST /api/admin/migration/import-bundle  (sito nuovo)
+    """
+    if not _is_admin(request.user):
+        messages.error(request, _t("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    ts = now().strftime("%Y%m%d_%H%M%S")
+    zip_buffer = io.BytesIO()
+
+    def _save(wb):
+        bio = io.BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        return bio.getvalue()
+
+    with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("00_languages.xlsx", _save(_build_languages_metadata_workbook()))
+        zf.writestr("01_motivations.xlsx", _save(_build_motivations_workbook()))
+        zf.writestr("02_parameters.xlsx", _save(_build_parameters_workbook()))
+        zf.writestr("03_questions.xlsx", _save(_build_questions_workbook()))
+        zf.writestr("04_question_allowed_motivations.xlsx", _save(_build_qam_workbook()))
+        zf.writestr("06_glossary.xlsx", _save(_build_glossary_workbook()))
+        zf.writestr("08_unsure_flags.xlsx", _save(_build_unsure_flags_workbook()))
+
+        # Una xlsx Database_model per lingua. Filename basato su name_full
+        # sanificato per essere safe nel ZIP.
+        import re
+        used_names = set()
+        for lang in Language.objects.all().order_by("position", "id"):
+            safe = re.sub(r"[^A-Za-z0-9._-]+", "_", lang.name_full or lang.id)
+            base = safe or lang.id
+            name = f"{base}.xlsx"
+            i = 2
+            while name in used_names:
+                name = f"{base}_{i}.xlsx"
+                i += 1
+            used_names.add(name)
+            zf.writestr(f"data/{name}", _save(_build_database_model_workbook(lang)))
+
+    zip_buffer.seek(0)
+    filename = f"PCM_migration_{ts}.zip"
+    resp = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
