@@ -1931,15 +1931,17 @@ def _build_database_model_workbook(lang: Language) -> Workbook:
     """Workbook con il SOLO foglio Database_model per una lingua.
 
     Stesso identico formato del foglio Database_model prodotto da
-    _build_language_workbook(), ma senza gli altri 6 fogli: il bundle è
+    _build_language_workbook(), ma senza gli altri fogli: il bundle è
     già autoconsistente e non vogliamo duplicare schema/answers.
     """
     upload_header = [
         "Language", "Parameter_Label", "Question_ID", "Question",
         "Question_Examples_YES", "Question_Intructions_Comments",
         "Language_Answer", "Language_Comments",
-        "Language_Examples", "Language_Example_Gloss",
-        "Language_Example_Translation", "Language_References",
+        "Language_Motivations",
+        "Language_Examples", "Language_Example_Transliteration",
+        "Language_Example_Gloss", "Language_Example_Translation",
+        "Language_References",
     ]
     bold_white = Font(bold=True, color="FFFFFF")
 
@@ -1950,6 +1952,21 @@ def _build_database_model_workbook(lang: Language) -> Workbook:
 
     answers = Answer.objects.select_related("question").filter(language_id=lang.id)
     ans_by_qid = {a.question_id: a for a in answers}
+
+    # Motivazioni effettivamente associate a ogni risposta della lingua.
+    # Mappa answer_id -> lista di Motivation.code, ordinata per code.
+    motivations_by_answer_id: dict[int, list[str]] = {}
+    am_qs = (
+        AnswerMotivation.objects
+        .filter(answer__language_id=lang.id)
+        .select_related("motivation")
+        .order_by("motivation__code")
+    )
+    for am in am_qs:
+        code = (am.motivation.code or "") if am.motivation else ""
+        if not code:
+            continue
+        motivations_by_answer_id.setdefault(am.answer_id, []).append(code)
 
     ex_by_qid: dict[str, list[Example]] = {}
     for ex in Example.objects.select_related("answer").filter(answer__language_id=lang.id):
@@ -1977,16 +1994,25 @@ def _build_database_model_workbook(lang: Language) -> Workbook:
             else:
                 lang_answer = ""
             lang_comments = (a.comments or "") if a else ""
+
+            # Codici delle motivazioni selezionate per questa risposta,
+            # comma-separated su una sola riga (es. "MOT01, MOT07").
+            mot_codes = motivations_by_answer_id.get(a.id, []) if a else []
+            cell_motivations = ", ".join(mot_codes)
+
             ex_list = ex_by_qid.get(q.id, [])
             cell_ex = "\n".join((ex.textarea or "") for ex in ex_list)
+            cell_tl = "\n".join((ex.transliteration or "") for ex in ex_list)
             cell_gl = "\n".join((ex.gloss or "") for ex in ex_list)
             cell_tr = "\n".join((ex.translation or "") for ex in ex_list)
             cell_rf = "\n".join((ex.reference or "") for ex in ex_list)
+
             ws.append([
                 lang.name_full, p.id, q.id, q.text or "",
                 q.example_yes or "", q.instruction or "",
                 lang_answer, lang_comments,
-                cell_ex, cell_gl, cell_tr, cell_rf,
+                cell_motivations,
+                cell_ex, cell_tl, cell_gl, cell_tr, cell_rf,
             ])
     ws.freeze_panes = "A2"
     return wb
