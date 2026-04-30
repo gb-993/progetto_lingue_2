@@ -62,6 +62,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 
+# Form con molte domande/esempi (es. parametro FGP) possono superare il default Django (1000).
+DATA_UPLOAD_MAX_NUMBER_FIELDS = int(env("DJANGO_DATA_UPLOAD_MAX_NUMBER_FIELDS", "10000"))
+
 
 # ---------------------- Apps ----------------------
 INSTALLED_APPS = [
