@@ -6,8 +6,9 @@
 {% endblock %}
 
 {% block content %}
-<header class="dashboard-hero" style="margin-bottom: 2rem;">
+<header class="dashboard-hero" style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
   <h1>Parameters</h1>
+  <a href="{% url 'parameter_add' %}" class="btn btn--primary">+ Add Parameter</a>
 </header>
 
 {% include "_toolbar_search.html" with q=q placeholder="Search parameters…" %}
