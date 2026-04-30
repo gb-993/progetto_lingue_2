@@ -19,6 +19,9 @@ from core.models import (
     Answer,
     AnswerStatus,
     Example,
+    Motivation,
+    AnswerMotivation,
+    QuestionAllowedMotivation,
 )
 from core.signals import answer_saved_recompute, answer_deleted_recompute
 from core.services.param_consolidate import recompute_and_persist_language_parameter
@@ -32,6 +35,21 @@ def _coerce_str(x):
 
 def parse_null(v):
     return None if v is None or str(v).strip() == "" else v
+
+
+def _split_codes(cell_value):
+    """Split una cella tipo 'MOT01, MOT07' in ['MOT01', 'MOT07']."""
+    if cell_value is None:
+        return []
+    s = str(cell_value).replace("\r\n", "\n").replace("\r", "\n")
+    # accettiamo sia virgole che newline come separatori
+    parts = []
+    for chunk in s.split("\n"):
+        for piece in chunk.split(","):
+            code = piece.strip()
+            if code:
+                parts.append(code)
+    return parts
 
 
 def _split_lines(cell_value):
@@ -170,7 +188,15 @@ class Command(BaseCommand):
 
         imported_answers = 0
         imported_examples = 0
+        imported_motivations = 0
         skipped_rows = 0
+
+        # cache codice -> Motivation per evitare query ripetute
+        motivation_by_code: dict[str, Motivation] = {
+            m.code: m for m in Motivation.objects.all()
+        }
+        # codici sconosciuti già segnalati, per evitare warning duplicati
+        unknown_motivation_codes: set[str] = set()
 
         # disabilitiamo i signal per evitare ricalcoli ridondanti durante l'import
         post_save.disconnect(answer_saved_recompute, sender=Answer)
@@ -276,13 +302,35 @@ class Command(BaseCommand):
                     )
                     imported_answers += 1
 
-                    # costruiamo gli Example dalle colonne Language_Examples/Gloss/Translation/References
+                    # importiamo le motivazioni associate alla risposta (colonna comma-separated)
+                    mot_codes = _split_codes(row.get("Language_Motivations"))
+                    seen_codes_for_answer: set[str] = set()
+                    for code in mot_codes:
+                        if code in seen_codes_for_answer:
+                            continue
+                        seen_codes_for_answer.add(code)
+                        mot = motivation_by_code.get(code)
+                        if mot is None:
+                            if code not in unknown_motivation_codes:
+                                unknown_motivation_codes.add(code)
+                                self.stdout.write(
+                                    self.style.WARNING(
+                                        f"Motivation con code={code!r} non trovata nel DB; ignorata."
+                                    )
+                                )
+                            continue
+                        AnswerMotivation.objects.create(answer=answer, motivation=mot)
+                        imported_motivations += 1
+
+                    # costruiamo gli Example dalle colonne Language_Examples/Transliteration/Gloss/Translation/References
                     ex_main = _split_examples(row.get("Language_Examples"))
+                    tlit_lines = _split_lines(row.get("Language_Example_Transliteration"))
                     gloss_lines = _split_lines(row.get("Language_Example_Gloss"))
                     trans_lines = _split_lines(row.get("Language_Example_Translation"))
                     ref_lines = _split_lines(row.get("Language_References"))
 
                     for idx_ex, (num, text_ex) in enumerate(ex_main):
+                        tlit = tlit_lines[idx_ex] if idx_ex < len(tlit_lines) else None
                         gloss = gloss_lines[idx_ex] if idx_ex < len(gloss_lines) else None
                         transl = (
                             trans_lines[idx_ex] if idx_ex < len(trans_lines) else None
@@ -295,7 +343,7 @@ class Command(BaseCommand):
                             textarea=text_ex,
                             gloss=parse_null(gloss),
                             translation=parse_null(transl),
-                            transliteration=None,
+                            transliteration=parse_null(tlit),
                             reference=parse_null(ref),
                         )
                         imported_examples += 1
@@ -310,7 +358,9 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Import completato. Answers creati: {imported_answers}, "
-                f"Examples creati: {imported_examples}, righe saltate: {skipped_rows}."
+                f"Examples creati: {imported_examples}, "
+                f"AnswerMotivation creati: {imported_motivations}, "
+                f"righe saltate: {skipped_rows}."
             )
         )
 

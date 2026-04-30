@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile languages_ui/views.py accounts/views.py progetto_lingua_2/settings.py)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python -m py_compile core/management/commands/import_language_from_excel.py)"
+    ]
+  }
+}
