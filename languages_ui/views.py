@@ -762,16 +762,22 @@ def parameter_save(request: HttpRequest, lang_id: str, param_id: str) -> HttpRes
     # is_complete è True solo se il numero di risposte salvate ("yes"/"no") è uguale al numero totale di domande del parametro.
     is_complete = (len(questions) > 0 and saved_count == len(questions))
 
+    # Best-effort: aggiornamento del flag isolato in un savepoint, così un suo
+    # fallimento (es. deadlock o integrity error transitorio) non perde le
+    # risposte appena salvate, ma viene comunque tracciato a log.
     try:
-        if action == "next" or not is_complete:
-            # Crea/aggiorna il flag per chi sta facendo l'azione
-            ParameterReviewFlag.objects.update_or_create(
-                language=lang, parameter=param, user=request.user, defaults={"flag": True}
-            )
-        else:
-            ParameterReviewFlag.objects.filter(language=lang, parameter=param).update(flag=False)
+        with transaction.atomic():
+            if action == "next" or not is_complete:
+                ParameterReviewFlag.objects.update_or_create(
+                    language=lang, parameter=param, user=request.user, defaults={"flag": True}
+                )
+            else:
+                ParameterReviewFlag.objects.filter(language=lang, parameter=param).update(flag=False)
     except Exception:
-        pass
+        logger.exception(
+            "Failed to update ParameterReviewFlag (lang=%s, param=%s, user=%s)",
+            lang.id, param.id, request.user.id,
+        )
 
 
     missing_count = len(questions) - saved_count
@@ -1090,35 +1096,39 @@ def language_run_dag(request: HttpRequest, lang_id: str) -> HttpResponse:
 
     lang = get_object_or_404(Language, pk=lang_id)
 
-    changed = Answer.objects.filter(
-        language=lang
-    ).exclude(
-        status=AnswerStatus.APPROVED
-    ).update(
-        status=AnswerStatus.APPROVED, modifiable=False
-    )
-
-    if changed > 0:
-        LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
-
     try:
-        report = run_dag_for_language(lang_id)
-        msg = _t(
-            "Forced approval on %(n)d answers. DAG completed: processed %(p)d, forced to zero %(fz)d, missing orig %(mo)d, warnings propagated %(wp)d."
-        ) % {
-            "n": changed,
-            "p": len(report.processed or []),
-            "fz": len(report.forced_zero or []),
-            "mo": len(report.missing_orig or []),
-            "wp": len(report.warnings_propagated or []),
-        }
-        if report.missing_orig:
-            msg += " Missing: " + ", ".join(report.missing_orig[:8]) + ("…" if len(report.missing_orig) > 8 else "")
-        if report.parse_errors:
-            msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6]) + ("…" if len(report.parse_errors) > 6 else "")
-        messages.success(request, msg)
-    except Exception as e:
-        messages.error(request, _t("Approved, but DAG failed: %(err)s") % {"err": str(e)})
+        with transaction.atomic():
+            changed = Answer.objects.filter(
+                language=lang
+            ).exclude(
+                status=AnswerStatus.APPROVED
+            ).update(
+                status=AnswerStatus.APPROVED, modifiable=False
+            )
+
+            if changed > 0:
+                LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
+
+            report = run_dag_for_language(lang_id)
+    except Exception:
+        logger.exception("language_run_dag failed for lang_id=%s; rolling back approval", lang_id)
+        messages.error(request, _t("DAG failed; the forced approval was rolled back. Please retry or contact an administrator."))
+        return redirect("language_debug", lang_id=lang_id)
+
+    msg = _t(
+        "Forced approval on %(n)d answers. DAG completed: processed %(p)d, forced to zero %(fz)d, missing orig %(mo)d, warnings propagated %(wp)d."
+    ) % {
+        "n": changed,
+        "p": len(report.processed or []),
+        "fz": len(report.forced_zero or []),
+        "mo": len(report.missing_orig or []),
+        "wp": len(report.warnings_propagated or []),
+    }
+    if report.missing_orig:
+        msg += " Missing: " + ", ".join(report.missing_orig[:8]) + ("…" if len(report.missing_orig) > 8 else "")
+    if report.parse_errors:
+        msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6]) + ("…" if len(report.parse_errors) > 6 else "")
+    messages.success(request, msg)
 
     return redirect("language_debug", lang_id=lang_id)
 
@@ -1177,30 +1187,34 @@ def language_approve(request: HttpRequest, lang_id: str) -> HttpResponse:
         messages.error(request, _t("Cannot approve: there are unanswered questions. Complete all answers before starting the DAG."))
         return redirect("language_data", lang_id=lang.id)
 
-    # Approva solo ciò che è in WAITING; resta modifiable=False
-    changed = Answer.objects.filter(language=lang, status=AnswerStatus.WAITING).update(
-        status=AnswerStatus.APPROVED, modifiable=False
-    )
-
-    LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
-
-    # Avvia il DAG
     try:
-        report = run_dag_for_language(lang_id)
-        msg = _t(
-            "Approved %(n)d answers. DAG: processed %(p)d, forced_to_zero %(fz)d, missing_orig %(mo)d, warnings %(wp)d."
-        ) % {
-            "n": changed,
-            "p": len(report.processed or []),
-            "fz": len(report.forced_zero or []),
-            "mo": len(report.missing_orig or []),
-            "wp": len(report.warnings_propagated or []),
-        }
-        if report.parse_errors:
-            msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6])
-        messages.success(request, msg)
-    except Exception as e:
-        messages.warning(request, _t("Approved, but DAG failed: %(err)s") % {"err": str(e)})
+        with transaction.atomic():
+            # Approva solo ciò che è in WAITING; resta modifiable=False
+            changed = Answer.objects.filter(language=lang, status=AnswerStatus.WAITING).update(
+                status=AnswerStatus.APPROVED, modifiable=False
+            )
+
+            LanguageReview.objects.create(language=lang, decision="approve", created_by=request.user)
+
+            # Avvia il DAG: se solleva, l'intera approvazione viene annullata
+            report = run_dag_for_language(lang_id)
+    except Exception:
+        logger.exception("language_approve failed for lang_id=%s; rolling back approval", lang_id)
+        messages.error(request, _t("Approval failed and was rolled back. Please retry or contact an administrator."))
+        return redirect("language_data", lang_id=lang.id)
+
+    msg = _t(
+        "Approved %(n)d answers. DAG: processed %(p)d, forced_to_zero %(fz)d, missing_orig %(mo)d, warnings %(wp)d."
+    ) % {
+        "n": changed,
+        "p": len(report.processed or []),
+        "fz": len(report.forced_zero or []),
+        "mo": len(report.missing_orig or []),
+        "wp": len(report.warnings_propagated or []),
+    }
+    if report.parse_errors:
+        msg += " ParseErrors: " + ", ".join(f"{pid}" for (pid, _, _) in report.parse_errors[:6])
+    messages.success(request, msg)
 
     return redirect("language_debug", lang_id=lang.id)
 
@@ -1522,6 +1536,29 @@ def language_import_excel(request: HttpRequest) -> HttpResponse:
 
         filename = (upload.name or "").lower()
         if not filename.endswith((".xlsx", ".xlsm", ".xltx", ".xltm")):
+            messages.error(request, _t("Unsupported file type. Please upload an .xlsx file."))
+            return redirect("language_import_excel")
+
+        # Limite dimensione: protegge da timeout/OOM su file molto grandi.
+        # Override via env DJANGO_EXCEL_IMPORT_MAX_MB (default: 25 MB).
+        max_mb = int(os.environ.get("DJANGO_EXCEL_IMPORT_MAX_MB", "25"))
+        max_bytes = max_mb * 1024 * 1024
+        if upload.size and upload.size > max_bytes:
+            messages.error(
+                request,
+                _t("File too large (max %(mb)d MB).") % {"mb": max_mb},
+            )
+            return redirect("language_import_excel")
+
+        # Allowlist MIME per coerenza con l'estensione .xlsx*
+        allowed_ct = {
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel.sheet.macroEnabled.12",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.template",
+            "application/vnd.ms-excel.template.macroEnabled.12",
+            "application/octet-stream",  # alcuni browser inviano questo
+        }
+        if upload.content_type and upload.content_type not in allowed_ct:
             messages.error(request, _t("Unsupported file type. Please upload an .xlsx file."))
             return redirect("language_import_excel")
 

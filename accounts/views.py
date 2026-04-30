@@ -192,14 +192,27 @@ def accounts_add(request: HttpRequest) -> HttpResponse:
         if form.is_valid():
             user = form.save(commit=False)
             lang_ids = request.POST.getlist("lang_ids") if HAS_LANGUAGE else []
-            langs = Language.objects.filter(id__in=lang_ids) if HAS_LANGUAGE else []
 
-            
+            # Esecuzione atomica con lock sulle Language scelte per evitare
+            # che due admin concorrenti riassegnino la stessa lingua.
             conflicts = []
-            if HAS_LANGUAGE:
-                for l in langs:
-                    if l.assigned_user_id and l.assigned_user_id != user.id:
-                        conflicts.append((l, l.assigned_user_id))
+            with transaction.atomic():
+                user.save()
+                if HAS_LANGUAGE:
+                    locked_langs = list(
+                        Language.objects.select_for_update().filter(id__in=lang_ids)
+                    )
+                    for l in locked_langs:
+                        if l.assigned_user_id and l.assigned_user_id != user.id:
+                            conflicts.append((l, l.assigned_user_id))
+
+                    if conflicts:
+                        # rollback dell'intera transazione (incluso il user.save())
+                        transaction.set_rollback(True)
+                    else:
+                        user.m2m_languages.set(locked_langs)
+                        Language.objects.filter(id__in=lang_ids).update(assigned_user=user)
+                        Language.objects.filter(assigned_user=user).exclude(id__in=lang_ids).update(assigned_user=None)
 
             if conflicts:
                 msg_lines = [_("Some languages are already assigned to other users:")]
@@ -215,13 +228,6 @@ def accounts_add(request: HttpRequest) -> HttpResponse:
                     )
                 form.add_error(None, "\n".join(msg_lines))
             else:
-                with transaction.atomic():
-                    user.save()
-                    if HAS_LANGUAGE:
-                        user.m2m_languages.set(langs)
-                        Language.objects.filter(id__in=lang_ids).update(assigned_user=user)
-                        Language.objects.filter(assigned_user=user).exclude(id__in=lang_ids).update(assigned_user=None)
-
                 messages.success(request, _("Account successfully created."))
                 return redirect("accounts_list")
 
@@ -262,13 +268,24 @@ def accounts_edit(request: HttpRequest, user_id: int) -> HttpResponse:
         if form.is_valid():
             updated_user = form.save(commit=False)
             lang_ids = request.POST.getlist("lang_ids") if HAS_LANGUAGE else []
-            langs = Language.objects.filter(id__in=lang_ids) if HAS_LANGUAGE else []
 
             conflicts = []
-            if HAS_LANGUAGE:
-                for l in langs:
-                    if l.assigned_user_id and l.assigned_user_id != user.id:
-                        conflicts.append((l, l.assigned_user_id))
+            with transaction.atomic():
+                updated_user.save()
+                if HAS_LANGUAGE:
+                    locked_langs = list(
+                        Language.objects.select_for_update().filter(id__in=lang_ids)
+                    )
+                    for l in locked_langs:
+                        if l.assigned_user_id and l.assigned_user_id != updated_user.id:
+                            conflicts.append((l, l.assigned_user_id))
+
+                    if conflicts:
+                        transaction.set_rollback(True)
+                    else:
+                        updated_user.m2m_languages.set(locked_langs)
+                        Language.objects.filter(id__in=lang_ids).update(assigned_user=updated_user)
+                        Language.objects.filter(assigned_user=updated_user).exclude(id__in=lang_ids).update(assigned_user=None)
 
             if conflicts:
                 msg_lines = [_("Some languages are already assigned to other users:")]
@@ -284,13 +301,6 @@ def accounts_edit(request: HttpRequest, user_id: int) -> HttpResponse:
                     )
                 form.add_error(None, "\n".join(msg_lines))
             else:
-                with transaction.atomic():
-                    updated_user.save()
-                    if HAS_LANGUAGE:
-                        updated_user.m2m_languages.set(langs)
-                        Language.objects.filter(id__in=lang_ids).update(assigned_user=updated_user)
-                        Language.objects.filter(assigned_user=updated_user).exclude(id__in=lang_ids).update(assigned_user=None)
-
                 messages.success(request, _("Account successfully updated."))
                 return redirect("accounts_list")
 
