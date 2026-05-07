@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Upload DB backup (.dump){% endblock %}
+{% block breadcrumb %}
+  <li><a href="{% url 'language_list' %}">Languages</a></li>
+  <li aria-current="page">Upload DB backup</li>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+
+  <h2>Upload DB backup (.dump)</h2>
+
+  <div class="alert" style="background-color:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:1rem; margin:1rem 0; border-radius:4px;">
+    <strong>Attenzione:</strong> il file viene salvato nel volume condiviso
+    <code>/backups/</code> con nome <code>uploaded_&lt;timestamp&gt;.dump</code>.
+    <br>
+    <strong>L'upload da solo NON ripristina il database</strong>: dopo l'upload devi
+    lanciare manualmente <code>pg_restore</code> dalla console del container
+    <code>db</code>. Le istruzioni esatte appariranno dopo l'upload.
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="upload-form">
+    {% csrf_token %}
+    <div class="form-row">
+      <label for="id_file" style="font-weight:600; display:block; margin-bottom:0.5rem;">
+        Seleziona un file .dump (max 200 MB)
+      </label>
+      <input type="file" id="id_file" name="file" accept=".dump" required>
+    </div>
+    <div class="toolbar" style="margin-top:1.5rem; display:flex; gap:0.5rem;">
+      <button type="submit" class="btn btn--primary" id="btn-submit" style="min-width:160px;">
+        Upload
+      </button>
+      <a href="{% url 'language_list' %}" class="btn" style="background:var(--surface-2); border:1px solid var(--border);">
+        Cancel
+      </a>
+    </div>
+  </form>
+
+  <hr style="margin:2rem 0;">
+
+  <h3>Dump già presenti in <code>/backups/</code></h3>
+
+  {% if existing %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nome file</th>
+          <th style="text-align:right;">Dimensione</th>
+          <th>Ultima modifica</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in existing %}
+          <tr>
+            <td><code>{{ f.name }}</code></td>
+            <td style="text-align:right;">{{ f.size_mb|floatformat:2 }} MB</td>
+            <td>{{ f.mtime|date:"Y-m-d H:i:s" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="color:#666;">Nessun file <code>.dump</code> presente.</p>
+  {% endif %}
+
+</div>
+
+<script>
+  document.getElementById('upload-form').onsubmit = function () {
+    document.getElementById('btn-submit').disabled = true;
+    document.getElementById('btn-submit').textContent = 'Upload in corso...';
+  };
+</script>
+{% endblock %}

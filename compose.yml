@@ -29,7 +29,7 @@ services:
       #- ./:/app  # da commentare per prod
       - staticfiles:/app/staticfiles
       - media:/app/media
-      - backups:/app/_backups:ro
+      - backups:/app/_backups
     expose:
       - "8000"
     restart: unless-stopped

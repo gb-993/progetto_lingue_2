@@ -2205,6 +2205,90 @@ def _build_unsure_flags_workbook() -> Workbook:
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
+def db_backup_upload(request: HttpRequest) -> HttpResponse:
+    """Carica un file .dump dal PC dell'admin nel volume condiviso /app/_backups/.
+
+    Il file viene salvato come `uploaded_<timestamp>.dump`. Da console del
+    container `db` lo si ripristina con:
+        pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists \\
+                   /backups/uploaded_<timestamp>.dump
+    """
+    if not _is_admin(request.user):
+        messages.error(request, _t("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    backup_dir = "/app/_backups"
+    if not os.path.isdir(backup_dir):
+        messages.error(request, "Cartella backup non disponibile (volume non montato).")
+        return redirect("language_list")
+
+    if request.method == "POST":
+        upload = request.FILES.get("file")
+        if not upload:
+            messages.error(request, "Devi selezionare un file .dump.")
+            return redirect("db_backup_upload")
+
+        fname = (upload.name or "").lower()
+        if not fname.endswith(".dump"):
+            messages.error(request, "Estensione non valida. Atteso un file .dump prodotto da pg_dump.")
+            return redirect("db_backup_upload")
+
+        # Limite 200 MB (override via env var DJANGO_DUMP_UPLOAD_MAX_MB)
+        max_mb = int(os.environ.get("DJANGO_DUMP_UPLOAD_MAX_MB", "200"))
+        max_bytes = max_mb * 1024 * 1024
+        if upload.size and upload.size > max_bytes:
+            messages.error(request, f"File troppo grande (max {max_mb} MB).")
+            return redirect("db_backup_upload")
+
+        ts = now().strftime("%Y%m%d_%H%M%S")
+        dest = os.path.join(backup_dir, f"uploaded_{ts}.dump")
+        try:
+            with open(dest, "wb") as f:
+                for chunk in upload.chunks():
+                    f.write(chunk)
+        except Exception as e:
+            messages.error(request, f"Errore durante l'upload: {e}")
+            return redirect("db_backup_upload")
+
+        size_mb = os.path.getsize(dest) / (1024 * 1024)
+        messages.success(
+            request,
+            mark_safe(
+                f"Upload completato. File salvato come <code>uploaded_{ts}.dump</code> "
+                f"({size_mb:.2f} MB). Per ripristinarlo, dalla console del container "
+                f"<code>db</code> esegui:<br>"
+                f"<code>pg_restore -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" "
+                f"--clean --if-exists /backups/uploaded_{ts}.dump</code>"
+            ),
+        )
+        return redirect("db_backup_upload")
+
+    # GET: mostra il form e la lista dei dump già presenti
+    existing = []
+    try:
+        for path in sorted(
+            glob.glob(os.path.join(backup_dir, "*.dump")),
+            key=os.path.getmtime,
+            reverse=True,
+        ):
+            stat = os.stat(path)
+            existing.append({
+                "name": os.path.basename(path),
+                "size_mb": stat.st_size / (1024 * 1024),
+                "mtime": datetime.fromtimestamp(stat.st_mtime),
+            })
+    except Exception:
+        pass
+
+    return render(
+        request,
+        "languages/db_backup_upload.html",
+        {"existing": existing},
+    )
+
+
+@login_required
 @require_http_methods(["GET"])
 def db_backup_download(request: HttpRequest) -> HttpResponse:
     """Scarica il file .dump più recente dal volume condiviso /app/_backups (read-only).

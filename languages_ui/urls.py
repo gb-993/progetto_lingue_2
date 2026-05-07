@@ -33,6 +33,7 @@ urlpatterns = [
     path("migration-bundle.zip", views.language_export_migration_bundle, name="language_export_migration_bundle"),
     path("parameter-change-log.xlsx", views.parameter_change_log_export_xlsx, name="parameter_change_log_export_xlsx"),
     path("db-backup/download/", views.db_backup_download, name="db_backup_download"),
+    path("db-backup/upload/", views.db_backup_upload, name="db_backup_upload"),
 
 
 ]

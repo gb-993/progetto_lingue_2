@@ -135,6 +135,7 @@
     <a href="{% url 'language_export_migration_bundle' %}"class="btn btn-export-xlsx" style="background:#b91c1c; color:#fff; border-color:#b91c1c;" title="Genera il Migration Bundle ZIP per popolare il sito nuovo"> ⤓ Export migration bundle</a>
     <a href="{% url 'parameter_change_log_export_xlsx' %}" class="btn btn-export-xlsx" style="background:#b91c1c; color:#fff; border-color:#b91c1c;" title="Esporta il Parameter Change Log come .xlsx"> ⤓ Export parameter change log</a>
     <a href="{% url 'db_backup_download' %}" class="btn btn-export-xlsx" style="background:#0f172a; color:#fff; border-color:#0f172a;" title="Scarica l'ultimo .dump prodotto da pg_dump nel container db"> ⤓ Download DB backup (.dump)</a>
+    <a href="{% url 'db_backup_upload' %}" class="btn btn-export-xlsx" style="background:#0f172a; color:#fff; border-color:#0f172a;" title="Carica un file .dump dal PC nel volume backups (poi pg_restore manuale)"> ⤒ Upload DB backup (.dump)</a>
     <button class="btn btn-export-zip">Export parametric data (.zip)</button>
     <a class="btn" href="{% url 'language_import_excel' %}">Import from Excel</a>
     <a class="btn" href="{% url 'submission_create_all' %}">Backup all languages</a>
@@ -156,6 +157,7 @@
       <a href="{% url 'language_export_migration_bundle' %}"class="btn btn-export-xlsx" style="background:#b91c1c; color:#fff; border-color:#b91c1c;" title="Genera il Migration Bundle ZIP per popolare il sito nuovo"> ⤓ Export migration bundle</a>
       <a href="{% url 'parameter_change_log_export_xlsx' %}" class="btn btn-export-xlsx" style="background:#b91c1c; color:#fff; border-color:#b91c1c;" title="Esporta il Parameter Change Log come .xlsx"> ⤓ Export parameter change log</a>
       <a href="{% url 'db_backup_download' %}" class="btn btn-export-xlsx" style="background:#0f172a; color:#fff; border-color:#0f172a;" title="Scarica l'ultimo .dump prodotto da pg_dump nel container db"> ⤓ Download DB backup (.dump)</a>
+      <a href="{% url 'db_backup_upload' %}" class="btn btn-export-xlsx" style="background:#0f172a; color:#fff; border-color:#0f172a;" title="Carica un file .dump dal PC nel volume backups (poi pg_restore manuale)"> ⤒ Upload DB backup (.dump)</a>
       <button class="btn btn-export-zip" style="justify-content: flex-start; width: 100%; text-align: left;">Export parametric data (.zip)</button>
       <a class="btn" href="{% url 'language_import_excel' %}" style="justify-content: flex-start;">Import from Excel</a>
       <a class="btn" href="{% url 'submission_create_all' %}" style="justify-content: flex-start;">Backup all languages</a>
