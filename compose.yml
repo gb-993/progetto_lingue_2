@@ -8,6 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - dbdata:/var/lib/postgresql/data
+      - backups:/backups
     restart: unless-stopped
     # Limite Log
     logging:
@@ -28,6 +29,7 @@ services:
       #- ./:/app  # da commentare per prod
       - staticfiles:/app/staticfiles
       - media:/app/media
+      - backups:/app/_backups:ro
     expose:
       - "8000"
     restart: unless-stopped
@@ -92,3 +94,4 @@ volumes:
   dbdata:
   staticfiles:
   media:
+  backups:

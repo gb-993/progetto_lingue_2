@@ -21,7 +21,8 @@ from django.db.models import Q, Prefetch, Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _t
 from django.views.decorators.http import require_http_methods, require_POST
-from django.http import HttpRequest, HttpResponse, Http404, JsonResponse
+from django.http import HttpRequest, HttpResponse, Http404, JsonResponse, FileResponse
+import glob
 from django.utils.timezone import now
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -2201,6 +2202,46 @@ def _build_unsure_flags_workbook() -> Workbook:
         ws.append([lid, pid])
     ws.freeze_panes = "A2"
     return wb
+
+
+@login_required
+@require_http_methods(["GET"])
+def db_backup_download(request: HttpRequest) -> HttpResponse:
+    """Scarica il file .dump più recente dal volume condiviso /app/_backups (read-only).
+
+    Il file viene prodotto da `pg_dump` lanciato dentro il container `db`
+    sul path `/backups/*.dump`. Solo admin.
+    """
+    if not _is_admin(request.user):
+        messages.error(request, _t("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    backup_dir = "/app/_backups"
+    if not os.path.isdir(backup_dir):
+        messages.error(request, "Cartella backup non disponibile (volume non montato).")
+        return redirect("language_list")
+
+    files = sorted(
+        glob.glob(os.path.join(backup_dir, "*.dump")),
+        key=os.path.getmtime,
+        reverse=True,
+    )
+    if not files:
+        messages.error(
+            request,
+            "Nessun file .dump trovato in /app/_backups. "
+            "Lancia prima `pg_dump` dal container db verso /backups/.",
+        )
+        return redirect("language_list")
+
+    latest = files[0]
+    fname = os.path.basename(latest)
+    return FileResponse(
+        open(latest, "rb"),
+        as_attachment=True,
+        filename=fname,
+        content_type="application/octet-stream",
+    )
 
 
 @login_required
