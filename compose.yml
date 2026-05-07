@@ -61,12 +61,29 @@ services:
 
   
   cleaner:
-    image: docker:20.10-cli
+    image: docker:25-cli
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    # Attende per 7 giorni (604800 secondi), fa pulizia in background e ricomincia
-    command: sh -c "while true; do sleep 604800; docker system prune -f; done"
+    # Pulizia giornaliera. NON tocca i volumes (dbdata/media/staticfiles restano intatti).
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          echo "[cleaner] $(date -Iseconds) starting cleanup"
+          docker container prune -f
+          docker image prune -af
+          docker builder prune -af
+          docker network prune -f
+          echo "[cleaner] $(date -Iseconds) cleanup done"
+          sleep 86400
+        done
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   dbdata:

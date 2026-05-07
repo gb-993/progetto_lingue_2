@@ -46,6 +46,7 @@ from core.models import (
     QuestionAllowedMotivation,
     LanguageParameter,
     Glossary,
+    ParameterChangeLog,
 )
 try:
     from core.models import LanguageParameterEval  
@@ -2200,6 +2201,64 @@ def _build_unsure_flags_workbook() -> Workbook:
         ws.append([lid, pid])
     ws.freeze_panes = "A2"
     return wb
+
+
+@login_required
+@require_http_methods(["GET"])
+def parameter_change_log_export_xlsx(request: HttpRequest) -> HttpResponse:
+    """Esporta tutti i ParameterChangeLog in un singolo .xlsx (solo admin)."""
+    if not _is_admin(request.user):
+        messages.error(request, _t("You are not allowed to perform this action."))
+        return redirect("language_list")
+
+    headers = [
+        "ID", "Changed at", "Parameter ID", "Parameter Name",
+        "Changed by (email)", "Changed by (name)",
+        "Recap", "Diff (JSON)",
+    ]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "ParameterChangeLog"
+    ws.append(headers)
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+
+    rows = (
+        ParameterChangeLog.objects
+        .select_related("parameter", "changed_by")
+        .order_by("-changed_at", "-id")
+    )
+    for log in rows:
+        diff_str = ""
+        if log.diff:
+            try:
+                diff_str = json.dumps(log.diff, ensure_ascii=False, sort_keys=True)
+            except Exception:
+                diff_str = str(log.diff)
+        param_id = log.parameter_id or ""
+        param_name = (log.parameter.name if log.parameter else "") or ""
+        user_email = (log.changed_by.email if log.changed_by else "") or ""
+        user_full = ""
+        if log.changed_by:
+            user_full = f"{log.changed_by.name or ''} {log.changed_by.surname or ''}".strip()
+        changed_at = log.changed_at.replace(tzinfo=None) if log.changed_at else ""
+        ws.append([
+            log.id, changed_at, param_id, param_name,
+            user_email, user_full, log.recap or "", diff_str,
+        ])
+    ws.freeze_panes = "A2"
+
+    bio = io.BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+    ts = now().strftime("%Y%m%d_%H%M%S")
+    filename = f"parameter_change_log_{ts}.xlsx"
+    resp = HttpResponse(
+        bio.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
 
 
 @login_required
